@@ -61,6 +61,16 @@ converting blast mix into a reservoir of <strong>molten iron</strong> and
 backfed exhaust, or letting the molten reservoir overflow will all snuff it out —
 keep the exhaust flowing and the door shut while it works.
 <br>
+<br><strong>Blocks required:</strong>
+<br>• 98 × Refractory Bricks (tier 3)
+<br>• 1 × Blast Furnace Door (the control block, placed first)
+<br>• 2 × Tuyere
+<br>• 2 × Molten Metal Tap
+<br>• 2 × Gas Outlet
+<br>• 1 × Reinforced Hopper
+<br>• 1 × Bell Hopper
+<br><i>The hollow shaft inside is left empty — the hoppers fill it with blast mix.</i>
+<br>
 <br><strong>2. The Cowper Stove — hot blast</strong> <br>A raw blast furnace
 tops out around 1400 °C, which is not enough. To push past that you reclaim the
 heat it throws away. A <a href=\"handbooksearch://cowper stove intake\">Cowper
@@ -80,6 +90,15 @@ blast into the furnace; when the discharging one cools, swap their roles (with
 valves) so the freshly charged stove takes over. Alternating like this keeps a
 steady stream of hot blast on the tuyeres without ever stalling. Keep exhaust and
 air on their separate paths — if they mix inside a stove it cannot heat.
+<br>
+<br><strong>Blocks required (per stove — you want two):</strong>
+<br>• 48 × Refractory Bricks (tier 3)
+<br>• 1 × Cowper Stove Intake (the control block)
+<br>• 4 × Heat Sink
+<br>• 2 × Gas Outlet
+<br>• 1 × Gas Passthrough
+<br>• 1 × Coke Oven Door
+<br><i>One interior slot is left open for the coal pile that charges the core.</i>
 <br>
 <br><strong>3. The Gas Network</strong>
 <br>Everything above breathes through a network of <a href=\"handbooksearch://gas
@@ -108,6 +127,10 @@ especially when only one is charging. The <a href=\"handbooksearch://smoke stack
 intake\">Smoke Stack</a> vents the surplus to the sky, keeping the gas network
 from backing up — a backed-up exhaust line chokes and extinguishes the furnace,
 so treat the smoke stack as a safety valve for the whole system.
+<br>
+<br><strong>Blocks required:</strong>
+<br>• 1 × Smoke Stack Intake (the control block)
+<br>• 60 × Fire Clay Bricks
 <br>
 <br><strong>5. Molten Canals</strong>
 <br>Liquid metal is plumbed, not carried. Lay a <a href=\"handbooksearch://molten
@@ -188,6 +211,26 @@ rusty gears and 12 iron or steel rods</strong> in your hotbar to start the vesse
 and build up the construction stages until it reports complete. Around the vessel
 sit its service ports: a <strong>gas intake</strong>, a mechanical
 <strong>transmission</strong>, an <strong>input tap</strong>, and an output.
+<br>
+<br><strong>Blocks required:</strong>
+<br>• 1 × Bessemer Control (the control block, placed first)
+<br>• 1 × Bessemer Converter vessel — raised in place from <strong>4 rusty gears + 12 iron or steel rods</strong>
+<br>• 1 × Bessemer Transmission
+<br>• 1 × Bessemer Gas Intake
+<br>• 1 × Molten Canal (Start)
+<br>• 2 × Molten Canal (Straight)
+<br>• 1 × Molten Canal (Tap)
+<br>
+<br><strong>Construction cost — raising the vessel.</strong> Placing the vessel costs
+<strong>4 rusty gears + 12 iron/steel rods</strong>; then <hk>rightmouse</hk> it
+through its build stages, each drawing materials from your hotbar. All stages
+together consume:
+<br>• 40 × Iron/Steel Plate
+<br>• 42 × Iron/Steel Nails & Strips
+<br>• 18 × Iron/Steel Rod
+<br>• 84 × Refractory Brick (tier 3)
+<br>• 84 × Fire Clay
+<br>• 3 × Gas Piping (Straight)
 <br>
 <br><strong>Plugging it into the line.</strong> The converter needs two services
 wired in from the systems you already built in Tier I:
