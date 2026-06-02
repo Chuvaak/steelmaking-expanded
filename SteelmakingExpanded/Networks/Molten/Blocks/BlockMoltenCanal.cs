@@ -119,7 +119,11 @@ public class BlockMoltenCanal : BlockNetworkNode
 
       // Recover part of the seal's fire clay when a sealed canal is broken.
       if (be.Sealed && world.GetItem(FireClayCode) is { } clay)
-        drops = [.. drops, new ItemStack(clay, UnsealClayRefund)];
+        drops =
+        [
+          .. drops,
+          new ItemStack(clay, SmexValues.CanalUnsealClayRefund),
+        ];
     }
 
     return drops;
@@ -147,18 +151,12 @@ public class BlockMoltenCanal : BlockNetworkNode
   }
 
   #region Sealing (separator / valve)
-  /// <summary>Fire clay consumed to seal a straight canal into a separator.</summary>
-  private const int SealClayCost = 4;
-
-  /// <summary>Fire clay returned when a seal is chiselled back out.</summary>
-  private const int UnsealClayRefund = 2;
-
   private static readonly AssetLocation FireClayCode = new("game:clay-fire");
 
   /// <summary>
-  /// Right-click a straight canal with <see cref="SealClayCost"/> fire clay to seal it
+  /// Right-click a straight canal with <see cref="SmexValues.CanalSealClayCost"/> fire clay to seal it
   /// into a flow-blocking separator; right-click a sealed canal with a chisel in hand
-  /// and a hammer in the off-hand to break the seal and recover <see cref="UnsealClayRefund"/>
+  /// and a hammer in the off-hand to break the seal and recover <see cref="SmexValues.CanalUnsealClayRefund"/>
   /// fire clay. Only straight segments are sealable.
   /// </summary>
   public override bool OnBlockInteractStart(
@@ -179,7 +177,7 @@ public class BlockMoltenCanal : BlockNetworkNode
 
     if (!be.Sealed)
     {
-      if (!IsFireClay(held) || held!.StackSize < SealClayCost)
+      if (!IsFireClay(held) || held!.StackSize < SmexValues.CanalSealClayCost)
         return base.OnBlockInteractStart(world, byPlayer, blockSel);
 
       // Don't let a player cut a line that still has liquid metal in it.
@@ -198,7 +196,7 @@ public class BlockMoltenCanal : BlockNetworkNode
         be.SetSealed(true);
         if (byPlayer.WorldData.CurrentGameMode != EnumGameMode.Creative)
         {
-          activeSlot!.TakeOut(SealClayCost);
+          activeSlot!.TakeOut(SmexValues.CanalSealClayCost);
           activeSlot.MarkDirty();
         }
         SmexSounds.Play(world.Api, blockSel.Position, SmexSounds.Build, 0.8f);
@@ -218,7 +216,7 @@ public class BlockMoltenCanal : BlockNetworkNode
         Item? clay = world.GetItem(FireClayCode);
         if (clay != null)
         {
-          var refund = new ItemStack(clay, UnsealClayRefund);
+          var refund = new ItemStack(clay, SmexValues.CanalUnsealClayRefund);
           if (!byPlayer.InventoryManager.TryGiveItemstack(refund))
             world.SpawnItemEntity(
               refund,
@@ -292,7 +290,9 @@ public class BlockMoltenCanal : BlockNetworkNode
   private static ItemStack[] ResolveFireClayStacks(IWorldAccessor world)
   {
     Item? clay = world.GetItem(FireClayCode);
-    return clay != null ? [new ItemStack(clay, SealClayCost)] : [];
+    return clay != null
+      ? [new ItemStack(clay, SmexValues.CanalSealClayCost)]
+      : [];
   }
   #endregion
 

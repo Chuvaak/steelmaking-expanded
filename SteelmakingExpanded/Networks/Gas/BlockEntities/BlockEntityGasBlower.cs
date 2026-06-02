@@ -18,8 +18,6 @@ namespace SteelmakingExpanded.Networks.Gas.BlockEntities;
 /// </summary>
 public class BlockEntityGasBlower : BlockEntityGasPipe
 {
-  private const float MinRPSForBlast = 1.5f;
-
   private long _tickId;
   private float _lastTransferVolume;
   private string _lastTransferType = "Air";
@@ -99,7 +97,7 @@ public class BlockEntityGasBlower : BlockEntityGasPipe
       if (transfer > 0)
       {
         string gasType = inState.GasType;
-        if (speed >= MinRPSForBlast && gasType == "Air")
+        if (speed >= SmexValues.BlowerMinRPSForBlast && gasType == "Air")
           gasType = "Blast";
         float temperature = inState.SourceTemperature;
         outType = gasType;
@@ -115,7 +113,7 @@ public class BlockEntityGasBlower : BlockEntityGasPipe
     }
 
     if (
-      speed > MinRPSForBlast
+      speed > SmexValues.BlowerMinRPSForBlast
       && outNet?.State is GasNetworkState outState
       && outState.GasType == "Air"
     )

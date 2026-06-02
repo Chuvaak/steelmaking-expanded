@@ -17,9 +17,6 @@ namespace SteelmakingExpanded.Networks.Molten.BlockEntities;
 /// </summary>
 public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
 {
-  /// <summary>Default capacity in units when the block defines no <c>maxUnits</c> attribute.</summary>
-  public const int DefaultMaxUnits = 1200;
-
   /// <summary>The metal currently stored, or <c>null</c> when empty.</summary>
   public ItemStack? MetalContent;
 
@@ -27,7 +24,7 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
   public int CurrentUnitAmount = 0;
 
   /// <summary>Maximum units this barrel can hold.</summary>
-  public int MaxUnitAmount = DefaultMaxUnits;
+  public int MaxUnitAmount = SmexValues.BarrelDefaultMaxUnits;
 
   private MoltenRenderer? _renderer;
 
@@ -105,7 +102,7 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
       MetalContent.StackSize = 1;
       (MetalContent.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
         "cooldownSpeed",
-        40f
+        SmexValues.MoltenCooldownSpeed
       );
     }
     else
@@ -135,7 +132,9 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
   {
     base.Initialize(api);
     if (Block?.Attributes != null)
-      MaxUnitAmount = Block.Attributes["maxUnits"].AsInt(DefaultMaxUnits);
+      MaxUnitAmount = Block
+        .Attributes["maxUnits"]
+        .AsInt(SmexValues.BarrelDefaultMaxUnits);
 
     if (api.Side == EnumAppSide.Client)
     {

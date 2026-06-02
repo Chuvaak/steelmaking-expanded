@@ -44,22 +44,13 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
   private static readonly (int x, int y, int z) OutputStartLocal = (1, -2, 2);
   #endregion
 
-  #region Spawn recipe for the converter block
-  private const int RequiredGears = 4;
-  private const int RequiredRods = 12;
-  #endregion
-
-  #region Tunables (overridable via block attributes)
-  private int CapacityUnits =>
-    Block?.Attributes?["converterCapacity"]?.AsInt(100) ?? 100;
-  private float BlastPerSecond =>
-    Block?.Attributes?["blastPerSecond"]?.AsFloat(1.0f) ?? 1.0f;
-  private float ProcessDurationSec =>
-    Block?.Attributes?["processDuration"]?.AsFloat(300f) ?? 300f;
-  private float ProcessHoldTemp =>
-    Block?.Attributes?["processTemperature"]?.AsFloat(1600f) ?? 1600f;
-  private float PowerSpeedThreshold =>
-    Block?.Attributes?["powerSpeedThreshold"]?.AsFloat(0.1f) ?? 0.1f;
+  #region Tunables (see SmexValues)
+  private static int CapacityUnits => SmexValues.BessemerConverterCapacity;
+  private static float BlastPerSecond => SmexValues.BessemerBlastPerSecond;
+  private static float ProcessDurationSec => SmexValues.BessemerProcessDuration;
+  private static float ProcessHoldTemp => SmexValues.BessemerProcessTemperature;
+  private static float PowerSpeedThreshold =>
+    SmexValues.BessemerPowerSpeedThreshold;
 
   private const string IronCode = "game:ingot-iron";
   private const string SteelCode = "game:ingot-steel";
@@ -286,7 +277,7 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
       _content = new ItemStack(collectible, 1);
       (_content.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
         "cooldownSpeed",
-        40f
+        24f
       );
     }
 
@@ -387,7 +378,7 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
     var steelStack = new ItemStack(steel, 1);
     (steelStack.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
       "cooldownSpeed",
-      40f
+      24f
     );
     steelStack.Collectible.SetTemperature(Api.World, steelStack, temp, false);
     _content = steelStack;
@@ -669,8 +660,8 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
     {
       error = Lang.Get(
         "smex:bessemer-err-materials",
-        RequiredGears,
-        RequiredRods
+        SmexValues.BessemerRequiredGears,
+        SmexValues.BessemerRequiredRods
       );
       return false;
     }
@@ -701,7 +692,8 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
   private bool HasSpawnMaterials(IPlayer byPlayer)
   {
     CountMaterials(byPlayer, out int gears, out int rods);
-    return gears >= RequiredGears && rods >= RequiredRods;
+    return gears >= SmexValues.BessemerRequiredGears
+      && rods >= SmexValues.BessemerRequiredRods;
   }
 
   private static void CountMaterials(
@@ -729,8 +721,8 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
 
   private void ConsumeSpawnMaterials(IPlayer byPlayer)
   {
-    int gearsLeft = RequiredGears;
-    int rodsLeft = RequiredRods;
+    int gearsLeft = SmexValues.BessemerRequiredGears;
+    int rodsLeft = SmexValues.BessemerRequiredRods;
     var hotbar = byPlayer.InventoryManager?.GetHotbarInventory();
     if (hotbar == null)
       return;

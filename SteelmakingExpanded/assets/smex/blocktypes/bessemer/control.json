@@ -16,11 +16,6 @@
     "smex": ["*-north"]
   },
   "attributes": {
-    "converterCapacity": 1200,
-    "blastPerSecond": 1.0,
-    "processDuration": 300,
-    "processTemperature": 1700,
-    "powerSpeedThreshold": 0.1,
     "multiblockStructure": {
       "blockNumbers": {
         "smex:bessemercontrol*": 1,

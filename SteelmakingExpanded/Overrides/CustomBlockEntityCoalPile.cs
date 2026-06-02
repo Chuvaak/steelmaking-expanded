@@ -12,7 +12,6 @@ namespace SteelmakingExpanded.Overrides;
 /// </summary>
 public class CustomBlockEntityCoalPile : BlockEntityCoalPile
 {
-  private const int BlastmixBurnTime = 300;
   private int _blastmixBurnTimer = 0;
   private long _tickId;
 
@@ -43,7 +42,7 @@ public class CustomBlockEntityCoalPile : BlockEntityCoalPile
       if (inventory[0].Itemstack?.Collectible.Code.Path == "blastmix")
       {
         _blastmixBurnTimer++;
-        if (_blastmixBurnTimer >= BlastmixBurnTime)
+        if (_blastmixBurnTimer >= SmexValues.BlastmixBurnTime)
         {
           ConvertToSlag();
         }

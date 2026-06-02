@@ -24,8 +24,7 @@ public class BlockEntityHopperBell : BlockEntity
   public int BlastMixMagazine => _blastMixMagazine;
 
   /// <summary>Maximum blast mix the magazine can hold.</summary>
-  public int MaxMagazineCapacity =>
-    Block?.Attributes?["maxMagazineCapacity"]?.AsInt(64) ?? 64;
+  public int MaxMagazineCapacity => SmexValues.HopperMaxMagazineCapacity;
 
   /// <summary>Whether the hopper is dropping blast mix into the furnace.</summary>
   public bool IsDropping
@@ -102,11 +101,11 @@ public class BlockEntityHopperBell : BlockEntity
     if (inv == null)
       return;
 
-    int ironOreReq = Block.Attributes?["ironOreRequired"]?.AsInt(12) ?? 12;
-    int cokeReq = Block.Attributes?["cokeRequired"]?.AsInt(3) ?? 3;
-    int limeReq = Block.Attributes?["limeRequired"]?.AsInt(1) ?? 1;
-    int blastmixProd = Block.Attributes?["blastmixProduced"]?.AsInt(16) ?? 16;
-    int dropAmount = Block.Attributes?["dropAmount"]?.AsInt(8) ?? 8;
+    int ironOreReq = SmexValues.HopperIronOreRequired;
+    int cokeReq = SmexValues.HopperCokeRequired;
+    int limeReq = SmexValues.HopperLimeRequired;
+    int blastmixProd = SmexValues.HopperBlastmixProduced;
+    int dropAmount = SmexValues.HopperDropAmount;
 
     // Reclaimed blastmix sitting in the hopper feeds straight into the magazine
     // (1:1), taking priority over crafting fresh blastmix from ore.

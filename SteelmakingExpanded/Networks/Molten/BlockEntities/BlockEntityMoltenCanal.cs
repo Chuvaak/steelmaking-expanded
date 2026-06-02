@@ -27,11 +27,9 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     set { }
   }
 
-  /// <summary>Default per-block canal capacity in units when no <c>maxUnits</c> attribute is set.</summary>
-  public const int DefaultUnitCapacity = 20;
-
   /// <summary>This block's contribution to the network capacity, in units.</summary>
-  public int MaxUnitCapacity { get; private set; } = DefaultUnitCapacity;
+  public int MaxUnitCapacity { get; private set; } =
+    SmexValues.CanalDefaultUnitCapacity;
 
   /// <summary>Whether the metal in this canal has solidified (network must be rebuilt).</summary>
   public bool Solidified { get; protected set; } = false;
@@ -208,8 +206,8 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     }
 
     MaxUnitCapacity =
-      Block?.Attributes?["maxUnits"].AsInt(DefaultUnitCapacity)
-      ?? DefaultUnitCapacity;
+      Block?.Attributes?["maxUnits"].AsInt(SmexValues.CanalDefaultUnitCapacity)
+      ?? SmexValues.CanalDefaultUnitCapacity;
   }
 
   private void RefreshOpenConnectorFaces()

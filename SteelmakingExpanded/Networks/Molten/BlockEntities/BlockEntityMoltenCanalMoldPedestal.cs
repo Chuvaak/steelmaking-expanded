@@ -16,9 +16,6 @@ namespace SteelmakingExpanded.Networks.Molten.BlockEntities;
 /// </summary>
 public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
 {
-  /// <summary>Fallback mold capacity in units when the mold defines no <c>requiredUnits</c>.</summary>
-  public const int DefaultMoldUnits = 100;
-
   /// <summary>Whether a mold is currently placed on the pedestal.</summary>
   public bool IsMold { get; set; } = false;
 
@@ -35,7 +32,7 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
   public int MoldCurrentUnits { get; private set; }
 
   /// <summary>The placed mold's capacity in units.</summary>
-  public int MoldMaxUnits { get; private set; } = DefaultMoldUnits;
+  public int MoldMaxUnits { get; private set; } = SmexValues.MoldDefaultUnits;
 
   /// <summary>Toggles whether the pedestal fills its mold from the network.</summary>
   public void TryTogglePouring()
@@ -95,8 +92,9 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
     }
 
     MoldMaxUnits =
-      MoldStack.Block?.Attributes?["requiredUnits"].AsInt(DefaultMoldUnits)
-      ?? DefaultMoldUnits;
+      MoldStack.Block?.Attributes?["requiredUnits"].AsInt(
+        SmexValues.MoldDefaultUnits
+      ) ?? SmexValues.MoldDefaultUnits;
     IsMold = true;
   }
 
@@ -121,7 +119,7 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
     MoldStack = null;
     MoldMetalContent = null;
     MoldCurrentUnits = 0;
-    MoldMaxUnits = DefaultMoldUnits;
+    MoldMaxUnits = SmexValues.MoldDefaultUnits;
     return stack;
   }
 
@@ -177,7 +175,7 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
       MoldMetalContent = new ItemStack(collectible, 1);
       (MoldMetalContent.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
         "cooldownSpeed",
-        40f
+        SmexValues.MoltenCooldownSpeed
       );
     }
     MoldMetalContent.Collectible.SetTemperature(
@@ -363,7 +361,7 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
     MoldMetalContent = tree.GetItemstack("moldContents");
     MoldMetalContent?.ResolveBlockOrItem(worldForResolving);
     MoldCurrentUnits = tree.GetInt("moldCurrentUnits");
-    MoldMaxUnits = tree.GetInt("moldMaxUnits", DefaultMoldUnits);
+    MoldMaxUnits = tree.GetInt("moldMaxUnits", SmexValues.MoldDefaultUnits);
     UpdateRenderer();
   }
 

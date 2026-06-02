@@ -16,12 +16,6 @@ namespace SteelmakingExpanded.Networks.Molten.BlockEntities;
 /// </summary>
 public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
 {
-  /// <summary>Fallback mold capacity in units when the mold defines no <c>requiredUnits</c>.</summary>
-  public const int DefaultMoldUnits = 100;
-
-  // Used when tap block attributes don't specify the network drain speed.
-  public const float DefaultDrainSpeed = 10f;
-
   /// <summary>Whether the tap is actively draining the network into its content.</summary>
   public bool IsPouring { get; private set; } = false;
 
@@ -37,7 +31,7 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
 
   /// <summary>Capacity of the parked barrel, in units.</summary>
   public int BarrelMaxUnits { get; private set; } =
-    BlockEntityMoltenBarrel.DefaultMaxUnits;
+    SmexValues.BarrelDefaultMaxUnits;
   #endregion
 
   #region Mold content (large molds only — anvil, helve hammer)
@@ -54,7 +48,7 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
   public int MoldCurrentUnits { get; private set; }
 
   /// <summary>The parked mold's capacity, in units.</summary>
-  public int MoldMaxUnits { get; private set; } = DefaultMoldUnits;
+  public int MoldMaxUnits { get; private set; } = SmexValues.MoldDefaultUnits;
   #endregion
 
   // Molds sit on the floor (bottom) of the tap block. Kept as a single knob so
@@ -85,7 +79,9 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     if (api.Side == EnumAppSide.Server)
       RegisterGameTickListener(OnServerTick, 1000);
 
-    _drainSpeed = Block.Attributes["drainSpeed"].AsFloat(DefaultDrainSpeed);
+    _drainSpeed = Block
+      .Attributes["drainSpeed"]
+      .AsFloat(SmexValues.CanalDefaultDrainSpeed);
   }
 
   public override void OnBlockRemoved()
@@ -248,8 +244,8 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     }
     BarrelMaxUnits =
       barrelStack.Block?.Attributes?["maxUnits"].AsInt(
-        BlockEntityMoltenBarrel.DefaultMaxUnits
-      ) ?? BlockEntityMoltenBarrel.DefaultMaxUnits;
+        SmexValues.BarrelDefaultMaxUnits
+      ) ?? SmexValues.BarrelDefaultMaxUnits;
     IsBarrel = true;
     IsMold = false;
     IsPouring = true;
@@ -272,7 +268,7 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     }
     BarrelMetalContent = null;
     BarrelCurrentUnits = 0;
-    BarrelMaxUnits = BlockEntityMoltenBarrel.DefaultMaxUnits;
+    BarrelMaxUnits = SmexValues.BarrelDefaultMaxUnits;
     return stack;
   }
 
@@ -299,8 +295,9 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     }
 
     MoldMaxUnits =
-      MoldStack.Block?.Attributes?["requiredUnits"].AsInt(DefaultMoldUnits)
-      ?? DefaultMoldUnits;
+      MoldStack.Block?.Attributes?["requiredUnits"].AsInt(
+        SmexValues.MoldDefaultUnits
+      ) ?? SmexValues.MoldDefaultUnits;
     IsMold = true;
     IsBarrel = false;
     IsPouring = true;
@@ -325,7 +322,7 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     MoldStack = null;
     MoldMetalContent = null;
     MoldCurrentUnits = 0;
-    MoldMaxUnits = DefaultMoldUnits;
+    MoldMaxUnits = SmexValues.MoldDefaultUnits;
     _moldMesh = null;
     _tessellatedMoldCode = null;
     return stack;
@@ -387,7 +384,7 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
         ref content,
         MoldCurrentUnits,
         MoldMaxUnits,
-        40f
+        SmexValues.MoltenCooldownSpeed
       );
       if (drained > 0)
       {
@@ -514,7 +511,7 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     BarrelCurrentUnits = tree.GetInt("barrelCurrentUnits");
     BarrelMaxUnits = tree.GetInt(
       "barrelMaxUnits",
-      BlockEntityMoltenBarrel.DefaultMaxUnits
+      SmexValues.BarrelDefaultMaxUnits
     );
 
     IsMold = tree.GetBool("isMold");
@@ -523,7 +520,7 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     MoldMetalContent = tree.GetItemstack("moldContents");
     MoldMetalContent?.ResolveBlockOrItem(worldForResolving);
     MoldCurrentUnits = tree.GetInt("moldCurrentUnits");
-    MoldMaxUnits = tree.GetInt("moldMaxUnits", DefaultMoldUnits);
+    MoldMaxUnits = tree.GetInt("moldMaxUnits", SmexValues.MoldDefaultUnits);
 
     if (IsBarrel != wasBarrel || IsMold != wasMold)
     {

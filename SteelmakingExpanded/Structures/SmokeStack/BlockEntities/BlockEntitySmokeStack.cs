@@ -140,8 +140,7 @@ public class BlockEntitySmokeStack
     if (!StructureComplete)
       return;
 
-    var gasIntakeVolume =
-      Block?.Attributes?["gasIntakeVolume"]?.AsFloat(4.0f) ?? 4.0f;
+    var gasIntakeVolume = SmexValues.SmokestackGasIntakeVolume;
 
     // Delegates to IGasConsumer; GasNetwork updates state and broadcasts.
     float consumed = TryConsumeGas(gasIntakeVolume);

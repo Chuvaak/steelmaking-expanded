@@ -3,14 +3,6 @@
   "class": "smex.BlockHopperBell",
   "entityclass": "smex.BlockEntityHopperBell",
   "behaviors": [{ "name": "Lockable" }],
-  "attributes": {
-    "maxMagazineCapacity": 64,
-    "ironOreRequired": 12,
-    "cokeRequired": 3,
-    "limeRequired": 1,
-    "blastmixProduced": 16,
-    "dropAmount": 4
-  },
   "creativeinventory": {
     "general": ["*"],
     "smex": ["*"]

@@ -77,8 +77,8 @@ public class BlockMoltenBarrel : Block
       return;
 
     int maxUnits =
-      Attributes?["maxUnits"].AsInt(BlockEntityMoltenBarrel.DefaultMaxUnits)
-      ?? BlockEntityMoltenBarrel.DefaultMaxUnits;
+      Attributes?["maxUnits"].AsInt(SmexValues.BarrelDefaultMaxUnits)
+      ?? SmexValues.BarrelDefaultMaxUnits;
     float fillRatio =
       maxUnits > 0 ? GameMath.Clamp((float)units / maxUnits, 0f, 1f) : 0f;
     float temp = metal.Collectible.GetTemperature(capi.World, metal);
@@ -318,8 +318,8 @@ public class BlockMoltenBarrel : Block
 
     int currentUnits = beData.GetInt("currentUnitAmount");
     int maxUnits =
-      Attributes?["maxUnits"].AsInt(BlockEntityMoltenBarrel.DefaultMaxUnits)
-      ?? BlockEntityMoltenBarrel.DefaultMaxUnits;
+      Attributes?["maxUnits"].AsInt(SmexValues.BarrelDefaultMaxUnits)
+      ?? SmexValues.BarrelDefaultMaxUnits;
 
     if (currentUnits <= 0)
     {

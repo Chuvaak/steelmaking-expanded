@@ -15,12 +15,6 @@
   },
   "maxstacksize": 1,
   "attributes": {
-    "maxTemperature": 1240.0,
-    "heatingSpeedAnthracite": 0.0128,
-    "heatingSpeedOtherCoal": 0.0085,
-    "heatingSpeedDefault": 0.0064,
-    "coolingSpeedExhaust": 0.3,
-    "coolingSpeedAir": 0.0024,
     "multiblockStructure": {
       "blockNumbers": {
         "game:refractorybricks-good-tier3": 1,

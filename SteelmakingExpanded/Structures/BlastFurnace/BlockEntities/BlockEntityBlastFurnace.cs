@@ -39,7 +39,6 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
   /// <summary>Current operating state of the furnace.</summary>
   public BlastFurnaceState State { get; private set; } = BlastFurnaceState.Idle;
 
-  private const int BlastMixRequiredToFire = 320;
   private int _cachedMixCount = 0;
   private bool _cachedIsFull = false;
   private List<BlockPos> _gasOutlets = [];
@@ -154,19 +153,18 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
 
   private void CacheAttributes()
   {
-    var attr = Block?.Attributes;
-    _naturalMaxTemp = attr?["naturalMaxTemp"]?.AsFloat(1400f) ?? 1400f;
-    _boostedMaxTemp = attr?["boostedMaxTemp"]?.AsFloat(1700f) ?? 1700f;
-    _blastBoostThreshold = attr?["blastBoostThreshold"]?.AsFloat(800f) ?? 800f;
-    _ironMeltingPoint = attr?["ironMeltingPoint"]?.AsFloat(1482f) ?? 1482f;
-    _maxFuelBurnTime = attr?["maxFuelBurnTime"]?.AsInt(1200) ?? 1200;
-    _meltStartDelay = attr?["meltStartDelay"]?.AsFloat(300f) ?? 300f;
-    _meltIntervalSec = attr?["meltIntervalSec"]?.AsFloat(10f) ?? 10f;
-    _ironPerMeltCycle = attr?["ironPerMeltCycle"]?.AsFloat(60f) ?? 60f;
-    _slagPerMeltCycle = attr?["slagPerMeltCycle"]?.AsFloat(10f) ?? 10f;
-    _blastMixPerMeltCycle = attr?["blastMixPerMeltCycle"]?.AsInt(16) ?? 16;
-    _maxMoltenIron = attr?["maxMoltenIron"]?.AsFloat(4800f) ?? 4800f;
-    _maxMoltenSlag = attr?["maxMoltenSlag"]?.AsFloat(1200f) ?? 1200f;
+    _naturalMaxTemp = SmexValues.BfNaturalMaxTemp;
+    _boostedMaxTemp = SmexValues.BfBoostedMaxTemp;
+    _blastBoostThreshold = SmexValues.BfBlastBoostThreshold;
+    _ironMeltingPoint = SmexValues.BfIronMeltingPoint;
+    _maxFuelBurnTime = SmexValues.BfMaxFuelBurnTime;
+    _meltStartDelay = SmexValues.BfMeltStartDelay;
+    _meltIntervalSec = SmexValues.BfMeltIntervalSec;
+    _ironPerMeltCycle = SmexValues.BfIronPerMeltCycle;
+    _slagPerMeltCycle = SmexValues.BfSlagPerMeltCycle;
+    _blastMixPerMeltCycle = SmexValues.BfBlastMixPerMeltCycle;
+    _maxMoltenIron = SmexValues.BfMaxMoltenIron;
+    _maxMoltenSlag = SmexValues.BfMaxMoltenSlag;
   }
 
   #endregion
@@ -724,7 +722,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
       }
     }
 
-    isFull = totalMix >= BlastMixRequiredToFire;
+    isFull = totalMix >= SmexValues.BlastMixRequiredToFire;
     return totalMix;
   }
 
@@ -802,7 +800,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
           Lang.Get(
             "smex:bf-info-mixloaded",
             _cachedMixCount,
-            BlastMixRequiredToFire
+            SmexValues.BlastMixRequiredToFire
           )
         );
 

@@ -9,18 +9,6 @@
   ],
   "entityBehaviors": [{ "name": "Door" }],
   "attributes": {
-    "naturalMaxTemp": 1400.0,
-    "boostedMaxTemp": 1700.0,
-    "blastBoostThreshold": 800.0,
-    "ironMeltingPoint": 1482.0,
-    "maxMoltenIron": 2400.0,
-    "maxMoltenSlag": 600.0,
-    "maxFuelBurnTime": 1200,
-    "meltStartDelay": 300,
-    "meltIntervalSec": 10,
-    "ironPerMeltCycle": 60,
-    "slagPerMeltCycle": 10,
-    "blastMixPerMeltCycle": 16,
     "widthByType": {
       "*": 1
     },

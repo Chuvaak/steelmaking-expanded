@@ -13,12 +13,6 @@ namespace SteelmakingExpanded.Structures.BessemerConverter.Blocks;
 /// </summary>
 public class BlockBessemerControl : Block
 {
-  /// <summary>
-  /// Pouring empties the whole charge, so it must be held — not single-clicked —
-  /// to fire, guarding against accidental pours. The hold time, in seconds.
-  /// </summary>
-  private const float PourHoldSeconds = 1f;
-
   public override bool OnBlockInteractStart(
     IWorldAccessor world,
     IPlayer byPlayer,
@@ -61,7 +55,7 @@ public class BlockBessemerControl : Block
     BessemerOpState target = ResolveTarget(byPlayer);
 
     // Pouring is destructive (drains the entire charge), so rather than firing on
-    // the click we begin a hold here and only commit once PourHoldSeconds have
+    // the click we begin a hold here and only commit once the pour-hold time has
     // elapsed in OnBlockInteractStep. Validate up front so the player isn't left
     // holding a doomed interaction; surface the same error a click would.
     if (target == BessemerOpState.Pouring)
@@ -116,7 +110,7 @@ public class BlockBessemerControl : Block
     )
       return false;
 
-    if (secondsUsed < PourHoldSeconds)
+    if (secondsUsed < SmexValues.BessemerPourHoldSeconds)
       return true; // keep holding
 
     // Held long enough — commit the pour (TrySetState re-validates internally).

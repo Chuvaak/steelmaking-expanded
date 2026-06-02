@@ -23,8 +23,8 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
   private string _lastStatus = Lang.Get("smex:cowperstove-status-idle");
   private long _lastHeatSoundMs;
 
-  // Cached block attributes (constant per block type) — read once at init instead
-  // of re-parsing the JsonObject every production tick.
+  // Cached config tunables (see SmexValues) — read once at init instead of
+  // re-reading the static config every production tick.
   private float _factorAnthracite;
   private float _factorOtherCoal;
   private float _factorDefault;
@@ -43,15 +43,12 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
   {
     base.Initialize(api);
 
-    var attr = Block?.Attributes;
-    _factorAnthracite =
-      attr?["heatingSpeedAnthracite"]?.AsFloat(0.0128f) ?? 0.0128f;
-    _factorOtherCoal =
-      attr?["heatingSpeedOtherCoal"]?.AsFloat(0.0085f) ?? 0.0085f;
-    _factorDefault = attr?["heatingSpeedDefault"]?.AsFloat(0.0064f) ?? 0.0064f;
-    _coolingSpeedExhaust = attr?["coolingSpeedExhaust"]?.AsFloat(0.3f) ?? 0.3f;
-    _coolingSpeedAir = attr?["coolingSpeedAir"]?.AsFloat(0.0005f) ?? 0.0005f;
-    _maxTemperature = attr?["maxTemperature"]?.AsFloat(1240f) ?? 1240f;
+    _factorAnthracite = SmexValues.CowperHeatingSpeedAnthracite;
+    _factorOtherCoal = SmexValues.CowperHeatingSpeedOtherCoal;
+    _factorDefault = SmexValues.CowperHeatingSpeedDefault;
+    _coolingSpeedExhaust = SmexValues.CowperCoolingSpeedExhaust;
+    _coolingSpeedAir = SmexValues.CowperCoolingSpeedAir;
+    _maxTemperature = SmexValues.CowperMaxTemperature;
 
     if (api.Side == EnumAppSide.Server)
     {

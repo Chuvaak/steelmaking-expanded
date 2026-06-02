@@ -22,7 +22,7 @@ public class MoltenNetwork(BlockNetworkModSystem system) : BlockNetwork(system)
       (
         blockAccessor.GetBlockEntity(pos) as BlockEntityMoltenCanal
       )?.MaxUnitCapacity
-      ?? BlockEntityMoltenCanal.DefaultUnitCapacity
+      ?? SmexValues.CanalDefaultUnitCapacity
     );
 
   /// <summary>
@@ -56,7 +56,7 @@ public class MoltenNetwork(BlockNetworkModSystem system) : BlockNetwork(system)
       );
       (stored.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
         "cooldownSpeed",
-        40f
+        SmexValues.MoltenCooldownSpeed
       );
       State = new MoltenNetworkState
       {
@@ -109,7 +109,7 @@ public class MoltenNetwork(BlockNetworkModSystem system) : BlockNetwork(system)
       state.MetalStack.Attributes["temperature"] is ITreeAttribute tempTree
       && tempTree.GetFloat("cooldownSpeed") <= 0f
     )
-      tempTree.SetFloat("cooldownSpeed", 40f);
+      tempTree.SetFloat("cooldownSpeed", SmexValues.MoltenCooldownSpeed);
     state.CurrentTemperature = newTemp;
     state.CurrentAmount += accepted2;
 
@@ -216,7 +216,7 @@ public class MoltenNetwork(BlockNetworkModSystem system) : BlockNetwork(system)
         );
         (
           state.MetalStack.Attributes["temperature"] as ITreeAttribute
-        )?.SetFloat("cooldownSpeed", 40f);
+        )?.SetFloat("cooldownSpeed", SmexValues.MoltenCooldownSpeed);
       }
     }
 

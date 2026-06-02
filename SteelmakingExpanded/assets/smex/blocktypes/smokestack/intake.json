@@ -15,7 +15,6 @@
   },
   "maxstacksize": 1,
   "attributes": {
-    "gasIntakeVolume": 4.0,
     "multiblockStructure": {
       "blockNumbers": {
         "smex:smokestack-intake*": 1,

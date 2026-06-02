@@ -70,8 +70,6 @@ public class SteelmakingExpandedModSystem : ModSystem
   #endregion
 
   #region Global player interactions
-  private const float MoldMinBurnTemperature = 200f;
-
   public override void StartServerSide(ICoreServerAPI api)
   {
     api.Event.AfterActiveSlotChanged += (player, ev) =>
@@ -138,7 +136,7 @@ public class SteelmakingExpandedModSystem : ModSystem
       return;
 
     float temp = contents.Collectible.GetTemperature(api.World, contents);
-    if (temp < MoldMinBurnTemperature || HasHandProtection(player))
+    if (temp < SmexValues.MoldBurnMinTemperature || HasHandProtection(player))
       return;
 
     player.Entity.ReceiveDamage(
@@ -183,6 +181,10 @@ public class SteelmakingExpandedModSystem : ModSystem
   #region Entity register/override
   public override void Start(ICoreAPI api)
   {
+    // Load gameplay tunables from ModConfig/smex.json (writes defaults on first
+    // run). Done before any block entity is constructed so the values apply.
+    SmexValues.Load(api);
+
     // Blocks
     RegisterBlock<BlockBlastFurnaceDoor>(api);
     RegisterBlock<BlockHopperReinforced>(api);
