@@ -126,9 +126,9 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
   {
     var (dx, dz) = _currentAngle switch
     {
-      90 => (-localZ, localX),
+      90 => (localZ, -localX),
       180 => (-localX, -localZ),
-      270 => (localZ, -localX),
+      270 => (-localZ, localX),
       _ => (localX, localZ), // Default case covers 0 degrees
     };
 

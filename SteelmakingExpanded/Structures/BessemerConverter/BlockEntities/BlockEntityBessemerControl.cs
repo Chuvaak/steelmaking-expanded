@@ -445,23 +445,14 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
   #region Peripheral access
   protected override BlockPos GetGlobalPos(int localX, int localY, int localZ)
   {
-    int dx = localX,
-      dz = localZ;
-    if (_currentAngle == 90)
+    var (dx, dz) = _currentAngle switch
     {
-      dx = -localZ;
-      dz = localX;
-    }
-    else if (_currentAngle == 180)
-    {
-      dx = -localX;
-      dz = -localZ;
-    }
-    else if (_currentAngle == 270)
-    {
-      dx = localZ;
-      dz = -localX;
-    }
+      90 => (-localZ, localX),
+      180 => (localX, localZ),
+      270 => (localZ, -localX),
+      _ => (-localX, -localZ), // Default case covers 0 degrees
+    };
+
     return Pos.AddCopy(dx, localY, dz);
   }
 
