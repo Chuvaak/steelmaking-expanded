@@ -1,3 +1,4 @@
+using System;
 using SteelmakingExpanded.Structures.BessemerConverter.BlockEntities;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
@@ -31,8 +32,31 @@ public class BlockBessemerConverter : Block
     )
       solidifiedDrops = be.CollectBreakDrops();
 
-    // Lets the RightClickConstructable behaviour drop its built-up parts.
-    base.OnBlockBroken(world, pos, byPlayer, dropQuantityMultiplier);
+    // base.OnBlockBroken drives the RightClickConstructable behaviour, which
+    // resolves each completed stage's ingredients back into drops. That path
+    // expands wildcard codes (e.g. metalplate-*) using the wildcard values
+    // captured at build time; a converter raised before "storeWildCard" was
+    // added to the recipe has none stored, so vanilla GetDrops throws while
+    // expanding the "*" — and because it runs before the block is cleared, the
+    // exception escapes to the client and crashes the game. Guard it so a
+    // legacy/corrupt construction state degrades to "no construction drops"
+    // and the block is still removed.
+    try
+    {
+      base.OnBlockBroken(world, pos, byPlayer, dropQuantityMultiplier);
+    }
+    catch (Exception e)
+    {
+      world.Logger.Warning(
+        "[smex] Bessemer converter at {0} could not drop its construction "
+          + "materials (likely built before the recipe fix); removing it "
+          + "anyway. {1}",
+        pos,
+        e
+      );
+      if (world.BlockAccessor.GetBlock(pos) == this)
+        world.BlockAccessor.SetBlock(0, pos);
+    }
 
     if (solidifiedDrops != null && world.Side == EnumAppSide.Server)
       world.SpawnItemEntity(solidifiedDrops, pos.ToVec3d().Add(0.5, 0.5, 0.5));
