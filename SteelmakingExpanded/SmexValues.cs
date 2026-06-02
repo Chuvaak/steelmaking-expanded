@@ -69,19 +69,19 @@ public class SmexConfig
   public float CowperMaxTemperature { get; set; } = 1240f;
 
   /// <summary>Per-second heat-soak rate when an anthracite coal pile burns below the stove.</summary>
-  public float CowperHeatingSpeedAnthracite { get; set; } = 0.0096f;
+  public float CowperHeatingSpeedAnthracite { get; set; } = 0.0064f;
 
   /// <summary>Per-second heat-soak rate when a non-anthracite coal pile burns below the stove.</summary>
-  public float CowperHeatingSpeedOtherCoal { get; set; } = 0.0064f;
+  public float CowperHeatingSpeedOtherCoal { get; set; } = 0.0048f;
 
   /// <summary>Per-second heat-soak rate with no coal pile below the stove.</summary>
-  public float CowperHeatingSpeedDefault { get; set; } = 0.0024f;
+  public float CowperHeatingSpeedDefault { get; set; } = 0.0012f;
 
   /// <summary>Per-second rate the soaked-up exhaust gives its heat to the regenerator.</summary>
   public float CowperCoolingSpeedExhaust { get; set; } = 0.3f;
 
   /// <summary>Per-second rate the regenerator loses heat into the air it reheats into hot blast.</summary>
-  public float CowperCoolingSpeedAir { get; set; } = 0.0024f;
+  public float CowperCoolingSpeedAir { get; set; } = 0.0012f;
   #endregion
 
   #region Blast furnace
