@@ -90,22 +90,19 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
       _ => 0,
     };
 
-    // Compare against the value actually stored in _currentAngle (angle + 180,
-    // normalised) — comparing against the raw angle never matched, so the monitor
-    // tick re-deserialised the multiblock-structure JSON every few seconds.
-    if (_structure == null || _currentAngle != (angle + 180) % 360)
+    if (_structure == null || _currentAngle != angle)
     {
       _structure = Block.Attributes?[
         "multiblockStructure"
       ]?.AsObject<MultiblockStructure>();
       _structure?.InitForUse(angle);
-      // Peripheral offsets are authored 180° rotated from the structure frame, so
-      // GetGlobalPos reads (angle + 180). Must be normalised mod 360 — otherwise
-      // east (270 + 180 = 450) misses the 90/180/270 cases in the base
-      // GetGlobalPos switch and silently falls through to the 0° identity offset,
-      // breaking every peripheral lookup (passthrough, outlets, heatsinks) for an
-      // east-facing stove.
-      _currentAngle = (angle + 180) % 360;
+      // The base GetGlobalPos switch applies the *exact* same Y-rotation that
+      // MultiblockStructure.InitForUse(angle) uses to lay out (and validate) the
+      // structure, so peripheral lookups only line up with the placed blocks when
+      // _currentAngle equals the angle handed to InitForUse. The previous
+      // (angle + 180) offset rotated every lookup 180° off, so the stove validated
+      // as complete but then never found its outlet/passthrough/heatsink blocks.
+      _currentAngle = angle;
 
       if (Api is ICoreClientAPI capi && _highlightedStructure != null)
       {
@@ -282,11 +279,14 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
 
   private void SpawnHeatingParticles()
   {
+    // Spawn the heat column over the central interior column (structure-local
+    // (0, *, 1) — the heatsink stack), rotated the same way GetGlobalPos resolves
+    // it. Mirrors InitForUse(_currentAngle) applied to (x:0, z:1).
     var (dx, dz) = _currentAngle switch
     {
-      90 => (-1, 0), // East
+      90 => (1, 0), // West
       180 => (0, -1), // South
-      270 => (1, 0), // West
+      270 => (-1, 0), // East
       _ => (0, 1), // North (Default for 0)
     };
 
