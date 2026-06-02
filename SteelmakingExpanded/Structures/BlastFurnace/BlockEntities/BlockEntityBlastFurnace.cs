@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using SteelmakingExpanded.Networks.Gas;
@@ -208,7 +209,11 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
       return;
 
     int units = System.Math.Min(20, (int)_moltenIron);
-    ItemStack? ironStack = CreateMoltenStack("iron", units, _internalTemp);
+    ItemStack? ironStack = CreateMoltenStack(
+      "iron",
+      (int)Math.Ceiling(units * 0.6f),
+      _internalTemp
+    );
     if (ironStack == null)
       return;
 
@@ -239,8 +244,12 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
     )
       return;
 
-    int units = System.Math.Min(20, (int)_moltenSlag);
-    ItemStack? slagStack = CreateMoltenStack("slag", units, _internalTemp);
+    int units = Math.Min(20, (int)_moltenSlag);
+    ItemStack? slagStack = CreateMoltenStack(
+      "slag",
+      (int)Math.Ceiling(units * 0.8),
+      _internalTemp
+    );
     if (slagStack == null)
       return;
 
@@ -518,7 +527,10 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
   /// found. All per-tick pile reads/writes share this list so the region is walked
   /// at most once per production tick.
   /// </summary>
-  private List<(BlockPos pos, CustomBlockEntityCoalPile pile)> CollectHearthPiles()
+  private List<(
+    BlockPos pos,
+    CustomBlockEntityCoalPile pile
+  )> CollectHearthPiles()
   {
     var piles = new List<(BlockPos, CustomBlockEntityCoalPile)>();
     BlockPos centerHearth = GetGlobalPos(0, 0, 2);
@@ -706,8 +718,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
       foreach (var slot in pileBe.inventory)
       {
         if (
-          !slot.Empty
-          && slot.Itemstack.Collectible.Code.Path.Equals("blastmix")
+          !slot.Empty && slot.Itemstack.Collectible.Code.Path.Equals("blastmix")
         )
           totalMix += slot.StackSize;
       }
@@ -821,7 +832,9 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
             // Bessemer converter's readout) rather than a raw seconds countdown.
             int pct = (int)
               GameMath.Clamp(
-                100f * _secondsAboveMelting / System.Math.Max(1f, _meltStartDelay),
+                100f
+                  * _secondsAboveMelting
+                  / System.Math.Max(1f, _meltStartDelay),
                 0,
                 100
               );
