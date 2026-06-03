@@ -139,7 +139,7 @@ public class SmexConfig
   public float BessemerProcessDuration { get; set; } = 300f;
 
   /// <summary>Temperature (°C) the blast holds the charge at while refining.</summary>
-  public float BessemerProcessTemperature { get; set; } = 1600f;
+  public float BessemerProcessTemperature { get; set; } = 1800f;
 
   /// <summary>Minimum geared mechanical speed for the converter to count as powered.</summary>
   public float BessemerPowerSpeedThreshold { get; set; } = 0.1f;

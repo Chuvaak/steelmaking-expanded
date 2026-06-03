@@ -246,7 +246,7 @@ kind that feeds the furnace) into its <strong>gas intake</strong>. The intake
 <br>1. Set the converter to <strong>Filling</strong> and pour molten iron into its
 input tap from the canal until charged.
 <br>2. Switch to <strong>Normal</strong>. With power and blast flowing, it blows
-air through the charge at ~1600 °C for about five minutes, refining the iron into
+air through the charge at ~1800 °C for about five minutes, refining the iron into
 <strong>steel</strong>.
 <br>3. Set it to <strong>Pouring</strong> to drain the finished steel into the
 output canal.
