@@ -54,6 +54,32 @@ public class BlockMoltenBarrel : Block
     _chisels = chiselList.ToArray();
   }
 
+  /// <summary>
+  /// Emits incandescent block light scaled to the stored metal's temperature, so a
+  /// hot barrel lights its surroundings (same scheme as the canals and the cowper
+  /// heat sink). The block entity owns the threshold/scaling via
+  /// <see cref="BlockEntityMoltenBarrel.GlowLightLevel"/> and re-lights the block as
+  /// that level shifts. Held/inventory barrels (null pos) fall back to base and glow
+  /// via <see cref="OnBeforeRender"/> instead.
+  /// </summary>
+  public override byte[] GetLightHsv(
+    IBlockAccessor blockAccessor,
+    BlockPos pos,
+    ItemStack? stack = null
+  )
+  {
+    if (
+      pos != null
+      && blockAccessor.GetBlockEntity(pos) is BlockEntityMoltenBarrel be
+    )
+    {
+      byte val = be.GlowLightLevel;
+      if (val > 0)
+        return [8, 7, val];
+    }
+    return base.GetLightHsv(blockAccessor, pos, stack);
+  }
+
   #region Held / inventory rendering
   public override void OnBeforeRender(
     ICoreClientAPI capi,

@@ -46,6 +46,47 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
   /// <summary>Whether the barrel is filled to capacity.</summary>
   public bool IsFull => CurrentUnitAmount >= MaxUnitAmount;
 
+  #region Incandescent block light
+  /// <summary>Below this temperature (°C) the metal emits no block light.</summary>
+  private const float GlowMinTemp = 500f;
+  private byte _lastGlow;
+
+  /// <summary>
+  /// Block-light value (0–24) emitted from the hot metal, scaled from temperature
+  /// above <see cref="GlowMinTemp"/>. Read by
+  /// <see cref="Blocks.BlockMoltenBarrel.GetLightHsv"/>; 0 when empty or cool.
+  /// </summary>
+  public byte GlowLightLevel
+  {
+    get
+    {
+      if (Api?.World == null || MetalContent == null || CurrentUnitAmount <= 0)
+        return 0;
+      float t = MetalContent.Collectible.GetTemperature(Api.World, MetalContent);
+      return t > GlowMinTemp
+        ? (byte)GameMath.Clamp((t - GlowMinTemp) / 30f, 0, 24)
+        : (byte)0;
+    }
+  }
+
+  /// <summary>
+  /// Re-lights the block when the emitted glow level shifts. The block id never
+  /// changes, so the engine won't relight on its own — nudge it via
+  /// <c>MarkBlockDirty</c>, exactly like the canals and the heat sink. Unlike the
+  /// canal (driven by the network thermal tick) the barrel has no other tick, so a
+  /// dedicated light tick drives the fade as the metal cools.
+  /// </summary>
+  private void UpdateGlow()
+  {
+    byte g = GlowLightLevel;
+    if (g != _lastGlow)
+    {
+      _lastGlow = g;
+      Api?.World.BlockAccessor.MarkBlockDirty(Pos);
+    }
+  }
+  #endregion
+
   /// <inheritdoc/>
   // Hardened contents are allowed — fresh molten metal of the same type re-melts
   // and tops up the barrel rather than being rejected.
@@ -121,6 +162,7 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
     CurrentUnitAmount += accepted;
     amount -= accepted;
     UpdateRenderer();
+    UpdateGlow();
     MarkDirty(true);
   }
 
@@ -142,6 +184,12 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
     {
       InitRenderer((ICoreClientAPI)api);
       UpdateRenderer();
+    }
+    else
+    {
+      // No other server tick exists on the barrel, so drive the cooling glow fade
+      // (and its relights) from here.
+      RegisterGameTickListener(_ => UpdateGlow(), 1000);
     }
   }
 
@@ -247,6 +295,7 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
       CurrentUnitAmount = 0;
       SmexSounds.Play(Api, Pos, SmexSounds.AnvilHit, 0.8f);
       UpdateRenderer();
+      UpdateGlow();
       MarkDirty(true);
     }
 
@@ -358,7 +407,10 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
     CurrentUnitAmount = tree.GetInt("currentUnitAmount");
     MetalContent?.ResolveBlockOrItem(worldForResolve);
     if (Api?.Side == EnumAppSide.Client)
+    {
       UpdateRenderer();
+      UpdateGlow();
+    }
   }
 
   public override void GetBlockInfo(IPlayer forPlayer, StringBuilder dsc)

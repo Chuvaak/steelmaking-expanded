@@ -69,6 +69,34 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
   /// <summary>Whether this cell currently holds liquid (not solidified) metal.</summary>
   public bool HasMoltenMetal => !Solidified && CellAmount > 0f;
 
+  #region Incandescent block light
+  /// <summary>Below this temperature (°C) the metal emits no block light.</summary>
+  private const float GlowMinTemp = 500f;
+
+  /// <summary>
+  /// Block-light value (0–24) this cell emits from its hot metal, scaled from
+  /// temperature above <see cref="GlowMinTemp"/>. Read by
+  /// <see cref="Blocks.BlockMoltenCanal.GetLightHsv"/>; 0 when empty or cool.
+  /// Liquid or solidified — a freshly hardened cell still glows until it cools.
+  /// </summary>
+  public byte GlowLightLevel =>
+    CellAmount > 0 && _cellTemperature > GlowMinTemp
+      ? (byte)GameMath.Clamp((_cellTemperature - GlowMinTemp) / 30f, 0, 24)
+      : (byte)0;
+
+  /// <summary>
+  /// Re-lights the block when the emitted glow level has shifted from
+  /// <paramref name="oldGlow"/>. The block id doesn't change, so the engine won't
+  /// relight on its own — we nudge it via <c>MarkBlockDirty</c> exactly like the
+  /// heat sink does.
+  /// </summary>
+  private void RelightIfGlowChanged(byte oldGlow)
+  {
+    if (Api != null && GlowLightLevel != oldGlow)
+      Api.World.BlockAccessor.MarkBlockDirty(Pos);
+  }
+  #endregion
+
   /// <summary>
   /// Whether this cell latches <see cref="Solidified"/> when its metal cools below
   /// the melting point. Plain canal runs do (they clog and must be chiselled);
@@ -137,6 +165,7 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     if (item == null)
       return 0;
 
+    byte oldGlow = GlowLightLevel;
     float existingTemp = CellAmount > 0f ? _cellTemperature : temperature;
     float total = CellAmount + accepted;
     float newTemp =
@@ -151,6 +180,7 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     CellAmount += accepted;
     CellMetalType = type;
     _cellTemperature = newTemp;
+    RelightIfGlowChanged(oldGlow);
     MarkDirty();
     return accepted;
   }
@@ -161,11 +191,13 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     if (Solidified || CellAmount <= 0f)
       return 0;
 
+    byte oldGlow = GlowLightLevel;
     var actual = Math.Min(amount, CellAmount);
     CellAmount -= actual;
     if (CellAmount <= 0.0001f)
       EmptyCell();
 
+    RelightIfGlowChanged(oldGlow);
     MarkDirty();
     return actual;
   }
@@ -221,6 +253,7 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     if (CellAmount <= 0f || _cellMetalStack == null)
       return;
 
+    byte oldGlow = GlowLightLevel;
     float temp = _cellMetalStack.Collectible.GetTemperature(
       world,
       _cellMetalStack
@@ -247,6 +280,8 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
 
     if (changed)
       MarkDirty(retesselate);
+
+    RelightIfGlowChanged(oldGlow);
   }
   #endregion
 
@@ -543,6 +578,7 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
   )
   {
     base.FromTreeAttributes(tree, worldForResolving);
+    byte oldGlow = GlowLightLevel;
     Solidified = tree.GetBool("solidified");
     Sealed = tree.GetBool("sealed");
     CellAmount = tree.GetInt("cellAmount");
@@ -563,6 +599,10 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
 
     RefreshOpenConnectorFaces();
     UpdateRenderer();
+
+    // Client received new authoritative state — re-light if the glow level moved.
+    if (Api?.Side == EnumAppSide.Client)
+      RelightIfGlowChanged(oldGlow);
   }
 
   public override void GetBlockInfo(IPlayer forPlayer, StringBuilder dsc)

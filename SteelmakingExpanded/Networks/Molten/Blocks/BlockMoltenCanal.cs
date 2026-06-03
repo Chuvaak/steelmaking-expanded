@@ -37,6 +37,30 @@ public class BlockMoltenCanal : BlockNetworkNode
       _ => "ns",
     };
 
+  /// <summary>
+  /// Emits incandescent block light scaled to the metal's temperature, so a hot
+  /// canal lights its surroundings (same scheme as the cowper heat sink). The cell
+  /// owns the threshold/scaling via <see cref="BlockEntityMoltenCanal.GlowLightLevel"/>
+  /// and re-lights the block when that level shifts.
+  /// </summary>
+  public override byte[] GetLightHsv(
+    IBlockAccessor blockAccessor,
+    BlockPos pos,
+    ItemStack? stack = null
+  )
+  {
+    if (
+      pos != null
+      && blockAccessor.GetBlockEntity(pos) is BlockEntityMoltenCanal be
+    )
+    {
+      byte val = be.GlowLightLevel;
+      if (val > 0)
+        return [8, 7, val];
+    }
+    return base.GetLightHsv(blockAccessor, pos, stack);
+  }
+
   public override void OnBlockPlaced(
     IWorldAccessor world,
     BlockPos pos,
