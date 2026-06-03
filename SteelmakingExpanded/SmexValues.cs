@@ -13,8 +13,14 @@ namespace SteelmakingExpanded;
 public class SmexConfig
 {
   #region Molten system
-  /// <summary>Temperature cooldown speed applied to molten-metal stacks held by the molten system (network, canal taps, barrels, molds, the bessemer charge).</summary>
+  /// <summary>Temperature cooldown speed applied to molten-metal stacks held by the molten system (canal cells, taps, barrels, molds, the bessemer charge).</summary>
   public float MoltenCooldownSpeed { get; set; } = 24f;
+
+  /// <summary>Max metal (units) that flows across one canal-to-canal connection per second. Higher = metal races down the run before it can cool; balance against <see cref="MoltenCooldownSpeed"/>.</summary>
+  public int MoltenFlowRate { get; set; } = 20;
+
+  /// <summary>Minimum metal (units) that must be able to move across a canal-to-canal connection for any flow to happen that tick. Stops sub-unit dribbles and keeps cells from endlessly equalising by tiny amounts.</summary>
+  public int MoltenMinFlowAmount { get; set; } = 10;
 
   /// <summary>Default per-canal-block capacity (units) when a block sets no <c>maxUnits</c> attribute.</summary>
   public int CanalDefaultUnitCapacity { get; set; } = 20;
@@ -214,6 +220,8 @@ public static class SmexValues
 
   #region Molten system
   public static float MoltenCooldownSpeed => _config.MoltenCooldownSpeed;
+  public static int MoltenFlowRate => _config.MoltenFlowRate;
+  public static int MoltenMinFlowAmount => _config.MoltenMinFlowAmount;
   public static int CanalDefaultUnitCapacity =>
     _config.CanalDefaultUnitCapacity;
   public static float CanalDefaultDrainSpeed => _config.CanalDefaultDrainSpeed;

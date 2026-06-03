@@ -18,7 +18,6 @@
     "smex": ["*-start-*-s"]
   },
   "attributes": {
-    "maxUnits": 20,
     "fillHeight": 1,
     "fillStart": 14,
     "fillQuadsByLevel": [

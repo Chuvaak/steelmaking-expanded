@@ -19,6 +19,14 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
   /// <summary>Whether the tap is actively draining the network into its content.</summary>
   public bool IsPouring { get; private set; } = false;
 
+  // The tap is a drain fitting — its cell must keep delivering to the parked
+  // barrel/mold, so it never clogs like a plain canal run.
+  protected override bool SolidifiesWhenCold => false;
+
+  /// <summary> Canal tap by itself has low capacity. </summary>
+  public override int MaxUnitCapacity =>
+    (int)Math.Ceiling(SmexValues.CanalDefaultUnitCapacity / 2.0);
+
   #region Barrel content
   /// <summary>Whether a barrel is parked under the tap.</summary>
   public bool IsBarrel { get; set; } = false;
@@ -345,23 +353,17 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
 
   private void OnServerTick(float dt)
   {
-    if (!IsPouring)
-      return;
-    if (NetworkSystem?.GetNetworkAt(Pos) is not MoltenNetwork network)
-      return;
-    if (
-      network.State is not MoltenNetworkState netState
-      || netState.CurrentAmount <= 0f
-      || netState.Solidified
-    )
+    // The tap drains its own cell (where the run delivers metal) into the parked
+    // barrel or mold.
+    if (!IsPouring || !HasMoltenMetal)
       return;
 
-    if (IsBarrel && !IsHardened(BarrelMetalContent))
+    // Barrels accept metal even when their contents have hardened (it re-melts);
+    // molds stay gated — a hardened mold is a finished cast.
+    if (IsBarrel)
     {
       var content = BarrelMetalContent;
       int drained = DrainInto(
-        network,
-        netState,
         ref content,
         BarrelCurrentUnits,
         BarrelMaxUnits,
@@ -379,8 +381,6 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     {
       var content = MoldMetalContent;
       int drained = DrainInto(
-        network,
-        netState,
         ref content,
         MoldCurrentUnits,
         MoldMaxUnits,
@@ -406,11 +406,9 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
       0.5f
     );
 
-  // Returns the units drained from the network into <paramref name="content"/>,
+  // Returns the units drained from this cell into <paramref name="content"/>,
   // creating/heating the content stack as needed. 0 if nothing was drained.
   private int DrainInto(
-    MoltenNetwork network,
-    MoltenNetworkState netState,
     ref ItemStack? content,
     int currentUnits,
     int maxUnits,
@@ -421,8 +419,8 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
       return 0;
     if (
       content != null
-      && netState.MetalType.Length > 0
-      && content.Collectible.Code.ToString() != netState.MetalType
+      && CellMetalType.Length > 0
+      && content.Collectible.Code.ToString() != CellMetalType
     )
       return 0;
 
@@ -431,19 +429,18 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     if (toDrain <= 0)
       return 0;
 
-    float drained = network.DrainMetal(toDrain, Api.World.BlockAccessor);
+    // Capture metal identity/temperature before draining empties the cell.
+    string type = CellMetalType;
+    float temp = CellTemperature;
+
+    float drained = DrainMetal(toDrain);
     if (drained <= 0f)
       return 0;
 
     if (content == null)
     {
-      var collectible =
-        netState.MetalStack?.Collectible
-        ?? (
-          netState.MetalType.Length > 0
-            ? Api.World.GetItem(new AssetLocation(netState.MetalType))
-            : null
-        );
+      Item? collectible =
+        type.Length > 0 ? Api.World.GetItem(new AssetLocation(type)) : null;
       if (collectible == null)
         return 0;
       content = new ItemStack(collectible, 1);
@@ -455,7 +452,7 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     content.Collectible.SetTemperature(
       Api.World,
       content,
-      netState.CurrentTemperature,
+      temp,
       delayCooldown: false
     );
     return (int)drained;

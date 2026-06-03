@@ -4,6 +4,7 @@ using System.Text;
 using BlockNetworkLib;
 using SteelmakingExpanded.Networks.Gas;
 using SteelmakingExpanded.Networks.Molten;
+using SteelmakingExpanded.Networks.Molten.BlockEntities;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -230,12 +231,8 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
       return;
     }
 
-    if (
-      GetMoltenNetwork(InputTapLocal) is not MoltenNetwork net
-      || net.State is not MoltenNetworkState s
-      || s.CurrentAmount <= 0f
-      || s.Solidified
-    )
+    var inputCell = GetMoltenCell(InputTapLocal);
+    if (inputCell == null || !inputCell.HasMoltenMetal)
     {
       SetStatus(Lang.Get("smex:bessemer-status-filling-nometal"));
       return;
@@ -248,43 +245,45 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
     }
 
     // Only accept a single metal type at a time.
-    if (_content != null && _content.Collectible.Code.ToString() != s.MetalType)
+    if (
+      _content != null
+      && _content.Collectible.Code.ToString() != inputCell.CellMetalType
+    )
     {
       SetStatus(Lang.Get("smex:bessemer-status-filling-mismatch"));
       return;
     }
 
     int space = CapacityUnits - _contentUnits;
-    int toDrain = (int)Math.Min(s.CurrentAmount, space);
+    int toDrain = (int)Math.Min(inputCell.CellAmount, space);
     if (toDrain <= 0)
       return;
 
-    float drained = net.DrainMetal(toDrain, Api.World.BlockAccessor);
+    // Capture metal identity/temperature before draining empties the cell.
+    string type = inputCell.CellMetalType;
+    float temp = inputCell.CellTemperature;
+
+    float drained = inputCell.DrainMetal(toDrain);
     if (drained <= 0f)
       return;
 
     if (_content == null)
     {
-      var collectible =
-        s.MetalStack?.Collectible
-        ?? (
-          s.MetalType.Length > 0
-            ? Api.World.GetItem(new AssetLocation(s.MetalType))
-            : null
-        );
+      Item? collectible =
+        type.Length > 0 ? Api.World.GetItem(new AssetLocation(type)) : null;
       if (collectible == null)
         return;
       _content = new ItemStack(collectible, 1);
       (_content.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
         "cooldownSpeed",
-        24f
+        SmexValues.MoltenCooldownSpeed
       );
     }
 
     _content.Collectible.SetTemperature(
       Api.World,
       _content,
-      s.CurrentTemperature,
+      temp,
       delayCooldown: false
     );
     _contentUnits += (int)drained;
@@ -320,7 +319,8 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
       return;
     }
 
-    if (GetMoltenNetwork(OutputStartLocal) is not MoltenNetwork net)
+    var outputCell = GetMoltenCell(OutputStartLocal);
+    if (outputCell == null)
     {
       SetStatus(Lang.Get("smex:bessemer-status-pouring-nocanal"));
       return;
@@ -330,12 +330,7 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
       _contentUnits,
       Math.Max(1, (int)(CapacityUnits * dt))
     );
-    float accepted = net.TryPushMetal(
-      amount,
-      _content,
-      Api.World,
-      Api.World.BlockAccessor
-    );
+    float accepted = outputCell.PushMetal(amount, _content, Api.World);
     if (accepted <= 0f)
     {
       SetStatus(Lang.Get("smex:bessemer-status-pouring-full"));
@@ -450,8 +445,9 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
   private BlockPos PeripheralPos((int x, int y, int z) local) =>
     GetGlobalPos(local.x, local.y, local.z);
 
-  private MoltenNetwork? GetMoltenNetwork((int x, int y, int z) local) =>
-    _netSystem?.GetNetworkAt(PeripheralPos(local)) as MoltenNetwork;
+  private BlockEntityMoltenCanal? GetMoltenCell((int x, int y, int z) local) =>
+    Api.World.BlockAccessor.GetBlockEntity(PeripheralPos(local))
+    as BlockEntityMoltenCanal;
 
   private float TryConsumeBlast(float amount)
   {

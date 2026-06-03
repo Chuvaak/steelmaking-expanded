@@ -47,12 +47,14 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
   public bool IsFull => CurrentUnitAmount >= MaxUnitAmount;
 
   /// <inheritdoc/>
-  public bool CanReceiveAny => !IsFull && (MetalContent == null || !IsHardened);
+  // Hardened contents are allowed — fresh molten metal of the same type re-melts
+  // and tops up the barrel rather than being rejected.
+  public bool CanReceiveAny => !IsFull;
 
   /// <inheritdoc/>
   public bool CanReceive(ItemStack metal)
   {
-    if (IsFull || IsHardened)
+    if (IsFull)
       return false;
     if (
       MetalContent != null
@@ -77,7 +79,7 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
     float temperature
   )
   {
-    if (IsFull || IsHardened)
+    if (IsFull)
       return;
     if (
       MetalContent != null

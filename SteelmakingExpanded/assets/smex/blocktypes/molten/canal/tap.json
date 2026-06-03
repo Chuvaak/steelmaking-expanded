@@ -18,8 +18,6 @@
     "smex": ["*-tap-s"]
   },
   "attributes": {
-    "drainSpeed": 10,
-    "maxUnits": 5,
     "fillHeight": 1,
     "fillStart": 14,
     "fillQuadsByLevel": [{ "x1": 7, "z1": 0, "x2": 9, "z2": 5 }],

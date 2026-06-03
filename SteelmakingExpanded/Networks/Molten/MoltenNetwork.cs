@@ -1,158 +1,24 @@
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using BlockNetworkLib;
 using SteelmakingExpanded.Networks.Molten.BlockEntities;
+using SteelmakingExpanded.Networks.Molten.Blocks;
 using Vintagestory.API.Common;
-using Vintagestory.API.Datastructures;
+using Vintagestory.API.MathTools;
 
 namespace SteelmakingExpanded.Networks.Molten;
 
 /// <summary>
-/// Concrete <see cref="BlockNetwork"/> for the molten-canal system. Holds a single
-/// liquid metal as a <see cref="MoltenNetworkState"/>, tracks its temperature and
-/// solidification via the VS time-based temperature, and implements the push/drain,
-/// merge/split, and per-tick cooling logic.
+/// Concrete <see cref="BlockNetwork"/> for the molten-canal system. The network no
+/// longer pools metal — each canal block is its own cell
+/// (<see cref="BlockEntityMoltenCanal"/>) holding its own metal. The network's only
+/// job is connectivity plus the per-tick driver that flows metal cell-to-cell
+/// (level-equalisation) and runs each cell's cooling/solidification. Because cells
+/// own their metal, merge/split need no redistribution.
 /// </summary>
 public class MoltenNetwork(BlockNetworkModSystem system) : BlockNetwork(system)
 {
-  #region Metal
-  /// <summary>Sums the per-block capacities of every canal node into the network's total capacity (units).</summary>
-  public int CalculateCapacity(IBlockAccessor blockAccessor) =>
-    Nodes.Sum(pos =>
-      (
-        blockAccessor.GetBlockEntity(pos) as BlockEntityMoltenCanal
-      )?.MaxUnitCapacity
-      ?? SmexValues.CanalDefaultUnitCapacity
-    );
-
-  /// <summary>
-  /// Pushes up to <paramref name="amount"/> units of <paramref name="metalStack"/> into the
-  /// network, temperature-averaging with any existing metal of the same type. Returns the
-  /// amount accepted (0 if the metal type mismatches or the network is full).
-  /// </summary>
-  public float TryPushMetal(
-    float amount,
-    ItemStack metalStack,
-    IWorldAccessor world,
-    IBlockAccessor blockAccessor
-  )
-  {
-    string metalType = metalStack.Collectible.Code.ToString();
-    float temperature = metalStack.Collectible.GetTemperature(
-      world,
-      metalStack
-    );
-
-    if (State == null)
-    {
-      float capacity = CalculateCapacity(blockAccessor);
-      float accepted = Math.Min(amount, capacity);
-      var stored = new ItemStack(metalStack.Collectible, 1);
-      stored.Collectible.SetTemperature(
-        world,
-        stored,
-        temperature,
-        delayCooldown: false
-      );
-      (stored.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
-        "cooldownSpeed",
-        SmexValues.MoltenCooldownSpeed
-      );
-      State = new MoltenNetworkState
-      {
-        MaxAmount = capacity,
-        CurrentAmount = accepted,
-        CurrentTemperature = temperature,
-        MetalType = metalType,
-        MetalStack = stored,
-      };
-      BroadcastUpdate(blockAccessor);
-      return accepted;
-    }
-
-    var state = (MoltenNetworkState)State;
-
-    // A solidified network must be broken to clear (OnTick only ever latches
-    // Solidified to true). Reject pushes so fresh hot metal can't accumulate in a
-    // canal that still reads as solid — which would strand the metal (consumers
-    // refuse to drain a solidified network) and never re-liquefy.
-    if (state.Solidified)
-      return 0f;
-
-    if (state.MetalType != metalType)
-      return 0f;
-
-    float space = state.MaxAmount - state.CurrentAmount;
-    float accepted2 = Math.Min(amount, space);
-    if (accepted2 <= 0f)
-      return 0f;
-
-    float existingTemp =
-      state.MetalStack != null
-        ? state.MetalStack.Collectible.GetTemperature(world, state.MetalStack)
-        : state.CurrentTemperature;
-    float totalAmount = state.CurrentAmount + accepted2;
-    float newTemp =
-      totalAmount > 0f
-        ? (state.CurrentAmount * existingTemp + accepted2 * temperature)
-          / totalAmount
-        : temperature;
-
-    state.MetalStack ??= new ItemStack(metalStack.Collectible, 1);
-    state.MetalStack.Collectible.SetTemperature(
-      world,
-      state.MetalStack,
-      newTemp,
-      delayCooldown: false
-    );
-    if (
-      state.MetalStack.Attributes["temperature"] is ITreeAttribute tempTree
-      && tempTree.GetFloat("cooldownSpeed") <= 0f
-    )
-      tempTree.SetFloat("cooldownSpeed", SmexValues.MoltenCooldownSpeed);
-    state.CurrentTemperature = newTemp;
-    state.CurrentAmount += accepted2;
-
-    BroadcastUpdate(blockAccessor);
-    return accepted2;
-  }
-
-  /// <summary>Removes up to <paramref name="amount"/> units from the network. Returns the amount actually drained.</summary>
-  public float DrainMetal(float amount, IBlockAccessor blockAccessor)
-  {
-    if (State is not MoltenNetworkState state)
-      return 0f;
-
-    float actual = Math.Min(amount, state.CurrentAmount);
-    state.CurrentAmount -= actual;
-    if (state.CurrentAmount <= 0f)
-      State = null;
-
-    BroadcastUpdate(blockAccessor);
-    return actual;
-  }
-
-  /// <summary>Returns the solid metal-bit drop for a solidified network, or <c>null</c> if there is nothing to drop.</summary>
-  public ItemStack? GetSolidifiedDrops(IWorldAccessor world)
-  {
-    if (
-      State is not MoltenNetworkState state
-      || !state.Solidified
-      || state.CurrentAmount <= 0f
-      || state.MetalType.Length == 0
-    )
-      return null;
-
-    int randLoss = Random.Shared.Next(3) * 5;
-    float remaining = state.CurrentAmount - randLoss;
-    if (remaining <= 0f)
-      return null;
-
-    int count = Math.Max(1, (int)(remaining / 5f));
-    var solidLoc = SolidDropLocation(new AssetLocation(state.MetalType));
-    Item? item = world.GetItem(solidLoc);
-    return item != null ? new ItemStack(item, count) : null;
-  }
+  public override string NetworkType => "molten";
 
   /// <summary>Maps a molten metal item to its solid drop ("game:ingot-iron" → "game:metalbit-iron"); non-ingot items drop as themselves.</summary>
   internal static AssetLocation SolidDropLocation(AssetLocation metalItemLoc)
@@ -177,226 +43,243 @@ public class MoltenNetwork(BlockNetworkModSystem system) : BlockNetwork(system)
     }
     return null;
   }
-  #endregion
 
-  protected override void OnBeforeBroadcast(IBlockAccessor blockAccessor)
+  private static int ComparePos(BlockPos a, BlockPos b)
   {
-    if (State is not MoltenNetworkState state)
-      return;
-
-    state.MaxAmount = CalculateCapacity(blockAccessor);
+    int c = a.X.CompareTo(b.X);
+    if (c != 0)
+      return c;
+    c = a.Y.CompareTo(b.Y);
+    return c != 0 ? c : a.Z.CompareTo(b.Z);
   }
 
-  #region Tick
+  // Distance-from-start is purely topological, so it only changes when the set
+  // of cells (or which cells are starts) changes. Cache the map and recompute it
+  // only when a cheap topology signature differs from the cached one, instead of
+  // running a BFS every tick.
+  private Dictionary<BlockPos, int>? _cachedDistFromStart;
+  private (int Count, long PosHash, long StartHash) _cachedTopoSig;
+
+  /// <summary>
+  /// Returns the cached distance-from-start map, rebuilding it (via
+  /// <see cref="BuildDistanceFromStart"/>) only when the network's topology
+  /// signature has changed since the last computation.
+  /// </summary>
+  private Dictionary<BlockPos, int> GetDistanceFromStart(
+    IBlockAccessor blockAccessor,
+    List<BlockEntityMoltenCanal> cells
+  )
+  {
+    var sig = ComputeTopologySignature(cells);
+    if (_cachedDistFromStart == null || sig != _cachedTopoSig)
+    {
+      _cachedDistFromStart = BuildDistanceFromStart(blockAccessor, cells);
+      _cachedTopoSig = sig;
+    }
+    return _cachedDistFromStart;
+  }
+
+  /// <summary>
+  /// Order-independent fingerprint of the cells that drive the distance map: cell
+  /// count plus XOR-folded hashes of all cell positions and of the start-cell
+  /// positions. Any add, removal, or start↔plain swap changes at least one term.
+  /// </summary>
+  private static (int, long, long) ComputeTopologySignature(
+    List<BlockEntityMoltenCanal> cells
+  )
+  {
+    long posHash = 0;
+    long startHash = 0;
+    foreach (var c in cells)
+    {
+      long h = unchecked(
+        (long)((uint)c.Pos.GetHashCode() * 0x9E3779B97F4A7C15UL)
+      );
+      posHash ^= h;
+      if (c is BlockEntityMoltenCanalStart)
+        startHash ^= h;
+    }
+    return (cells.Count, posHash, startHash);
+  }
+
+  /// <summary>
+  /// Multi-source BFS over the canal graph that maps each cell to its hop
+  /// distance from the nearest <see cref="BlockEntityMoltenCanalStart"/>. Cells
+  /// unreachable from any start (e.g. a startless run) are simply absent.
+  /// </summary>
+  private Dictionary<BlockPos, int> BuildDistanceFromStart(
+    IBlockAccessor blockAccessor,
+    List<BlockEntityMoltenCanal> cells
+  )
+  {
+    var dist = new Dictionary<BlockPos, int>(cells.Count);
+    var queue = new Queue<BlockPos>();
+    foreach (var c in cells)
+      if (c is BlockEntityMoltenCanalStart)
+      {
+        dist[c.Pos] = 0;
+        queue.Enqueue(c.Pos);
+      }
+
+    while (queue.Count > 0)
+    {
+      BlockPos cur = queue.Dequeue();
+      int next = dist[cur] + 1;
+      if (blockAccessor.GetBlockEntity(cur)?.Block is not BlockNetworkNode node)
+        continue;
+
+      foreach (var face in BlockFacing.HORIZONTALS)
+      {
+        if (!node.HasConnectorAt(face))
+          continue;
+        BlockPos npos = cur.AddCopy(face);
+        if (!Nodes.Contains(npos) || dist.ContainsKey(npos))
+          continue;
+        if (blockAccessor.GetBlockEntity(npos) is not BlockEntityMoltenCanal)
+          continue;
+        dist[npos] = next;
+        queue.Enqueue(npos);
+      }
+    }
+    return dist;
+  }
+
+  /// <summary>
+  /// Orders cells for the flow pass: greater distance from the start first, so
+  /// metal is driven from the farthest cells back toward the start. Position
+  /// breaks ties (including cells unreachable from a start, treated as farthest).
+  /// </summary>
+  private static int CompareFlowOrder(
+    BlockEntityMoltenCanal x,
+    BlockEntityMoltenCanal y,
+    Dictionary<BlockPos, int> dist
+  )
+  {
+    int dx = dist.TryGetValue(x.Pos, out int vx) ? vx : int.MaxValue;
+    int dy = dist.TryGetValue(y.Pos, out int vy) ? vy : int.MaxValue;
+    int c = dy.CompareTo(dx); // descending distance: farthest processed first
+    return c != 0 ? c : ComparePos(x.Pos, y.Pos);
+  }
+
+  #region Tick — flow + cooling
   public override void OnTick(
     IBlockAccessor blockAccessor,
     float dt,
     BlockNetworkModSystem manager
   )
   {
-    if (State is not MoltenNetworkState state || state.CurrentAmount <= 0f)
-      return;
-
     var world = GetWorld(blockAccessor);
     if (world == null)
       return;
 
-    // Lazily reconstruct MetalStack after world load (DeserializeNetworkState has no world access).
-    if (state.MetalStack == null && state.MetalType.Length > 0)
+    var cells = new List<BlockEntityMoltenCanal>(Nodes.Count);
+    foreach (var pos in Nodes)
+      if (blockAccessor.GetBlockEntity(pos) is BlockEntityMoltenCanal c)
+        cells.Add(c);
+    if (cells.Count == 0)
+      return;
+
+    // Order cells by graph distance from the start block, farthest first, so
+    // metal drains down the run toward the start a wavefront at a time instead
+    // of in an arbitrary positional order. The map is cached and only rebuilt
+    // when the network topology changes.
+    var distFromStart = GetDistanceFromStart(blockAccessor, cells);
+    cells.Sort((x, y) => CompareFlowOrder(x, y, distFromStart));
+    foreach (var c in cells)
+      c.EnsureMetalStack(world);
+
+    int maxFlow = SmexValues.MoltenFlowRate;
+    foreach (var a in cells)
     {
-      var item = world.GetItem(new AssetLocation(state.MetalType));
-      if (item != null)
+      if (a.Sealed || a.Solidified || a.Block is not BlockNetworkNode aNode)
+        continue;
+
+      foreach (var face in BlockFacing.HORIZONTALS)
       {
-        state.MetalStack = new ItemStack(item, 1);
-        state.MetalStack.Collectible.SetTemperature(
-          world,
-          state.MetalStack,
-          state.CurrentTemperature,
-          delayCooldown: false
-        );
-        (
-          state.MetalStack.Attributes["temperature"] as ITreeAttribute
-        )?.SetFloat("cooldownSpeed", SmexValues.MoltenCooldownSpeed);
+        if (!aNode.HasConnectorAt(face))
+          continue;
+        BlockPos npos = a.Pos.AddCopy(face);
+        if (!Nodes.Contains(npos))
+          continue;
+        if (blockAccessor.GetBlockEntity(npos) is not BlockEntityMoltenCanal b)
+          continue;
+        if (b.Sealed || b.Solidified)
+          continue;
+        // Drive each undirected edge exactly once, from the cell farther from
+        // the start (ties broken by position).
+        if (CompareFlowOrder(a, b, distFromStart) >= 0)
+          continue;
+
+        FlowEdge(a, b, maxFlow, world);
       }
     }
 
-    if (state.MetalStack == null)
+    // Thermal pass: cool / solidify each cell.
+    foreach (var c in cells)
+      c.UpdateThermal(world);
+  }
+
+  /// <summary>Moves metal across one connection toward equal fill ratio, capped at <paramref name="maxFlow"/> units.</summary>
+  private static void FlowEdge(
+    BlockEntityMoltenCanal aNode,
+    BlockEntityMoltenCanal bNode,
+    int maxFlow,
+    IWorldAccessor world
+  )
+  {
+    var aCap = aNode.MaxUnitCapacity;
+    var bCap = bNode.MaxUnitCapacity;
+    if (aCap <= 0 || bCap <= 0)
       return;
 
-    // VS handles cooling automatically via time-based temperature decay.
-    float temp = state.MetalStack.Collectible.GetTemperature(
-      world,
-      state.MetalStack
-    );
-    float meltPoint = state.MetalStack.Collectible.GetMeltingPoint(
-      world,
-      null,
-      new DummySlot(state.MetalStack)
-    );
+    var diff = Math.Abs(aNode.CellAmount - bNode.CellAmount);
+    if (diff == 0)
+      return;
 
-    bool changed = false;
-    if (state.CurrentTemperature != temp)
-    {
-      state.CurrentTemperature = temp;
-      changed = true;
-    }
-    if (!state.Solidified && temp < meltPoint)
-    {
-      state.Solidified = true;
-      changed = true;
-    }
-    if (state.CurrentAmount > state.MaxAmount)
-    {
-      state.CurrentAmount = state.MaxAmount;
-      changed = true;
-    }
+    bool aIsGiver = aNode.CellAmount > bNode.CellAmount;
+    BlockEntityMoltenCanal giver = aIsGiver ? aNode : bNode;
+    BlockEntityMoltenCanal receiver = aIsGiver ? bNode : aNode;
+    if (giver.CellAmount <= 0f)
+      return;
 
-    if (changed)
-      BroadcastUpdate(blockAccessor);
+    // Different metals sit side by side without mixing.
+    if (
+      receiver.CellAmount > 0f
+      && receiver.CellMetalType != giver.CellMetalType
+    )
+      return;
+
+    // Flow moves whole units only, and never less than the minimum per tick.
+    var transfer = diff > maxFlow ? maxFlow : diff;
+    if (
+      transfer < SmexValues.MoltenMinFlowAmount
+      && (
+        receiver is not BlockEntityMoltenCanalMoldPedestal
+        || receiver is not BlockEntityMoltenCanalTap
+      )
+    )
+      return;
+
+    var accepted = receiver.PushMetalRaw(
+      transfer,
+      giver.CellMetalType,
+      giver.CellTemperature,
+      world
+    );
+    if (accepted > 0f)
+      giver.DrainMetal(accepted);
   }
   #endregion
 
-  #region Network
-  public override string NetworkType => "molten";
+  #region Graph lifecycle (cells own their metal, so these are trivial)
+  public override bool CanMerge(BlockNetwork other, IBlockAccessor world) =>
+    other is MoltenNetwork;
 
-  public override bool CanMerge(BlockNetwork other, IBlockAccessor world)
-  {
-    if (other is not MoltenNetwork otherMolten)
-      return false;
-
-    // A solidified network on either side blocks the merge.
-    if (State is MoltenNetworkState s && s.Solidified)
-      return false;
-    if (otherMolten.State is MoltenNetworkState os && os.Solidified)
-      return false;
-
-    // An empty network (no state, or state with no metal type yet) can always
-    // absorb / be absorbed — important on world load, where every node except
-    // the start comes up with a null-state network and must merge into the one
-    // that restored the metal. Note: a null State yields a null MetalType, which
-    // is NOT "", so this must be checked explicitly rather than via string equality.
-    string? thisType = (State as MoltenNetworkState)?.MetalType;
-    string? otherType = (otherMolten.State as MoltenNetworkState)?.MetalType;
-    if (string.IsNullOrEmpty(thisType) || string.IsNullOrEmpty(otherType))
-      return true;
-
-    // Both sides carry metal — only merge when the metal types match.
-    return thisType == otherType;
-  }
-
-  public override void OnMerge(BlockNetwork other, IBlockAccessor world)
-  {
-    if (
-      State is MoltenNetworkState state
-      && other.State is not MoltenNetworkState
-    )
-      state.MaxAmount = CalculateCapacity(world);
-
-    if (
-      State is not MoltenNetworkState
-      && other.State is MoltenNetworkState otherState
-    )
-    {
-      otherState.MaxAmount = CalculateCapacity(world);
-      State = otherState;
-    }
-
-    if (
-      State is MoltenNetworkState stateMerge
-      && other.State is MoltenNetworkState otherStateMerge
-    )
-    {
-      stateMerge.MaxAmount = CalculateCapacity(world);
-
-      var iworld = GetWorld(world);
-      float temp1 =
-        iworld != null && stateMerge.MetalStack != null
-          ? stateMerge.MetalStack.Collectible.GetTemperature(
-            iworld,
-            stateMerge.MetalStack
-          )
-          : stateMerge.CurrentTemperature;
-      float temp2 =
-        iworld != null && otherStateMerge.MetalStack != null
-          ? otherStateMerge.MetalStack.Collectible.GetTemperature(
-            iworld,
-            otherStateMerge.MetalStack
-          )
-          : otherStateMerge.CurrentTemperature;
-
-      float totalAmount =
-        stateMerge.CurrentAmount + otherStateMerge.CurrentAmount;
-      float mergedTemp =
-        totalAmount > 0f
-          ? (
-            stateMerge.CurrentAmount * temp1
-            + otherStateMerge.CurrentAmount * temp2
-          ) / totalAmount
-          : temp1;
-
-      if (iworld != null && stateMerge.MetalStack != null)
-        stateMerge.MetalStack.Collectible.SetTemperature(
-          iworld,
-          stateMerge.MetalStack,
-          mergedTemp,
-          delayCooldown: false
-        );
-      stateMerge.CurrentTemperature = mergedTemp;
-      stateMerge.CurrentAmount += otherStateMerge.CurrentAmount;
-    }
-  }
+  public override void OnMerge(BlockNetwork other, IBlockAccessor world) { }
 
   public override void OnSplitFragment(
     BlockNetwork original,
     IBlockAccessor world
-  )
-  {
-    // Give each fragment its proportional share of the metal (by capacity)
-    // rather than wiping the whole network — only the broken block's portion is
-    // lost. Temperature/solidified state carry over; the metal stack is cloned
-    // so fragments don't share one mutable ItemStack.
-    if (
-      original is not MoltenNetwork orig
-      || orig.State is not MoltenNetworkState os
-      || os.CurrentAmount <= 0f
-    )
-    {
-      State = null;
-      return;
-    }
-
-    float origCapacity = Math.Max(1f, orig.CalculateCapacity(world));
-    float fragCapacity = CalculateCapacity(world);
-    float share = Math.Min(
-      os.CurrentAmount * (fragCapacity / origCapacity),
-      fragCapacity
-    );
-    if (share <= 0f)
-    {
-      State = null;
-      return;
-    }
-
-    State = new MoltenNetworkState
-    {
-      MaxAmount = fragCapacity,
-      CurrentAmount = share,
-      CurrentTemperature = os.CurrentTemperature,
-      MetalType = os.MetalType,
-      Solidified = os.Solidified,
-      MetalStack = os.MetalStack?.Clone(),
-    };
-  }
-
-  public override void InheritStateFrom(BlockNetwork source)
-  {
-    if (source is MoltenNetwork other)
-      State = other.State;
-  }
-
-  public override void RestoreState(object? state)
-  {
-    State = state as MoltenNetworkState;
-  }
+  ) { }
   #endregion
 }

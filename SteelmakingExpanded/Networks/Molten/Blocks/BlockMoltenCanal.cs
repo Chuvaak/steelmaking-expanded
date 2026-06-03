@@ -154,10 +154,15 @@ public class BlockMoltenCanal : BlockNetworkNode
   private static readonly AssetLocation FireClayCode = new("game:clay-fire");
 
   /// <summary>
-  /// Right-click a straight canal with <see cref="SmexValues.CanalSealClayCost"/> fire clay to seal it
-  /// into a flow-blocking separator; right-click a sealed canal with a chisel in hand
-  /// and a hammer in the off-hand to break the seal and recover <see cref="SmexValues.CanalUnsealClayRefund"/>
-  /// fire clay. Only straight segments are sealable.
+  /// Interactions on a molten canal:
+  /// <list type="bullet">
+  /// <item>Any solidified canal: chisel in hand + hammer in the off-hand chips the
+  /// hardened metal out, recovering bits and restoring the run to working order.</item>
+  /// <item>Straight canal + <see cref="SmexValues.CanalSealClayCost"/> fire clay:
+  /// seals it into a flow-blocking separator.</item>
+  /// <item>Sealed straight canal + chisel: breaks the seal and refunds
+  /// <see cref="SmexValues.CanalUnsealClayRefund"/> fire clay.</item>
+  /// </list>
   /// </summary>
   public override bool OnBlockInteractStart(
     IWorldAccessor world,
@@ -166,14 +171,50 @@ public class BlockMoltenCanal : BlockNetworkNode
   )
   {
     if (
-      Type != "straight"
-      || world.BlockAccessor.GetBlockEntity(blockSel.Position)
-        is not BlockEntityMoltenCanal be
+      world.BlockAccessor.GetBlockEntity(blockSel.Position)
+      is not BlockEntityMoltenCanal be
     )
       return base.OnBlockInteractStart(world, byPlayer, blockSel);
 
     ItemSlot? activeSlot = byPlayer.InventoryManager.ActiveHotbarSlot;
     ItemStack? held = activeSlot?.Itemstack;
+
+    // A solidified canal (any shape) is chipped clear with a chisel in hand and a
+    // hammer in the off-hand — an alternative to breaking and replacing the block.
+    if (be.Solidified)
+    {
+      ItemStack? offhand = byPlayer.Entity?.LeftHandItemSlot?.Itemstack;
+      if (!IsTool(held, EnumTool.Chisel) || !IsTool(offhand, EnumTool.Hammer))
+        return base.OnBlockInteractStart(world, byPlayer, blockSel);
+
+      if (world.Side == EnumAppSide.Server)
+      {
+        ItemStack? recovered = be.ClearSolidified();
+        if (
+          recovered != null
+          && !byPlayer.InventoryManager.TryGiveItemstack(recovered)
+        )
+          world.SpawnItemEntity(
+            recovered,
+            blockSel.Position.ToVec3d().Add(0.5, 0.6, 0.5)
+          );
+
+        if (byPlayer.WorldData.CurrentGameMode != EnumGameMode.Creative)
+          held!.Collectible.DamageItem(world, byPlayer.Entity, activeSlot, 2);
+
+        SmexSounds.Play(
+          world.Api,
+          blockSel.Position,
+          SmexSounds.StoneCrush,
+          0.8f
+        );
+      }
+      return true;
+    }
+
+    // Sealing / unsealing only applies to straight segments.
+    if (Type != "straight")
+      return base.OnBlockInteractStart(world, byPlayer, blockSel);
 
     if (!be.Sealed)
     {
@@ -255,12 +296,32 @@ public class BlockMoltenCanal : BlockNetworkNode
     WorldInteraction[] baseHelp =
       base.GetPlacedBlockInteractionHelp(world, selection, forPlayer) ?? [];
 
+    var be =
+      world.BlockAccessor.GetBlockEntity(selection.Position)
+      as BlockEntityMoltenCanal;
+
+    // A solidified canal (any shape) is chipped clear with a chisel + hammer.
+    if (be?.Solidified == true)
+      return
+      [
+        .. baseHelp,
+        new WorldInteraction
+        {
+          ActionLangCode = "smex:blockhelp-canal-clearsolidified",
+          MouseButton = EnumMouseButton.Right,
+          Itemstacks = _chiselStacks ??=
+            [
+              .. world
+                .SearchItems(new AssetLocation("chisel-*"))
+                .Select(i => new ItemStack(i)),
+            ],
+        },
+      ];
+
     if (Type != "straight")
       return baseHelp;
 
-    bool isSealed =
-      world.BlockAccessor.GetBlockEntity(selection.Position)
-      is BlockEntityMoltenCanal { Sealed: true };
+    bool isSealed = be is { Sealed: true };
 
     WorldInteraction extra = isSealed
       ? new WorldInteraction

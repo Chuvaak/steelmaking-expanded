@@ -18,7 +18,6 @@
     "smex": ["*-straight-*-ns"]
   },
   "attributes": {
-    "maxUnits": 10,
     "fillHeight": 1,
     "fillStart": 14,
     "fillQuadsByLevel": [{ "x1": 7, "z1": 0, "x2": 9, "z2": 16 }],

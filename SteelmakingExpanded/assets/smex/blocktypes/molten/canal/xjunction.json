@@ -18,7 +18,6 @@
     "smex": ["*-xjunction-*-nswe"]
   },
   "attributes": {
-    "maxUnits": 10,
     "fillHeight": 1,
     "fillStart": 14,
     "fillQuadsByLevel": [

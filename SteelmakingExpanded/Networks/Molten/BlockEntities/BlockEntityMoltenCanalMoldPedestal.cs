@@ -22,6 +22,10 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
   /// <summary>Whether the pedestal is actively filling the mold from the network.</summary>
   public bool IsPouring { get; private set; } = true;
 
+  // The pedestal is a drain fitting — its cell must keep delivering to the mold,
+  // so it never clogs like a plain canal run.
+  protected override bool SolidifiesWhenCold => false;
+
   /// <summary>The placed mold item, or <c>null</c> when empty.</summary>
   public ItemStack? MoldStack { get; private set; }
 
@@ -33,6 +37,10 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
 
   /// <summary>The placed mold's capacity in units.</summary>
   public int MoldMaxUnits { get; private set; } = SmexValues.MoldDefaultUnits;
+
+  /// <summary> Mold pedestal by itself has low capacity. </summary>
+  public override int MaxUnitCapacity =>
+    (int)Math.Ceiling(SmexValues.CanalDefaultUnitCapacity / 2.0);
 
   /// <summary>Toggles whether the pedestal fills its mold from the network.</summary>
   public void TryTogglePouring()
@@ -129,47 +137,40 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
 
   private void OnServerTick(float dt)
   {
+    // The pedestal drains its own cell (where the run delivers metal) into the mold.
     if (
       !IsMold
       || !IsPouring
       || MoldCurrentUnits >= MoldMaxUnits
       || IsMoldHardened()
-    )
-      return;
-    if (NetworkSystem?.GetNetworkAt(Pos) is not MoltenNetwork network)
-      return;
-    if (
-      network.State is not MoltenNetworkState netState
-      || netState.CurrentAmount <= 0f
-      || netState.Solidified
+      || !HasMoltenMetal
     )
       return;
 
     if (
       MoldMetalContent != null
-      && netState.MetalType.Length > 0
-      && MoldMetalContent.Collectible.Code.ToString() != netState.MetalType
+      && CellMetalType.Length > 0
+      && MoldMetalContent.Collectible.Code.ToString() != CellMetalType
     )
       return;
 
     int space = MoldMaxUnits - MoldCurrentUnits;
-    int toDrain = (int)Math.Min(netState.CurrentAmount, space);
+    int toDrain = Math.Min(CellAmount, space);
     if (toDrain <= 0)
       return;
 
-    float drained = network.DrainMetal(toDrain, Api.World.BlockAccessor);
+    // Capture metal identity/temperature before draining empties the cell.
+    string type = CellMetalType;
+    float temp = CellTemperature;
+
+    float drained = DrainMetal(toDrain);
     if (drained <= 0f)
       return;
 
     if (MoldMetalContent == null)
     {
-      var collectible =
-        netState.MetalStack?.Collectible
-        ?? (
-          netState.MetalType.Length > 0
-            ? Api.World.GetItem(new AssetLocation(netState.MetalType))
-            : null
-        );
+      Item? collectible =
+        type.Length > 0 ? Api.World.GetItem(new AssetLocation(type)) : null;
       if (collectible == null)
         return;
       MoldMetalContent = new ItemStack(collectible, 1);
@@ -181,7 +182,7 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
     MoldMetalContent.Collectible.SetTemperature(
       Api.World,
       MoldMetalContent,
-      netState.CurrentTemperature,
+      temp,
       delayCooldown: false
     );
     MoldCurrentUnits += (int)drained;

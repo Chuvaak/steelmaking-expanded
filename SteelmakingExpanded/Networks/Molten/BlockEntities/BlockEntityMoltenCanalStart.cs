@@ -1,112 +1,41 @@
+using System;
 using Vintagestory.API.Common;
-using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 
 namespace SteelmakingExpanded.Networks.Molten.BlockEntities;
 
 /// <summary>
-/// Block entity for the molten-canal start. Acts as the network's <see cref="ILiquidMetalSink"/>:
-/// liquid metal poured here (from a tap above or a crucible) is pushed into the
-/// canal network and persisted across reloads.
+/// Block entity for the molten-canal start. Acts as the network's
+/// <see cref="ILiquidMetalSink"/>: liquid metal poured here (from a tap above or a
+/// crucible) enters this cell and then flows down the canal run. Per-cell state is
+/// persisted by the base <see cref="BlockEntityMoltenCanal"/>.
 /// </summary>
 public class BlockEntityMoltenCanalStart
   : BlockEntityMoltenCanal,
     ILiquidMetalSink
 {
-  /// <summary>Metal accepted directly at this node before it is pushed into the network.</summary>
-  public float OwnCurrentAmount { get; set; } = 0f;
+  /// <summary> Start block by itself has higher capacity. </summary>
+  public override int MaxUnitCapacity =>
+    SmexValues.CanalDefaultUnitCapacity * 2;
 
-  // Throttle for the molten-pour sound as metal enters the network here.
+  // Throttle for the molten-pour sound as metal enters here.
   private long _lastPourSoundMs;
 
-  #region Persistence hooks
-
-  protected override bool IsNetworkStateMeaningful(object? state) =>
-    state is MoltenNetworkState s && s.CurrentAmount > 0f;
-
-  protected override object? DeserializeNetworkState(ITreeAttribute tree)
-  {
-    if (!tree.GetBool("hasMoltenState"))
-      return null;
-
-    // Migrate old "Iron"/"Steel"/"Slag" values to full AssetLocation strings.
-    string rawType = tree.GetString("moltenType", "");
-    string metalType = rawType switch
-    {
-      "Iron" => "game:ingot-iron",
-      "Steel" => "game:ingot-steel",
-      "Slag" => "smex:slag",
-      _ => rawType,
-    };
-
-    return new MoltenNetworkState
-    {
-      CurrentAmount = tree.GetFloat("moltenAmount"),
-      CurrentTemperature = tree.GetFloat("moltenTemp", 1300f),
-      MetalType = metalType,
-      // MetalStack is null here; OnTick reconstructs it lazily once the world is available.
-    };
-  }
-
-  protected override void SerializeNetworkState(
-    ITreeAttribute tree,
-    object? state
-  )
-  {
-    if (state is MoltenNetworkState s && s.CurrentAmount > 0f)
-    {
-      tree.SetBool("hasMoltenState", true);
-      tree.SetFloat("moltenAmount", s.CurrentAmount);
-      tree.SetFloat("moltenTemp", s.CurrentTemperature);
-      tree.SetString("moltenType", s.MetalType);
-    }
-    else
-    {
-      tree.SetBool("hasMoltenState", false);
-    }
-  }
-
-  #endregion
+  // The start is a source fitting — it must keep accepting/passing metal, so it
+  // never clogs like a plain canal run.
+  protected override bool SolidifiesWhenCold => false;
 
   #region ILiquidMetalSink
 
   /// <inheritdoc/>
-  public bool CanReceiveAny
-  {
-    get
-    {
-      if (Api?.Side == EnumAppSide.Client)
-        return _clientMaxAmount == 0f
-          || _clientCurrentAmount < _clientMaxAmount;
-
-      return NetworkSystem?.GetNetworkAt(Pos) is MoltenNetwork net
-        && (
-          net.State is not MoltenNetworkState s || s.CurrentAmount < s.MaxAmount
-        );
-    }
-  }
+  public bool CanReceiveAny => !Solidified && CellAmount < MaxUnitCapacity;
 
   /// <inheritdoc/>
-  public bool CanReceive(ItemStack metal)
-  {
-    if (Api?.Side == EnumAppSide.Client)
-    {
-      if (_clientMaxAmount == 0f)
-        return true;
-      return _clientCurrentAmount < _clientMaxAmount
-        && _clientMetalType == metal.Collectible.Code.ToString();
-    }
-
-    return NetworkSystem?.GetNetworkAt(Pos) is MoltenNetwork net
-      && (
-        net.State is not MoltenNetworkState s
-        || (
-          s.CurrentAmount < s.MaxAmount
-          && s.MetalType == metal.Collectible.Code.ToString()
-        )
-      );
-  }
+  public bool CanReceive(ItemStack metal) =>
+    !Solidified
+    && CellAmount < MaxUnitCapacity
+    && (CellAmount <= 0f || CellMetalType == metal.Collectible.Code.ToString());
 
   /// <inheritdoc/>
   public void BeginFill(Vec3d hitPosition) { }
@@ -123,24 +52,16 @@ public class BlockEntityMoltenCanalStart
   {
     if (Api?.Side == EnumAppSide.Client)
     {
-      _pendingFillAmount = amount;
-      UpdateRenderer();
+      // Show the pour immediately; the server confirms the real fill on next sync.
+      ShowPendingFill(amount);
       amount = 0;
       return;
     }
 
-    if (
-      !CanReceive(metal)
-      || NetworkSystem?.GetNetworkAt(Pos) is not MoltenNetwork network
-    )
+    if (!CanReceive(metal))
       return;
 
-    float accepted = network.TryPushMetal(
-      amount,
-      metal,
-      Api!.World,
-      Api!.World.BlockAccessor
-    );
+    float accepted = PushMetal(amount, metal, Api!.World);
     amount -= (int)accepted;
 
     if (accepted > 0f)
@@ -152,8 +73,6 @@ public class BlockEntityMoltenCanalStart
         2000,
         0.6f
       );
-
-    MarkDirty(true);
   }
 
   #endregion

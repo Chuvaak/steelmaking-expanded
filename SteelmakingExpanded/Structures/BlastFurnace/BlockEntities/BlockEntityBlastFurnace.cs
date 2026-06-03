@@ -206,7 +206,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
     )
       return;
 
-    int units = System.Math.Min(20, (int)_moltenIron);
+    int units = Math.Min(20, (int)_moltenIron);
     ItemStack? ironStack = CreateMoltenStack(
       "iron",
       (int)Math.Ceiling(units * 0.6f),

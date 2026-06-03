@@ -137,6 +137,7 @@
   "blockhelp-canalstart-pour": "Pour molten metal",
   "blockhelp-canal-seal": "Seal canal",
   "blockhelp-canal-unseal": "Break seal",
+  "blockhelp-canal-clearsolidified": "Chip out solidified metal (hammer in off-hand)",
   "blockhelp-hopper-open": "Open hopper inventory",
   "blockhelp-hopper-toggle": "Toggle blastmix dropping",
   "blockhelp-pressurevalve-cycle": "Cycle pressure threshold",

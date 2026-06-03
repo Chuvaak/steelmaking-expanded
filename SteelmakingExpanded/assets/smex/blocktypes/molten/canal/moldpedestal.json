@@ -18,7 +18,6 @@
     "smex": ["*-moldpedestal-*-s"]
   },
   "attributes": {
-    "maxUnits": 5,
     "fillStart": 14,
     "fillHeight": 1,
     "fillQuadsByLevel": [{ "x1": 7, "z1": 0, "x2": 9, "z2": 5 }],

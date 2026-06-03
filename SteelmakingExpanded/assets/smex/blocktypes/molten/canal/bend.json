@@ -18,7 +18,6 @@
     "smex": ["*-bend-*-nw"]
   },
   "attributes": {
-    "maxUnits": 5,
     "fillHeight": 1,
     "fillStart": 14,
     "fillQuadsByLevel": [

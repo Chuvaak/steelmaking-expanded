@@ -9,14 +9,15 @@ using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
-using Vintagestory.GameContent;
 
 namespace SteelmakingExpanded.Networks.Molten.BlockEntities;
 
 /// <summary>
-/// Block entity for all molten-canal blocks. Caches the owning <c>MoltenNetwork</c>'s
-/// fill/temperature/metal for rendering and HUD, tessellates capped ends on open
-/// connectors, and produces solidified-metal drops when the canal is broken.
+/// Block entity for all molten-canal blocks. Each block is a self-contained
+/// <em>cell</em> that holds its own liquid metal (amount, type, temperature); the
+/// owning <see cref="MoltenNetwork"/> only provides connectivity and drives the
+/// per-tick cell-to-cell flow and cooling. A cell solidifies on its own when its
+/// metal drops below the melting point, blocking flow until chiselled or broken.
 /// </summary>
 public class BlockEntityMoltenCanal : BlockEntityNetworkNode
 {
@@ -27,11 +28,27 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     set { }
   }
 
-  /// <summary>This block's contribution to the network capacity, in units.</summary>
-  public int MaxUnitCapacity { get; private set; } =
-    SmexValues.CanalDefaultUnitCapacity;
+  /// <summary>This cell's metal capacity, in units (from the block's <c>maxUnits</c> attribute).</summary>
+  public virtual int MaxUnitCapacity => SmexValues.CanalDefaultUnitCapacity;
 
-  /// <summary>Whether the metal in this canal has solidified (network must be rebuilt).</summary>
+  /// <summary>Units of liquid (or, once latched, solidified) metal held by this cell.</summary>
+  public int CellAmount { get; protected set; }
+
+  /// <summary>Full code of the metal in this cell, e.g. "game:ingot-iron"; empty when empty.</summary>
+  public string CellMetalType { get; protected set; } = "";
+
+  /// <summary>This cell's metal temperature (°C), updated from <see cref="_cellMetalStack"/> each tick.</summary>
+  public float CellTemperature => _cellTemperature;
+
+  // Server-side temperature carrier: an ItemStack so VS applies time-based
+  // cooling. Null on clients and when the cell is empty; rebuilt lazily on load.
+  private ItemStack? _cellMetalStack;
+  private float _cellTemperature;
+
+  // Client-only predicted fill from in-flight metal, for instant pour feedback.
+  private float _pendingFillAmount;
+
+  /// <summary>Whether this cell's metal has solidified.</summary>
   public bool Solidified { get; protected set; } = false;
 
   /// <summary>
@@ -41,14 +58,24 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
   /// </summary>
   public bool Sealed { get; protected set; } = false;
 
-  /// <summary>Chance per unit that breaking a solidified canal drops a metal bit.</summary>
-  public readonly float SolidifiedBitDropProbability = 0.2f;
+  /// <summary>
+  /// A sealed node severs connectivity at its position (manual valve), and so does
+  /// a solidified one — a hardened cell must not pass metal or pull freshly placed
+  /// neighbours into itself. Clear it with a chisel + hammer
+  /// (see <see cref="ClearSolidified"/>) or break it to restore flow.
+  /// </summary>
+  public override bool IsConnectionBroken() => Sealed || Solidified;
 
-  /// <summary>A sealed node severs network connectivity at its position.</summary>
-  public override bool IsConnectionBroken() => Sealed;
+  /// <summary>Whether this cell currently holds liquid (not solidified) metal.</summary>
+  public bool HasMoltenMetal => !Solidified && CellAmount > 0f;
 
-  /// <summary>Whether this canal's network currently holds liquid (not solidified) metal.</summary>
-  public bool HasMoltenMetal => !Solidified && _clientCurrentAmount > 0f;
+  /// <summary>
+  /// Whether this cell latches <see cref="Solidified"/> when its metal cools below
+  /// the melting point. Plain canal runs do (they clog and must be chiselled);
+  /// functional fittings (start, tap, mold pedestal) are sinks/sources, not
+  /// storage, so they override this to keep passing metal even when it has cooled.
+  /// </summary>
+  protected virtual bool SolidifiesWhenCold => true;
 
   /// <summary>
   /// Seals or unseals this canal, then re-registers the node so the network graph
@@ -74,30 +101,204 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     RefreshOpenConnectorFaces();
     MarkDirty(true);
   }
+  #endregion
 
-  public override void OnNetworkUpdate(object? state)
+  #region Per-cell metal API
+  /// <summary>
+  /// Pushes up to <paramref name="amount"/> units of <paramref name="metal"/> into
+  /// this cell, temperature-averaging with any metal already present (same type
+  /// only). Returns the amount accepted. Server-side.
+  /// </summary>
+  public int PushMetal(int amount, ItemStack metal, IWorldAccessor world) =>
+    PushMetalRaw(
+      amount,
+      metal.Collectible.Code.ToString(),
+      metal.Collectible.GetTemperature(world, metal),
+      world
+    );
+
+  internal int PushMetalRaw(
+    int amount,
+    string type,
+    float temperature,
+    IWorldAccessor world
+  )
   {
-    base.OnNetworkUpdate(state);
+    if (Solidified || type.Length == 0)
+      return 0;
+    if (CellAmount > 0f && CellMetalType != type)
+      return 0;
 
-    if (state is MoltenNetworkState netState)
-    {
-      _clientTemperature = netState.CurrentTemperature;
-      _clientMetalType = netState.MetalType;
-      _clientCurrentAmount = netState.CurrentAmount;
-      _clientMaxAmount = netState.MaxAmount;
-      Solidified = netState.Solidified;
-    }
-    else
-    {
-      _clientTemperature = 0f;
-      _clientMetalType = "";
-      _clientCurrentAmount = 0f;
-    }
-    _pendingFillAmount = 0f;
+    var accepted = Math.Min(amount, MaxUnitCapacity - CellAmount);
+    if (accepted <= 0f)
+      return 0;
 
-    RefreshOpenConnectorFaces();
-    UpdateRenderer();
+    Item? item = world.GetItem(new AssetLocation(type));
+    if (item == null)
+      return 0;
+
+    float existingTemp = CellAmount > 0f ? _cellTemperature : temperature;
+    float total = CellAmount + accepted;
+    float newTemp =
+      total > 0f
+        ? (CellAmount * existingTemp + accepted * temperature) / total
+        : temperature;
+
+    if (_cellMetalStack == null || CellMetalType != type)
+      _cellMetalStack = new ItemStack(item, 1);
+
+    SetStackTemperature(world, newTemp);
+    CellAmount += accepted;
+    CellMetalType = type;
+    _cellTemperature = newTemp;
+    MarkDirty();
+    return accepted;
+  }
+
+  /// <summary>Removes up to <paramref name="amount"/> liquid units from this cell. Returns the amount drained. Server-side.</summary>
+  public int DrainMetal(int amount)
+  {
+    if (Solidified || CellAmount <= 0f)
+      return 0;
+
+    var actual = Math.Min(amount, CellAmount);
+    CellAmount -= actual;
+    if (CellAmount <= 0.0001f)
+      EmptyCell();
+
+    MarkDirty();
+    return actual;
+  }
+
+  private void EmptyCell()
+  {
+    CellAmount = 0;
+    CellMetalType = "";
+    _cellMetalStack = null;
+    _cellTemperature = 0f;
+  }
+
+  private void SetStackTemperature(IWorldAccessor world, float temp)
+  {
+    if (_cellMetalStack == null)
+      return;
+    _cellMetalStack.Collectible.SetTemperature(
+      world,
+      _cellMetalStack,
+      temp,
+      delayCooldown: false
+    );
+    (_cellMetalStack.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
+      "cooldownSpeed",
+      SmexValues.MoltenCooldownSpeed
+    );
+  }
+
+  /// <summary>Rebuilds the server temperature carrier after a world load (To/FromTreeAttributes only persist type + temperature).</summary>
+  internal void EnsureMetalStack(IWorldAccessor world)
+  {
+    if (
+      _cellMetalStack != null
+      || CellMetalType.Length == 0
+      || CellAmount <= 0f
+    )
+      return;
+
+    Item? item = world.GetItem(new AssetLocation(CellMetalType));
+    if (item == null)
+      return;
+    _cellMetalStack = new ItemStack(item, 1);
+    SetStackTemperature(world, _cellTemperature);
+  }
+
+  /// <summary>
+  /// Server per-tick thermal update: refreshes the displayed temperature from the
+  /// VS time-based decay and latches <see cref="Solidified"/> once the metal drops
+  /// below its melting point. Driven by <see cref="MoltenNetwork.OnTick"/>.
+  /// </summary>
+  internal void UpdateThermal(IWorldAccessor world)
+  {
+    if (CellAmount <= 0f || _cellMetalStack == null)
+      return;
+
+    float temp = _cellMetalStack.Collectible.GetTemperature(
+      world,
+      _cellMetalStack
+    );
+    float meltPoint = _cellMetalStack.Collectible.GetMeltingPoint(
+      world,
+      null,
+      new DummySlot(_cellMetalStack)
+    );
+
+    bool changed = false;
+    bool retesselate = false;
+    if (Math.Abs(_cellTemperature - temp) >= 1f)
+    {
+      _cellTemperature = temp;
+      changed = true;
+    }
+    if (SolidifiesWhenCold && !Solidified && temp < meltPoint)
+    {
+      Solidified = true;
+      changed = true;
+      retesselate = true;
+    }
+
+    if (changed)
+      MarkDirty(retesselate);
+  }
+  #endregion
+
+  #region Solidified clearing / drops
+  /// <summary>
+  /// Server-side: chips the hardened metal out of <em>this cell only</em> — returns
+  /// the recoverable solid-metal drop, empties the cell and lifts its solidified
+  /// latch, then rebuilds so the freed cell rejoins the run. Returns <c>null</c>
+  /// off-server or when this cell isn't solidified.
+  /// </summary>
+  public ItemStack? ClearSolidified()
+  {
+    if (Api?.Side != EnumAppSide.Server || !Solidified)
+      return null;
+
+    ItemStack? recovered = GetSolidifiedDrop(Api.World);
+    EmptyCell();
+    Solidified = false;
     MarkDirty(true);
+
+    // No longer broken — rebuild so this cell re-merges with its neighbours.
+    if (NetworkSystem != null && Api.World?.BlockAccessor is { } ba)
+      NetworkSystem.RebuildFromRoot(ba, Pos, NetworkType);
+
+    return recovered;
+  }
+
+  /// <summary>Whether breaking this canal would let still-liquid metal spill out.</summary>
+  public bool WouldSpillOnRemoval() => !Solidified && CellAmount > 0f;
+
+  /// <summary>Returns the solid metal-bit drop for this solidified cell, or <c>null</c> if there's nothing to drop.</summary>
+  public ItemStack? GetSolidifiedDrop(IWorldAccessor world)
+  {
+    if (!Solidified || CellAmount <= 0f || CellMetalType.Length == 0)
+      return null;
+
+    int count = Math.Max(1, (int)(CellAmount / 5f));
+    var solidLoc = MoltenNetwork.SolidDropLocation(
+      new AssetLocation(CellMetalType)
+    );
+    Item? item = world.GetItem(solidLoc);
+    if (item == null)
+      return null;
+
+    var drop = new ItemStack(item, count);
+    drop.Collectible.SetTemperature(
+      world,
+      drop,
+      _cellTemperature,
+      delayCooldown: false
+    );
+    return drop;
   }
   #endregion
 
@@ -204,10 +405,6 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
       InitRenderer((ICoreClientAPI)api);
       UpdateRenderer();
     }
-
-    MaxUnitCapacity =
-      Block?.Attributes?["maxUnits"].AsInt(SmexValues.CanalDefaultUnitCapacity)
-      ?? SmexValues.CanalDefaultUnitCapacity;
   }
 
   private void RefreshOpenConnectorFaces()
@@ -277,34 +474,41 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     capi.Event.RegisterRenderer(_renderer, EnumRenderStage.Opaque);
   }
 
-  /// <summary>Pushes the cached fill ratio, temperature and metal stack into the renderer. Override to add custom render state.</summary>
+  /// <summary>Pushes this cell's fill ratio, temperature and metal stack into the renderer. Override to add custom render state.</summary>
   protected virtual void UpdateRenderer()
   {
     if (_renderer == null)
       return;
 
-    float displayAmount = _clientCurrentAmount + _pendingFillAmount;
+    float displayAmount = CellAmount + _pendingFillAmount;
     _renderer.FillRatio =
-      _clientMaxAmount > 0f ? displayAmount / _clientMaxAmount : 0f;
-    _renderer.Temperature = _clientTemperature;
+      MaxUnitCapacity > 0 ? displayAmount / MaxUnitCapacity : 0f;
+    _renderer.Temperature = _cellTemperature;
 
-    if (_clientMetalType != _cachedMetalType)
+    if (CellMetalType != _cachedMetalType)
     {
-      if (_clientMetalType.Length == 0)
+      if (CellMetalType.Length == 0)
       {
         _cachedMetalStack = null;
         _cachedMetalType = "";
       }
       else
       {
-        Item? item = Api.World.GetItem(new AssetLocation(_clientMetalType));
+        Item? item = Api.World.GetItem(new AssetLocation(CellMetalType));
         _cachedMetalStack = item != null ? new ItemStack(item) : null;
         // Only advance the cache key when the item resolved; leave stale to retry if not yet registered.
         if (item != null)
-          _cachedMetalType = _clientMetalType;
+          _cachedMetalType = CellMetalType;
       }
     }
     _renderer.MetalStack = _cachedMetalStack;
+  }
+
+  /// <summary>Client-side: shows in-flight poured metal immediately, before the server confirms.</summary>
+  public void ShowPendingFill(float amount)
+  {
+    _pendingFillAmount = amount;
+    UpdateRenderer();
   }
 
   public override void OnBlockRemoved()
@@ -322,65 +526,15 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
   }
   #endregion
 
-  #region Drop / sound helpers
-  /// <summary>Whether breaking this canal would let still-liquid metal spill out.</summary>
-  public bool WouldSpillOnRemoval() =>
-    !Solidified
-    && _clientCurrentAmount > 0
-    && _clientCurrentAmount > (_clientMaxAmount - MaxUnitCapacity);
-
-  /// <summary>Returns the solid metal-bit drop for a solidified canal, or <c>null</c> if there is nothing to drop.</summary>
-  public ItemStack? GetSolidifiedDrop(IWorldAccessor world)
-  {
-    if (
-      !Solidified
-      || _clientCurrentAmount <= 0f
-      || _clientMetalType.Length == 0
-    )
-      return null;
-
-    int randLoss = Random.Shared.Next(3) * 5;
-    float remaining = _clientCurrentAmount - randLoss;
-    if (remaining <= 0f)
-      return null;
-
-    int count = Math.Max(1, (int)(remaining / 5f));
-    var solidLoc = MoltenNetwork.SolidDropLocation(
-      new AssetLocation(_clientMetalType)
-    );
-    Item? item = world.GetItem(solidLoc);
-    if (item == null)
-      return null;
-
-    var drop = new ItemStack(item, count);
-    drop.Collectible.SetTemperature(
-      world,
-      drop,
-      _clientTemperature,
-      delayCooldown: false
-    );
-    return drop;
-  }
-  #endregion
-
-  #region Serialization Info
-  protected float _clientCurrentAmount;
-  protected float _clientMaxAmount;
-  protected float _clientTemperature;
-
-  // Full AssetLocation string, e.g. "game:ingot-iron". Empty when canal is empty.
-  protected string _clientMetalType = "";
-  protected float _pendingFillAmount;
-
+  #region Serialization / info
   public override void ToTreeAttributes(ITreeAttribute tree)
   {
     base.ToTreeAttributes(tree);
     tree.SetBool("solidified", Solidified);
     tree.SetBool("sealed", Sealed);
-    tree.SetFloat("clientTemperature", _clientTemperature);
-    tree.SetString("clientMetalType", _clientMetalType);
-    tree.SetFloat("clientCurrentAmount", _clientCurrentAmount);
-    tree.SetFloat("clientMaxAmount", _clientMaxAmount);
+    tree.SetInt("cellAmount", CellAmount);
+    tree.SetString("cellMetalType", CellMetalType);
+    tree.SetFloat("cellTemperature", _cellTemperature);
   }
 
   public override void FromTreeAttributes(
@@ -391,20 +545,22 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     base.FromTreeAttributes(tree, worldForResolving);
     Solidified = tree.GetBool("solidified");
     Sealed = tree.GetBool("sealed");
-    _clientTemperature = tree.GetFloat("clientTemperature");
+    CellAmount = tree.GetInt("cellAmount");
+    CellMetalType = tree.GetString("cellMetalType", "");
+    _cellTemperature = tree.GetFloat("cellTemperature");
+    // _cellMetalStack is rebuilt lazily server-side in EnsureMetalStack.
 
-    // Migrate old "Iron"/"Steel"/"Slag" values to full AssetLocation strings.
-    string rawType = tree.GetString("clientMetalType", "");
-    _clientMetalType = rawType switch
+    // Invariant: an empty cell is never solidified (also scrubs phantom solid
+    // flags from pre-per-cell saves, whose metal didn't carry over).
+    if (CellAmount <= 0f)
     {
-      "Iron" => "game:ingot-iron",
-      "Steel" => "game:ingot-steel",
-      "Slag" => "smex:slag",
-      _ => rawType,
-    };
+      Solidified = false;
+      CellMetalType = "";
+    }
 
-    _clientCurrentAmount = tree.GetFloat("clientCurrentAmount");
-    _clientMaxAmount = tree.GetFloat("clientMaxAmount");
+    // Authoritative state has arrived — drop any client-predicted pour fill.
+    _pendingFillAmount = 0f;
+
     RefreshOpenConnectorFaces();
     UpdateRenderer();
   }
@@ -422,20 +578,20 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
       return;
     }
 
-    if (_clientCurrentAmount == 0)
+    if (CellAmount <= 0f)
     {
       dsc.AppendLine(Lang.Get("smex:canal-empty"));
     }
     else
     {
-      string metalName = MetalDisplayName(_clientMetalType);
+      string metalName = MetalDisplayName(CellMetalType);
       dsc.AppendLine(
         Lang.Get(
           "smex:canal-content2",
-          _clientCurrentAmount,
-          _clientMaxAmount,
+          CellAmount,
+          MaxUnitCapacity,
           metalName,
-          _clientTemperature
+          _cellTemperature
         )
       );
     }
