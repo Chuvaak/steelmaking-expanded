@@ -49,7 +49,7 @@ public class BlockGasValve : BlockGasPipe
       }
 
       world.PlaySoundAt(
-        SmexSounds.Build,
+        SmexSounds.CokeOvenDoorOpen,
         blockSel.Position.X,
         blockSel.Position.Y,
         blockSel.Position.Z,
