@@ -67,6 +67,29 @@ public class BlockEntityGasValve : BlockEntityGasPipe
     _animatorReady = true;
   }
 
+  /// <summary>
+  /// A wrench rotates the valve via <c>ExchangeBlock</c>, which swaps the block to
+  /// the new orientation variant but keeps this block entity alive — so
+  /// <see cref="Initialize"/> never re-runs and the animator stays bound to the
+  /// <em>original</em> orientation's renderer rotation. The static mesh
+  /// re-tessellates into the new facing while the held "open" pose kept rendering
+  /// in the old one, making the valve appear to flip between orientations as it
+  /// was toggled. Re-bind the animator to the new block's rotation (the core
+  /// <c>InitializeAnimator</c> disposes the stale renderer first) and restore the
+  /// current pose. Fires on both sides; only the client has an animator.
+  /// </summary>
+  public override void OnExchanged(Block block)
+  {
+    base.OnExchanged(block);
+
+    if (Api is ICoreClientAPI capi && _animatable != null)
+    {
+      _animatorReady = false;
+      InitAnimator(capi);
+      ApplyValvePose();
+    }
+  }
+
   /// <summary>Server-side toggle of the valve's open state.</summary>
   public void ToggleOpen()
   {
