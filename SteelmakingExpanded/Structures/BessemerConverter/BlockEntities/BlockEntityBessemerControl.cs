@@ -373,7 +373,7 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
     var steelStack = new ItemStack(steel, 1);
     (steelStack.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
       "cooldownSpeed",
-      24f
+      SmexValues.MoltenCooldownSpeed
     );
     steelStack.Collectible.SetTemperature(Api.World, steelStack, temp, false);
     _content = steelStack;
@@ -413,7 +413,7 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
       null,
       new DummySlot(_content)
     );
-    bool nowSolid = temp < 0.3f * meltPoint;
+    bool nowSolid = temp < meltPoint;
     if (nowSolid != _solidified)
     {
       _solidified = nowSolid;
