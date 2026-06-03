@@ -86,6 +86,12 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     base.Initialize(api);
     if (api.Side == EnumAppSide.Server)
       RegisterGameTickListener(OnServerTick, 1000);
+    else
+      // The parked barrel/mold metal keeps cooling after the pour stops
+      // broadcasting (full / hardened), so refresh the surface glow on the client
+      // from the stack's live temperature — otherwise it freezes at the last server
+      // value and snaps cold on the next interaction.
+      RegisterGameTickListener(_ => UpdateRenderer(), 1000);
 
     _drainSpeed = Block
       .Attributes["drainSpeed"]

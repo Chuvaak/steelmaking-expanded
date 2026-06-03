@@ -184,6 +184,10 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
     {
       InitRenderer((ICoreClientAPI)api);
       UpdateRenderer();
+      // Metal cools after the last broadcast (the barrel only syncs on fill /
+      // chisel), so refresh the surface glow on the client from the stack's live
+      // temperature — otherwise it freezes and snaps cold on the next interaction.
+      RegisterGameTickListener(_ => UpdateRenderer(), 1000);
     }
     else
     {
