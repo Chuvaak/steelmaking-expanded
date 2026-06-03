@@ -17,16 +17,16 @@ public class SmexConfig
   public float MoltenCooldownSpeed { get; set; } = 24f;
 
   /// <summary>Max metal (units) that flows across one canal-to-canal connection per second. Higher = metal races down the run before it can cool; balance against <see cref="MoltenCooldownSpeed"/>.</summary>
-  public int MoltenFlowRate { get; set; } = 20;
+  public int MoltenFlowRate { get; set; } = 50;
 
   /// <summary>Minimum metal (units) that must be able to move across a canal-to-canal connection for any flow to happen that tick. Stops sub-unit dribbles and keeps cells from endlessly equalising by tiny amounts.</summary>
   public int MoltenMinFlowAmount { get; set; } = 10;
 
   /// <summary>Default per-canal-block capacity (units) when a block sets no <c>maxUnits</c> attribute.</summary>
-  public int CanalDefaultUnitCapacity { get; set; } = 20;
+  public int CanalDefaultUnitCapacity { get; set; } = 50;
 
   /// <summary>Default canal-tap network drain speed (units/s) when no <c>drainSpeed</c> attribute is set.</summary>
-  public float CanalDefaultDrainSpeed { get; set; } = 10f;
+  public float CanalDefaultDrainSpeed { get; set; } = 20f;
 
   /// <summary>Default large-mold capacity (units) when the mold sets no <c>requiredUnits</c> attribute.</summary>
   public int MoldDefaultUnits { get; set; } = 100;

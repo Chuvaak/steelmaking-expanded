@@ -11,7 +11,7 @@
   "textures": {
     "all": { "base": "game:block/metal/sheet-plain/iron5" }
   },
-  "resistance": 15.0,
+  "resistance": 45.0,
   "maxstacksize": 8,
   "requiredMiningTier": 5,
   "mineTool": "pickaxe",
