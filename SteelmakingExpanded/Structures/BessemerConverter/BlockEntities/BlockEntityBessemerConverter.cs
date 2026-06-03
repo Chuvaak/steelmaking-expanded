@@ -256,7 +256,7 @@ public class BlockEntityBessemerConverter : BlockEntity
         Animation = code,
         Code = code,
         // The whole vessel tilts — slow and heavy. Idle just holds it visible.
-        AnimationSpeed = code == "idle" ? 1f : 0.6f,
+        AnimationSpeed = code == "idle" ? 1f : 0.3f,
         EaseInSpeed = 3f,
         EaseOutSpeed = 3f,
       }.Init()

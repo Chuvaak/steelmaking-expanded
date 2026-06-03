@@ -379,8 +379,6 @@ public class BlockEntityBessemerControl : BlockEntityMultiblockStructure
     _content = steelStack;
     _processSeconds = ProcessDurationSec;
     SetStatus(Lang.Get("smex:bessemer-status-steelready"));
-    // A clear "ting" cue that the charge has finished converting to steel.
-    SmexSounds.Play(Api, Pos, SmexSounds.AnvilHit, 0.8f);
     MarkDirty();
   }
 
