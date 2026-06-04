@@ -6,35 +6,45 @@ using Vintagestory.API.Server;
 namespace SteelmakingExpanded.Migrations;
 
 /// <summary>
-/// Migrates pre-brick-variant gas blocks. The passthrough, outlet and heated-intake
-/// blocks originally used brickless codes (e.g. <c>smex:gaspipe-passthrough-ns</c>);
-/// adding the brick variantgroup changed those codes, so old placements load as
-/// missing-block placeholders. Each is rewritten to the refractory-tier3 variant of the
-/// same type and orientation (refractory brick was the original recipe ingredient and
-/// shape texture).
+/// Migrates blocks that gained a brick/refractory-tier variantgroup. The gas passthrough,
+/// outlet and heated-intake, plus the cowper-stove intake, originally used codes without
+/// that group (e.g. <c>smex:gaspipe-passthrough-ns</c>, <c>smex:cowperstove-intake-s</c>);
+/// adding the group changed those codes, so old placements load as missing-block
+/// placeholders. Each is rewritten to the tier3-refractory variant of the same base and
+/// orientation (refractory brick was the original recipe ingredient and shape texture).
 /// </summary>
 public class BrickVariantMigration : IBlockCodeMigration
 {
-  // type -> the orientations that existed before the brick variantgroup was added.
-  private static readonly Dictionary<string, string[]> BricklessOrientations =
-    new()
-    {
-      { "passthrough", ["ns", "we", "ud"] },
-      { "outlet", ["s", "n", "w", "e"] },
-      { "heated", ["ns", "sn", "we", "ew"] },
-    };
+  /// <summary>
+  /// One block that gained a variant: its code without the new group, the variant value
+  /// inserted before the orientation, and the orientations that existed beforehand.
+  /// </summary>
+  private readonly record struct Entry(
+    string CodeBase,
+    string InsertedVariant,
+    string[] Orientations
+  );
 
-  public string Name => "Gas block brick variants";
+  private static readonly Entry[] Entries =
+  [
+    new("gaspipe-passthrough", "refractorytier3", ["ns", "we", "ud"]),
+    new("gaspipe-outlet", "refractorytier3", ["s", "n", "w", "e"]),
+    new("gaspipe-heated", "refractorytier3", ["ns", "sn", "we", "ew"]),
+    new("cowperstove-intake", "tier3", ["n", "s", "w", "e"]),
+    new("smokestack-intake", "tier3", ["n", "s", "w", "e"]),
+  ];
+
+  public string Name => "Brick and refractory-tier variants";
 
   public IEnumerable<(AssetLocation oldCode, AssetLocation newCode)> GetRemaps(
     ICoreServerAPI api
   )
   {
-    foreach (var (type, orientations) in BricklessOrientations)
+    foreach (var (codeBase, inserted, orientations) in Entries)
     foreach (string orient in orientations)
       yield return (
-        new AssetLocation("smex", $"gaspipe-{type}-{orient}"),
-        new AssetLocation("smex", $"gaspipe-{type}-refractorytier3-{orient}")
+        new AssetLocation("smex", $"{codeBase}-{orient}"),
+        new AssetLocation("smex", $"{codeBase}-{inserted}-{orient}")
       );
   }
 }

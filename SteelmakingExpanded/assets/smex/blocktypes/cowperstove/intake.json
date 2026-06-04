@@ -15,9 +15,10 @@
   },
   "maxstacksize": 1,
   "attributes": {
+    "handbook": { "groupBy": ["cowperstove-intake-*"] },
     "multiblockStructure": {
       "blockNumbers": {
-        "game:refractorybricks-good-tier3": 1,
+        "game:refractorybricks-good-tier*": 1,
         "smex:cowperstove-intake*": 2,
         "smex:gaspipe-outlet*": 3,
         "smex:gaspipe-passthrough-*": 4,
@@ -96,31 +97,35 @@
     }
   },
   "creativeinventory": {
-    "general": ["*-intake-s"],
-    "smex": ["*-intake-s"]
+    "general": ["*-intake-*-s"],
+    "smex": ["*-intake-*-s"]
   },
   "behaviors": [{ "name": "Lockable" }],
   "variantgroups": [
     { "code": "type", "states": ["intake"] },
+    { "code": "refractory", "states": ["tier1", "tier2", "tier3"] },
     { "code": "orientation", "states": ["n", "s", "w", "e"] }
   ],
   "shapebytype": {
-    "*-intake-n": {
+    "*-intake-*-n": {
       "base": "smex:gas/machines/heatedintake",
       "rotateY": 180
     },
-    "*-intake-w": {
+    "*-intake-*-w": {
       "base": "smex:gas/machines/heatedintake",
       "rotateY": 270
     },
-    "*-intake-s": {
+    "*-intake-*-s": {
       "base": "smex:gas/machines/heatedintake",
       "rotateY": 0
     },
-    "*-intake-e": {
+    "*-intake-*-e": {
       "base": "smex:gas/machines/heatedintake",
       "rotateY": 90
     }
+  },
+  "textures": {
+    "front1": { "base": "game:block/clay/refractory/{refractory}/front1" }
   },
   "sidesolid": {
     "all": true

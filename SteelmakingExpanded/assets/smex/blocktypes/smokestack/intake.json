@@ -15,11 +15,13 @@
   },
   "maxstacksize": 1,
   "attributes": {
+    "handbook": { "groupBy": ["smokestack-intake-*"] },
     "multiblockStructure": {
       "blockNumbers": {
         "smex:smokestack-intake*": 1,
-        "game:claybricks-good-fire": 2,
-        "game:air": 3
+        "game:refractorybricks-good-tier*": 2,
+        "game:air": 3,
+        "@(claybricks-good-fire|refractorybricks-good-.*|brickcourse-.*-(black|brown|cream|gray|orange|red|tan))": 4
       },
       "offsets": [
         { "x": 0, "y": -1, "z": 0, "w": 2 },
@@ -52,90 +54,91 @@
         { "x": -1, "y": 1, "z": 2, "w": 2 },
         { "x": 1, "y": 1, "z": 2, "w": 2 },
 
-        { "x": 0, "y": 2, "z": 0, "w": 2 },
-        { "x": 1, "y": 2, "z": 1, "w": 2 },
+        { "x": 0, "y": 2, "z": 0, "w": 4 },
+        { "x": 1, "y": 2, "z": 1, "w": 4 },
         { "x": 0, "y": 2, "z": 1, "w": 3 },
-        { "x": -1, "y": 2, "z": 1, "w": 2 },
-        { "x": 0, "y": 2, "z": 2, "w": 2 },
+        { "x": -1, "y": 2, "z": 1, "w": 4 },
+        { "x": 0, "y": 2, "z": 2, "w": 4 },
 
-        { "x": 0, "y": 3, "z": 0, "w": 2 },
-        { "x": 1, "y": 3, "z": 1, "w": 2 },
+        { "x": 0, "y": 3, "z": 0, "w": 4 },
+        { "x": 1, "y": 3, "z": 1, "w": 4 },
         { "x": 0, "y": 3, "z": 1, "w": 3 },
-        { "x": -1, "y": 3, "z": 1, "w": 2 },
-        { "x": 0, "y": 3, "z": 2, "w": 2 },
+        { "x": -1, "y": 3, "z": 1, "w": 4 },
+        { "x": 0, "y": 3, "z": 2, "w": 4 },
 
-        { "x": 0, "y": 4, "z": 0, "w": 2 },
-        { "x": 1, "y": 4, "z": 1, "w": 2 },
+        { "x": 0, "y": 4, "z": 0, "w": 4 },
+        { "x": 1, "y": 4, "z": 1, "w": 4 },
         { "x": 0, "y": 4, "z": 1, "w": 3 },
-        { "x": -1, "y": 4, "z": 1, "w": 2 },
-        { "x": 0, "y": 4, "z": 2, "w": 2 },
+        { "x": -1, "y": 4, "z": 1, "w": 4 },
+        { "x": 0, "y": 4, "z": 2, "w": 4 },
 
-        { "x": 0, "y": 5, "z": 0, "w": 2 },
-        { "x": 1, "y": 5, "z": 1, "w": 2 },
+        { "x": 0, "y": 5, "z": 0, "w": 4 },
+        { "x": 1, "y": 5, "z": 1, "w": 4 },
         { "x": 0, "y": 5, "z": 1, "w": 3 },
-        { "x": -1, "y": 5, "z": 1, "w": 2 },
-        { "x": 0, "y": 5, "z": 2, "w": 2 },
+        { "x": -1, "y": 5, "z": 1, "w": 4 },
+        { "x": 0, "y": 5, "z": 2, "w": 4 },
 
-        { "x": 0, "y": 6, "z": 0, "w": 2 },
-        { "x": 1, "y": 6, "z": 1, "w": 2 },
+        { "x": 0, "y": 6, "z": 0, "w": 4 },
+        { "x": 1, "y": 6, "z": 1, "w": 4 },
         { "x": 0, "y": 6, "z": 1, "w": 3 },
-        { "x": -1, "y": 6, "z": 1, "w": 2 },
-        { "x": 0, "y": 6, "z": 2, "w": 2 },
+        { "x": -1, "y": 6, "z": 1, "w": 4 },
+        { "x": 0, "y": 6, "z": 2, "w": 4 },
 
-        { "x": 0, "y": 7, "z": 0, "w": 2 },
-        { "x": 1, "y": 7, "z": 1, "w": 2 },
+        { "x": 0, "y": 7, "z": 0, "w": 4 },
+        { "x": 1, "y": 7, "z": 1, "w": 4 },
         { "x": 0, "y": 7, "z": 1, "w": 3 },
-        { "x": -1, "y": 7, "z": 1, "w": 2 },
-        { "x": 0, "y": 7, "z": 2, "w": 2 },
+        { "x": -1, "y": 7, "z": 1, "w": 4 },
+        { "x": 0, "y": 7, "z": 2, "w": 4 },
 
-        { "x": 0, "y": 8, "z": 0, "w": 2 },
-        { "x": 1, "y": 8, "z": 1, "w": 2 },
+        { "x": 0, "y": 8, "z": 0, "w": 4 },
+        { "x": 1, "y": 8, "z": 1, "w": 4 },
         { "x": 0, "y": 8, "z": 1, "w": 3 },
-        { "x": -1, "y": 8, "z": 1, "w": 2 },
-        { "x": 0, "y": 8, "z": 2, "w": 2 },
+        { "x": -1, "y": 8, "z": 1, "w": 4 },
+        { "x": 0, "y": 8, "z": 2, "w": 4 },
 
-        { "x": 0, "y": 9, "z": 0, "w": 2 },
-        { "x": 1, "y": 9, "z": 1, "w": 2 },
+        { "x": 0, "y": 9, "z": 0, "w": 4 },
+        { "x": 1, "y": 9, "z": 1, "w": 4 },
         { "x": 0, "y": 9, "z": 1, "w": 3 },
-        { "x": -1, "y": 9, "z": 1, "w": 2 },
-        { "x": 0, "y": 9, "z": 2, "w": 2 },
+        { "x": -1, "y": 9, "z": 1, "w": 4 },
+        { "x": 0, "y": 9, "z": 2, "w": 4 },
 
-        { "x": 0, "y": 10, "z": 0, "w": 2 },
-        { "x": 1, "y": 10, "z": 1, "w": 2 },
+        { "x": 0, "y": 10, "z": 0, "w": 4 },
+        { "x": 1, "y": 10, "z": 1, "w": 4 },
         { "x": 0, "y": 10, "z": 1, "w": 3 },
-        { "x": -1, "y": 10, "z": 1, "w": 2 },
-        { "x": 0, "y": 10, "z": 2, "w": 2 }
+        { "x": -1, "y": 10, "z": 1, "w": 4 },
+        { "x": 0, "y": 10, "z": 2, "w": 4 }
       ]
     }
   },
   "creativeinventory": {
-    "general": ["*-intake-n"],
-    "smex": ["*-intake-n"]
+    "general": ["*-intake-*-n"],
+    "smex": ["*-intake-*-n"]
   },
   "behaviors": [{ "name": "Lockable" }],
   "variantgroups": [
     { "code": "type", "states": ["intake"] },
+    { "code": "refractory", "states": ["tier1", "tier2", "tier3"] },
     { "code": "orientation", "states": ["n", "s", "w", "e"] }
   ],
   "shapebytype": {
-    "*-intake-s": {
+    "*-intake-*-s": {
       "base": "smex:gas/pipes/outlet"
     },
-    "*-intake-e": {
+    "*-intake-*-e": {
       "base": "smex:gas/pipes/outlet",
       "rotateY": 90
     },
-    "*-intake-n": {
+    "*-intake-*-n": {
       "base": "smex:gas/pipes/outlet",
       "rotateY": 180
     },
-    "*-intake-w": {
+    "*-intake-*-w": {
       "base": "smex:gas/pipes/outlet",
       "rotateY": 270
     }
   },
   "textures": {
-    "front1": { "base": "game:block/clay/brick/four/running/fire1" }
+    "front1": { "base": "game:block/clay/refractory/{refractory}/front1" }
   },
   "sidesolid": {
     "all": false

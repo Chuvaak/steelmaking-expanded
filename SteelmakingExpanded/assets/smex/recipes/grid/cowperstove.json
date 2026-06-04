@@ -5,7 +5,7 @@
     "ingredients": {
       "B": {
         "type": "item",
-        "code": "game:refractorybrick-fired-tier3",
+        "code": "game:refractorybrick-fired-{tier}",
         "quantity": 2
       },
       "N": {
@@ -21,13 +21,14 @@
       }
     },
     "allowedVariants": {
+      "tier": ["tier1", "tier2", "tier3"],
       "metal": ["iron", "steel"]
     },
     "width": 3,
     "height": 3,
     "output": {
       "type": "block",
-      "code": "smex:cowperstove-intake-s"
+      "code": "smex:cowperstove-intake-{tier}-s"
     }
   },
   {
