@@ -11,14 +11,16 @@ namespace SteelmakingExpanded.Migration;
 
 /// <summary>
 /// Generic, server-side world migrator for renamed/re-variantted blocks. Collects every
-/// <see cref="IBlockCodeMigration"/> in the mod assembly into a single old-block-id →
-/// new-block-id table and rewrites matching blocks as chunk columns load.
+/// <see cref="IBlockCodeMigration"/> in the mod assembly into a single legacy-code →
+/// replacement-block table and rewrites matching blocks as chunk columns load.
 ///
 /// <para>How it works: when a block code is removed, the engine keeps every placed
 /// instance as a "missing" placeholder block that retains the original code (see
-/// <c>ServerSystemBlockIdRemapper</c>), so no data is lost to air. This system looks the
-/// old codes up by id, and on each <see cref="IServerEventAPI.ChunkColumnLoaded"/> swaps
-/// the stored block id for the new one via <see cref="IBlockAccessor.SetBlock(int,
+/// <c>ServerSystemBlockIdRemapper</c>), so no data is lost to air. On each
+/// <see cref="IServerEventAPI.ChunkColumnLoaded"/> this system resolves the live block
+/// for every stored id and matches on its <see cref="Block.Code"/> — not a precomputed
+/// id, because the engine can renumber block ids while reconciling the save mapping on
+/// load — then swaps in the replacement via <see cref="IBlockAccessor.SetBlock(int,
 /// BlockPos)"/>. The replacement gets a fresh block entity that reconstructs its state
 /// (e.g. a network node's orientation/connectors) from the new variant code.</para>
 ///
@@ -53,95 +55,156 @@ public class BlockMigrationModSystem : ModSystem
   public override void StartServerSide(ICoreServerAPI api)
   {
     _sapi = api;
-    // Built lazily on the first chunk load: by then every block — including the
-    // missing-block placeholders created during world load — is registered.
+    // Two passes are needed because the spawn-area chunks are already loaded by the time
+    // this event is wired up, so ChunkColumnLoaded never fires for them:
+    //   - a one-time sweep of all currently-loaded chunks once the world is up, and
+    //   - the event handler for every chunk column that loads afterwards.
+    api.Event.ServerRunPhase(EnumServerRunPhase.RunGame, SweepLoadedChunks);
     api.Event.ChunkColumnLoaded += OnChunkColumnLoaded;
   }
 
-  private void OnChunkColumnLoaded(Vec2i chunkCoord, IWorldChunk[] chunks)
+  /// <summary>Builds the remap table on first use; returns false if nothing to migrate.</summary>
+  private bool EnsureInitialized()
   {
     if (!_initialized)
     {
       BuildRemapTable();
       _initialized = true;
-      if (_remap.Count == 0)
-      {
-        // Nothing in this world matches any migration — stop listening entirely.
-        _sapi.Event.ChunkColumnLoaded -= OnChunkColumnLoaded;
-        return;
-      }
     }
+    return _remap.Count > 0;
+  }
+
+  private void SweepLoadedChunks()
+  {
+    if (!EnsureInitialized())
+      return;
+
+    int chunksTall = _sapi.WorldManager.MapSizeY / GlobalConstants.ChunkSize;
+    int total = 0;
+
+    // Copy the keys: ReplaceBlock mutates chunks, and we do not want to enumerate the
+    // live dictionary while that happens.
+    foreach (
+      long index2d in _sapi.WorldManager.AllLoadedMapchunks.Keys.ToArray()
+    )
+    {
+      Vec2i coord = _sapi.WorldManager.MapChunkPosFromChunkIndex2D(index2d);
+      int migrated = 0;
+      for (int cy = 0; cy < chunksTall; cy++)
+        migrated += ScanChunk(
+          coord.X,
+          cy,
+          coord.Y,
+          _sapi.WorldManager.GetChunk(coord.X, cy, coord.Y)
+        );
+
+      if (migrated > 0)
+        LogColumn(migrated, coord.X, coord.Y);
+      total += migrated;
+    }
+
+    if (total > 0)
+      _sapi.Logger.Notification(
+        "[smex] Startup migration sweep updated {0} block(s) across loaded chunks.",
+        total
+      );
+  }
+
+  private void OnChunkColumnLoaded(Vec2i chunkCoord, IWorldChunk[] chunks)
+  {
+    if (!EnsureInitialized())
+    {
+      // Nothing in this world matches any migration — stop listening entirely.
+      _sapi.Event.ChunkColumnLoaded -= OnChunkColumnLoaded;
+      return;
+    }
+
+    int migrated = 0;
+    for (int cy = 0; cy < chunks.Length; cy++)
+      migrated += ScanChunk(chunkCoord.X, cy, chunkCoord.Y, chunks[cy]);
+
+    if (migrated > 0)
+      LogColumn(migrated, chunkCoord.X, chunkCoord.Y);
+  }
+
+  /// <summary>Scans one chunk section and rewrites every block matched by a migration.</summary>
+  private int ScanChunk(int chunkX, int chunkY, int chunkZ, IWorldChunk? chunk)
+  {
+    if (chunk == null)
+      return 0;
+    chunk.Unpack();
+    IChunkBlocks data = chunk.Data;
+    int len = data.Length;
 
     const int cs = GlobalConstants.ChunkSize;
     IBlockAccessor ba = _sapi.World.BlockAccessor;
     int migrated = 0;
 
-    for (int cy = 0; cy < chunks.Length; cy++)
+    for (int i = 0; i < len; i++)
     {
-      IWorldChunk chunk = chunks[cy];
-      if (chunk == null)
+      int id = data[i];
+      if (id == 0)
         continue;
-      chunk.Unpack();
-      IChunkBlocks data = chunk.Data;
-      int len = data.Length;
 
-      for (int i = 0; i < len; i++)
-      {
-        int id = data[i];
-        if (id == 0 || !_remap.TryGetValue(id, out RemapEntry entry))
-          continue;
+      // Resolve the live block for this id and match on its code, so renumbered ids
+      // (and the missing-block placeholders that keep their original code) are handled.
+      Block block = _sapi.World.GetBlock(id);
+      if (
+        block?.Code == null
+        || !_remap.TryGetValue(block.Code, out RemapEntry entry)
+      )
+        continue;
 
-        // index3d layout: ((y * cs) + z) * cs + x
-        int x = i % cs;
-        int z = i / cs % cs;
-        int y = i / (cs * cs);
+      // index3d layout: ((y * cs) + z) * cs + x
+      int x = i % cs;
+      int z = i / cs % cs;
+      int y = i / (cs * cs);
 
-        BlockPos pos = new(
-          chunkCoord.X * cs + x,
-          cy * cs + y,
-          chunkCoord.Y * cs + z
-        );
+      BlockPos pos = new(chunkX * cs + x, chunkY * cs + y, chunkZ * cs + z);
 
-        ReplaceBlock(ba, pos, entry);
-        migrated++;
-      }
+      ReplaceBlock(ba, pos, entry);
+      migrated++;
     }
 
-    if (migrated > 0)
-      _sapi.Logger.Notification(
-        "[smex] Migrated {0} block(s) in chunk column {1},{2}.",
-        migrated,
-        chunkCoord.X,
-        chunkCoord.Y
-      );
+    return migrated;
   }
+
+  private void LogColumn(int migrated, int chunkX, int chunkZ) =>
+    _sapi.Logger.Notification(
+      "[smex] Migrated {0} block(s) in chunk column {1},{2}.",
+      migrated,
+      chunkX,
+      chunkZ
+    );
 
   private void BuildRemapTable()
   {
-    var byCode = new Dictionary<AssetLocation, int>();
-    foreach (Block? block in _sapi.World.Blocks)
-    {
-      if (block?.Code != null)
-        byCode[block.Code] = block.BlockId;
-    }
-
     foreach (IBlockCodeMigration migration in DiscoverMigrations())
     {
       var beMigration = migration as IBlockEntityMigration;
       int count = 0;
       foreach (var (oldCode, newCode) in migration.GetRemaps(_sapi))
       {
-        if (
-          !byCode.TryGetValue(oldCode, out int oldId)
-          || oldId == 0
-          || !byCode.TryGetValue(newCode, out int newId)
-          || newId == 0
-        )
+        // GetBlock(code) resolves missing-block placeholders too (they are registered in
+        // BlocksByCode), so a null here means this world has no such legacy block — skip
+        // it, which keeps _remap empty when there is nothing to migrate.
+        if (_sapi.World.GetBlock(oldCode) == null)
           continue;
 
+        Block? newBlock = _sapi.World.GetBlock(newCode);
+        if (newBlock == null || newBlock.BlockId == 0)
+        {
+          _sapi.Logger.Warning(
+            "[smex] Migration '{0}': replacement block '{1}' is not registered; skipping.",
+            migration.Name,
+            newCode
+          );
+          continue;
+        }
+
         if (
-          _remap.TryGetValue(oldId, out RemapEntry existing)
-          && existing.NewBlockId != newId
+          _remap.TryGetValue(oldCode, out RemapEntry existing)
+          && !existing.NewBlock.Code.Equals(newCode)
         )
         {
           _sapi.Logger.Warning(
@@ -152,7 +215,12 @@ public class BlockMigrationModSystem : ModSystem
           continue;
         }
 
-        _remap[oldId] = new RemapEntry(newId, oldCode, newCode, beMigration);
+        _remap[oldCode] = new RemapEntry(
+          newBlock,
+          oldCode,
+          newCode,
+          beMigration
+        );
         count++;
       }
 
@@ -175,7 +243,7 @@ public class BlockMigrationModSystem : ModSystem
   {
     if (entry.BlockEntityMigration == null)
     {
-      ba.SetBlock(entry.NewBlockId, pos);
+      ba.SetBlock(entry.NewBlock.BlockId, pos);
       return;
     }
 
@@ -186,7 +254,7 @@ public class BlockMigrationModSystem : ModSystem
       oldBe.ToTreeAttributes(oldState);
     }
 
-    ba.SetBlock(entry.NewBlockId, pos);
+    ba.SetBlock(entry.NewBlock.BlockId, pos);
 
     if (ba.GetBlockEntity(pos) is BlockEntity newBe)
     {
