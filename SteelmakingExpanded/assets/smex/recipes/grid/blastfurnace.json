@@ -63,7 +63,7 @@
     "height": 3,
     "output": {
       "type": "block",
-      "code": "smex:blastfurnacetap-north"
+      "code": "smex:blastfurnacetap-south"
     }
   },
   {

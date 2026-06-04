@@ -124,7 +124,7 @@
     "height": 2,
     "output": {
       "type": "block",
-      "code": "smex:moltencanal-tjunction-{rock}-nes",
+      "code": "smex:moltencanal-tjunction-{rock}-esw",
       "quantity": 1
     }
   },
