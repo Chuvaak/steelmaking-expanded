@@ -64,7 +64,52 @@ public class BlockEntityGasValve : BlockEntityGasPipe
       capi.Tesselator.GetTextureSource(Block),
       new Vec3f(Block.Shape.rotateX, Block.Shape.rotateY, Block.Shape.rotateZ)
     );
+
+    // AnimatableRenderer only honours the Y component of that rotation vector;
+    // rotateX/rotateZ are silently dropped. The vertical valve variants (ud/du) place
+    // their pipe along rotateX=90, so the held "open" pose rendered flat (horizontal)
+    // while the static closed mesh — rotated by the chunk tesselator — stayed vertical,
+    // making an opening valve appear to snap sideways. Drive the full rotation through
+    // the renderer's CustomTransform instead, replicating the exact model-space rotation
+    // the tesselator bakes into a block's CompositeShape so every orientation matches.
+    if (_animatable?.animUtil.renderer is { } renderer)
+      renderer.CustomTransform = BuildShapeRotationTransform(
+        Block.Shape.rotateX,
+        Block.Shape.rotateY,
+        Block.Shape.rotateZ
+      );
+
     _animatorReady = true;
+  }
+
+  /// <summary>
+  /// Builds the model→world matrix that matches how the chunk tesselator rotates a
+  /// block's <see cref="Vintagestory.API.Common.CompositeShape"/>:
+  /// <c>T(centre) · RotateXYZ · T(-centre)</c> about the block centre (0.5, 0.5, 0.5),
+  /// with X→Y→Z applied in the same order as <c>MeshData.Rotate</c>. Assigned to the
+  /// animator renderer's <c>CustomTransform</c> so the animated pose lines up with the
+  /// static block mesh in every orientation, including the vertical ones.
+  /// </summary>
+  private static float[] BuildShapeRotationTransform(
+    float rotXDeg,
+    float rotYDeg,
+    float rotZDeg
+  )
+  {
+    float[] rotation = Mat4f.Create();
+    Mat4f.RotateXYZ(
+      rotation,
+      rotXDeg * GameMath.DEG2RAD,
+      rotYDeg * GameMath.DEG2RAD,
+      rotZDeg * GameMath.DEG2RAD
+    );
+
+    float[] transform = Mat4f.Create();
+    Mat4f.Identity(transform);
+    Mat4f.Translate(transform, transform, 0.5f, 0.5f, 0.5f);
+    Mat4f.Mul(transform, transform, rotation);
+    Mat4f.Translate(transform, transform, -0.5f, -0.5f, -0.5f);
+    return transform;
   }
 
   /// <summary>

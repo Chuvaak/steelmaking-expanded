@@ -26,7 +26,11 @@
     "*-valve-ud": { "base": "smex:gas/machines/valve", "rotateX": 90 },
     "*-valve-sn": { "base": "smex:gas/machines/valve", "rotateY": 180 },
     "*-valve-ew": { "base": "smex:gas/machines/valve", "rotateY": -90 },
-    "*-valve-du": { "base": "smex:gas/machines/valve", "rotateX": -90 }
+    "*-valve-du": {
+      "base": "smex:gas/machines/valve",
+      "rotateX": 90,
+      "rotateY": 180
+    }
   },
   "collisionboxes": [
     {
