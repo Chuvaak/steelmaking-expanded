@@ -243,7 +243,7 @@
     "ingredients": {
       "B": {
         "type": "item",
-        "code": "game:refractorybrick-fired-tier3",
+        "code": "game:burnedbrick-{brick}",
         "quantity": 2
       },
       "P": {
@@ -263,13 +263,59 @@
       }
     },
     "allowedVariants": {
+      "brick": [
+        "fire",
+        "black",
+        "brown",
+        "cream",
+        "gray",
+        "orange",
+        "red",
+        "tan"
+      ],
       "metal": ["iron", "steel"]
     },
     "width": 3,
     "height": 3,
     "output": {
       "type": "block",
-      "code": "smex:gaspipe-outlet-n"
+      "code": "smex:gaspipe-outlet-{brick}-n"
+    }
+  },
+  {
+    "name": "Gas Outlet (Refractory)",
+    "ingredientPattern": "BHB,BNB,BPB",
+    "ingredients": {
+      "B": {
+        "type": "item",
+        "code": "game:refractorybrick-fired-{tier}",
+        "quantity": 2
+      },
+      "P": {
+        "type": "block",
+        "code": "smex:gaspipe-straight-*",
+        "quantity": 1
+      },
+      "H": {
+        "type": "item",
+        "code": "game:hammer-*",
+        "isTool": true
+      },
+      "N": {
+        "type": "item",
+        "code": "game:metalnailsandstrips-{metal}",
+        "quantity": 2
+      }
+    },
+    "allowedVariants": {
+      "tier": ["tier1", "tier2", "tier3"],
+      "metal": ["iron", "steel"]
+    },
+    "width": 3,
+    "height": 3,
+    "output": {
+      "type": "block",
+      "code": "smex:gaspipe-outlet-refractory{tier}-n"
     }
   }
 ]
