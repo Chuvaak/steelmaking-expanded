@@ -483,8 +483,6 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
           if (_belowMeltingSeconds >= 30)
           {
             State = BlastFurnaceState.Firing;
-            _moltenIron = 0;
-            _moltenSlag = 0;
             _secondsAboveMelting = 0;
             _belowMeltingSeconds = 0;
             _fuelBurnSeconds = 0;
@@ -512,11 +510,11 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
               dirty = true;
             }
           }
+
+          DrainIronTap(ref dirty);
+          DrainSlagTap(ref dirty);
         }
       }
-
-      DrainIronTap(ref dirty);
-      DrainSlagTap(ref dirty);
     }
 
     if (dirty)

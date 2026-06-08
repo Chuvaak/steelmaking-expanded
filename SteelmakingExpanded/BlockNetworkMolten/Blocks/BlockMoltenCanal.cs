@@ -40,6 +40,22 @@ public class BlockMoltenCanal : BlockNetworkNode
     };
 
   /// <summary>
+  /// Disables wrench rotation while the cell holds liquid metal or has solidified —
+  /// you can't twist a fitting that's full of (or plugged by) metal. Drain or chip
+  /// it clear first. Also suppresses the "Rotate" interaction hint in that state.
+  /// </summary>
+  protected override bool CanWrenchRotate(IWorldAccessor world, BlockPos pos)
+  {
+    if (
+      world.BlockAccessor.GetBlockEntity(pos) is BlockEntityMoltenCanal be
+      && (be.HasMoltenMetal || be.Solidified)
+    )
+      return false;
+
+    return base.CanWrenchRotate(world, pos);
+  }
+
+  /// <summary>
   /// Emits incandescent block light scaled to the metal's temperature, so a hot
   /// canal lights its surroundings (same scheme as the cowper heat sink). The cell
   /// owns the threshold/scaling via <see cref="BlockEntityMoltenCanal.GlowLightLevel"/>
@@ -259,8 +275,9 @@ public class BlockMoltenCanal : BlockNetworkNode
       if (!IsFireClay(held) || held!.StackSize < SmexValues.CanalSealClayCost)
         return base.OnBlockInteractStart(world, byPlayer, blockSel);
 
-      // Don't let a player cut a line that still has liquid metal in it.
-      if (be.HasMoltenMetal)
+      // Don't let a player cut a line that still has liquid metal in it, or one
+      // that has solidified (chip it clear before sealing).
+      if (be.HasMoltenMetal || be.Solidified)
       {
         if (world.Side == EnumAppSide.Server)
           (byPlayer as IServerPlayer)?.SendIngameError(

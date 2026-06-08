@@ -15,7 +15,12 @@ public class MoltenRenderer : IRenderer
 {
   private readonly ICoreClientAPI _api;
   private readonly BlockPos _pos;
-  private readonly MeshRef _meshRef;
+
+  // One uploaded quad per footprint box. fillQuadsByLevel may list one cross-section
+  // PER fill level (e.g. the anvil mold's 10 levels); only the box for the current
+  // fill level is drawn, so the surface matches the cavity at its current height
+  // instead of the union of every level (which covered the whole block).
+  private readonly MeshRef[] _meshRefs;
   private readonly float _rotationY;
 
   // Derived from block JSON attributes.
@@ -73,14 +78,12 @@ public class MoltenRenderer : IRenderer
     _fillStartY = fillStartY;
     _fillHeightLevels = fillHeightLevels - 0.01f;
 
-    // Each box becomes one quad; pre-size the buffer to avoid reallocations.
-    MeshData combined = new(
-      4 * footprintBoxes.Length,
-      6 * footprintBoxes.Length
-    );
-
-    foreach (Cuboidf box in footprintBoxes)
+    // Upload one quad per box so OnRenderFrame can pick the single level to draw.
+    _meshRefs = new MeshRef[footprintBoxes.Length];
+    for (int i = 0; i < footprintBoxes.Length; i++)
     {
+      Cuboidf box = footprintBoxes[i];
+
       MeshData quad = QuadMeshUtil.GetQuad();
       quad.Rgba = new byte[16];
       quad.Rgba.Fill(byte.MaxValue);
@@ -117,15 +120,13 @@ public class MoltenRenderer : IRenderer
         .Values;
 
       quad.MatrixTransform(matrix);
-      combined.AddMeshData(quad);
+      _meshRefs[i] = api.Render.UploadMesh(quad);
     }
-
-    _meshRef = api.Render.UploadMesh(combined);
   }
 
   public void OnRenderFrame(float deltaTime, EnumRenderStage stage)
   {
-    if (FillRatio <= 0f || MetalStack == null)
+    if (FillRatio <= 0f || MetalStack == null || _meshRefs.Length == 0)
       return;
 
     IRenderAPI render = _api.Render;
@@ -214,7 +215,12 @@ public class MoltenRenderer : IRenderer
     shader.ViewMatrix = render.CameraMatrixOriginf;
     shader.ProjectionMatrix = render.CurrentProjectionMatrix;
 
-    render.RenderMesh(_meshRef);
+    // Draw only the cross-section at the current fill level. Single-box footprints
+    // (canals, barrels, simple molds) always resolve to box 0; multi-level molds
+    // (anvil) show the cavity shape at the surface instead of every level at once.
+    int level = (int)(FillRatio * _meshRefs.Length);
+    level = GameMath.Clamp(level, 0, _meshRefs.Length - 1);
+    render.RenderMesh(_meshRefs[level]);
     shader.Stop();
 
     render.GlEnableCullFace();
@@ -223,6 +229,7 @@ public class MoltenRenderer : IRenderer
   public void Dispose()
   {
     _api.Event.UnregisterRenderer(this, EnumRenderStage.Opaque);
-    _meshRef?.Dispose();
+    foreach (MeshRef meshRef in _meshRefs)
+      meshRef?.Dispose();
   }
 }

@@ -1,7 +1,7 @@
 {
   "ingredient": {
     "type": "item",
-    "code": "clay-*",
+    "code": "game:clay-*",
     "name": "color",
     "allowedVariants": ["blue", "fire", "red"]
   },
@@ -40,5 +40,5 @@
     ]
   ],
   "name": "Double Ingot Mold",
-  "output": { "type": "block", "code": "toolmold-{color}-raw-doubleingot" }
+  "output": { "type": "block", "code": "game:toolmold-{color}-raw-doubleingot" }
 }
