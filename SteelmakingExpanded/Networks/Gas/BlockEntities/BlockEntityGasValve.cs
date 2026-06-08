@@ -22,6 +22,7 @@ public class BlockEntityGasValve : BlockEntityGasPipe
 
   private BEBehaviorAnimatable? _animatable;
   private bool _animatorReady;
+  private string? _animatorOrientation;
 
   /// <summary>Whether the valve is currently open (passing gas).</summary>
   public bool IsOpen() => _open;
@@ -79,6 +80,7 @@ public class BlockEntityGasValve : BlockEntityGasPipe
         Block.Shape.rotateZ
       );
 
+    _animatorOrientation = Block.Variant["orientation"];
     _animatorReady = true;
   }
 
@@ -129,6 +131,14 @@ public class BlockEntityGasValve : BlockEntityGasPipe
 
     if (Api is ICoreClientAPI capi && _animatable != null)
     {
+      // Only re-init when the orientation actually changed. A network re-walk can
+      // re-exchange the valve to an equivalent orientation variant (e.g. ns<->sn);
+      // re-initing the animator every time would reset the held "open" pose to its
+      // start, making the valve appear to reset its position and re-open over and
+      // over while gas flows.
+      if (_animatorReady && _animatorOrientation == block.Variant["orientation"])
+        return;
+
       _animatorReady = false;
       InitAnimator(capi);
       ApplyValvePose();
