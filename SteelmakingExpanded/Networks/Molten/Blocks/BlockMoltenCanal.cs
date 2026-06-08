@@ -273,8 +273,7 @@ public class BlockMoltenCanal : BlockNetworkNode
       if (!IsFireClay(held) || held!.StackSize < SmexValues.CanalSealClayCost)
         return base.OnBlockInteractStart(world, byPlayer, blockSel);
 
-      // Don't let a player cut a line that still has liquid metal in it.
-      if (be.HasMoltenMetal)
+      if (be.HasMoltenMetal || be.Solidified)
       {
         if (world.Side == EnumAppSide.Server)
           (byPlayer as IServerPlayer)?.SendIngameError(
