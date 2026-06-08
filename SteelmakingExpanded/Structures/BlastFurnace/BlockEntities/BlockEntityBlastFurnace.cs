@@ -495,10 +495,10 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
             }
           }
         }
-      }
 
-      DrainIronTap(ref dirty);
-      DrainSlagTap(ref dirty);
+        DrainIronTap(ref dirty);
+        DrainSlagTap(ref dirty);
+      }
     }
 
     if (dirty)
