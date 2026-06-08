@@ -136,7 +136,10 @@ public class BlockEntityGasValve : BlockEntityGasPipe
       // re-initing the animator every time would reset the held "open" pose to its
       // start, making the valve appear to reset its position and re-open over and
       // over while gas flows.
-      if (_animatorReady && _animatorOrientation == block.Variant["orientation"])
+      if (
+        _animatorReady
+        && _animatorOrientation == block.Variant["orientation"]
+      )
         return;
 
       _animatorReady = false;

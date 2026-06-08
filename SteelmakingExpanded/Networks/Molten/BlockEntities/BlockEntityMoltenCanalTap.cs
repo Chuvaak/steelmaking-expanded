@@ -235,11 +235,8 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     // OnTesselation, which uses this.Block.Shape.rotateY), so the footprint takes
     // exactly that and nothing else. The barrel uses its own (round, ≈0) shape.
     float rotY =
-      (
-        key.StartsWith("mold:")
-          ? Block?.Shape?.rotateY
-          : block.Shape?.rotateY
-      ) ?? 0f;
+      (key.StartsWith("mold:") ? Block?.Shape?.rotateY : block.Shape?.rotateY)
+      ?? 0f;
     rotY *= GameMath.DEG2RAD;
 
     _contentRenderer = new MoltenRenderer(

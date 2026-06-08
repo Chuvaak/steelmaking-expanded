@@ -406,12 +406,7 @@ public abstract class BlockNetworkNode : Block, IWrenchOrientable
     CollisionBoxes is { Length: 1 } boxes && IsFullCubeBox(boxes[0]);
 
   private static bool IsFullCubeBox(Cuboidf b) =>
-    b.X1 <= 0
-    && b.Y1 <= 0
-    && b.Z1 <= 0
-    && b.X2 >= 1
-    && b.Y2 >= 1
-    && b.Z2 >= 1;
+    b.X1 <= 0 && b.Y1 <= 0 && b.Z1 <= 0 && b.X2 >= 1 && b.Y2 >= 1 && b.Z2 >= 1;
 
   /// <summary>
   /// Whether a wrench can rotate this block at <paramref name="pos"/> right now.
