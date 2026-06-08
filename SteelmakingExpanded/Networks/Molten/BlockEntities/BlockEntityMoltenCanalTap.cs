@@ -226,7 +226,21 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
       out float baseFillStartY,
       out float fillHeightLevels
     );
-    float rotY = (block.Shape?.rotateY ?? 0f) * GameMath.DEG2RAD;
+    // Rotate the molten-surface footprint to match how the content mesh is drawn.
+    // For a parked MOLD, vanilla authors fillQuadsByLevel in the mold's FINAL
+    // (already shape-rotated) world orientation, so they must NOT be re-rotated by
+    // the mold's own Shape.rotateY (e.g. the anvil's 270 — doing so rendered the
+    // metal surface perpendicular to the mold). The mold mesh only takes the tap's
+    // facing rotation on top of its baked shape (see _moldMesh.Rotate in
+    // OnTesselation, which uses this.Block.Shape.rotateY), so the footprint takes
+    // exactly that and nothing else. The barrel uses its own (round, ≈0) shape.
+    float rotY =
+      (
+        key.StartsWith("mold:")
+          ? Block?.Shape?.rotateY
+          : block.Shape?.rotateY
+      ) ?? 0f;
+    rotY *= GameMath.DEG2RAD;
 
     _contentRenderer = new MoltenRenderer(
       Pos,
