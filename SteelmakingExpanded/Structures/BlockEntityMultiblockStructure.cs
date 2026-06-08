@@ -209,11 +209,7 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
           "incomplete",
           GetIncompleteMessage(missingCount)
         );
-        _highlightedStructure.HighlightIncompleteParts(
-          Api.World,
-          byPlayer,
-          Pos
-        );
+        HighlightIncompleteSafe(_highlightedStructure, byPlayer);
       }
       else
       {
@@ -222,6 +218,78 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
         _highlightedStructure = null;
       }
     }
+  }
+
+  /// <summary>
+  /// Crash-safe replacement for vanilla <see cref="MultiblockStructure.HighlightIncompleteParts"/>.
+  /// The vanilla method tints each empty slot with <c>SearchBlocks(wantedCode)[0]</c>;
+  /// when a wanted (possibly wildcard) code resolves to no registered block, that
+  /// indexes an empty array and throws <see cref="System.IndexOutOfRangeException"/>.
+  /// Because this runs from a render-stage interaction, the exception is a critical
+  /// mod error that aborts the whole interaction — so the build outline silently
+  /// never appears. This mirrors the vanilla logic but falls back to a neutral tint
+  /// for any slot whose wanted block cannot be resolved.
+  /// </summary>
+  private void HighlightIncompleteSafe(
+    MultiblockStructure structure,
+    IPlayer player
+  )
+  {
+    var offsets = structure.TransformedOffsets;
+    if (offsets == null)
+      return;
+
+    // Vanilla keeps its number -> code map private, so rebuild it from the public
+    // BlockNumbers dictionary to learn what block each offset slot wants.
+    var codeByNumber = new Dictionary<int, AssetLocation>();
+    foreach (var kv in structure.BlockNumbers)
+      codeByNumber[kv.Value] = kv.Key;
+
+    var positions = new List<BlockPos>();
+    var colors = new List<int>();
+
+    foreach (var offset in offsets)
+    {
+      if (!codeByNumber.TryGetValue(offset.W, out AssetLocation? wanted))
+        continue;
+
+      Block actual = Api.World.BlockAccessor.GetBlockRaw(
+        Pos.X + offset.X,
+        Pos.InternalY + offset.Y,
+        Pos.Z + offset.Z
+      );
+      if (WildcardUtil.Match(wanted, actual.Code))
+        continue;
+
+      positions.Add(new BlockPos(offset.X, offset.Y, offset.Z).Add(Pos));
+
+      if (actual.Id != 0)
+      {
+        // A wrong solid block occupies the slot — vanilla tints these red.
+        colors.Add(ColorUtil.ColorFromRgba(215, 94, 94, 0x60));
+        continue;
+      }
+
+      // Empty slot: tint with the wanted block's color when it resolves, otherwise
+      // fall back to a neutral blue instead of crashing on an empty SearchBlocks.
+      Block[] matches = Api.World.SearchBlocks(wanted);
+      if (matches.Length == 0)
+      {
+        colors.Add(ColorUtil.ColorFromRgba(94, 94, 215, 0x60));
+        continue;
+      }
+
+      int color = matches[0].GetColor(Api as ICoreClientAPI, Pos) & 0xFFFFFF;
+      color |= 0x60 << 24;
+      colors.Add(color);
+    }
+
+    Api.World.HighlightBlocks(
+      player,
+      MultiblockStructure.HighlightSlotId,
+      positions,
+      colors
+    );
   }
 
   private static readonly AssetLocation AirCode = new("game:air");
