@@ -1,6 +1,6 @@
 [
   {
-    "name": "Cornish Air Blower",
+    "name": "Air Blower",
     "ingredientPattern": "_H_,PGP,RPR",
     "ingredients": {
       "P": {
@@ -11,12 +11,12 @@
       "R": {
         "type": "item",
         "code": "game:rod-{metal}",
-        "quantity": 1
+        "quantity": 2
       },
       "G": {
         "type": "item",
         "code": "game:gear-rusty",
-        "quantity": 1
+        "quantity": 2
       },
       "H": {
         "type": "item",

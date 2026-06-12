@@ -60,8 +60,8 @@
       },
       "G": {
         "type": "item",
-        "code": "game:jonasframes-gearbox02",
-        "quantity": 2
+        "code": "game:gear-rusty",
+        "quantity": 16
       },
       "A": {
         "type": "block",

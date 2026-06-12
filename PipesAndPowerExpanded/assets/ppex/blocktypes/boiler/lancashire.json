@@ -32,19 +32,19 @@
               {
                 "type": "item",
                 "code": "metalplate-steel",
-                "quantity": 36
+                "quantity": 10
               },
               {
                 "type": "item",
                 "code": "metalnailsandstrips-{metal}",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
-                "quantity": 18
+                "quantity": 8
               },
               {
                 "type": "item",
                 "code": "game:burnedbrick-fire",
-                "quantity": 64
+                "quantity": 12
               }
             ],
             "addElements": ["Root/BaseExtension"]
@@ -54,21 +54,19 @@
               {
                 "type": "item",
                 "code": "metalplate-steel",
-                "quantity": 18
+                "quantity": 8
               },
               {
                 "type": "item",
-                "code": "rod-{metal}",
-                "allowedVariants": ["iron", "steel"],
-                "storeWildCard": "metal",
-                "quantity": 12
+                "code": "rod-steel",
+                "quantity": 4
               },
               {
                 "type": "item",
                 "code": "metalnailsandstrips-{metal}",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
-                "quantity": 12
+                "quantity": 8
               }
             ],
             "addElements": ["Root/Flues"]
@@ -78,21 +76,24 @@
               {
                 "type": "item",
                 "code": "metalplate-steel",
+                "quantity": 16
+              },
+              {
+                "type": "item",
+                "code": "metalnailsandstrips-{metal}",
+                "allowedVariants": ["iron", "steel"],
+                "storeWildCard": "metal",
+                "quantity": 8
+              },
+              {
+                "type": "item",
+                "code": "rod-steel",
+                "quantity": 6
+              },
+              {
+                "type": "item",
+                "code": "game:burnedbrick-fire",
                 "quantity": 48
-              },
-              {
-                "type": "item",
-                "code": "metalnailsandstrips-{metal}",
-                "allowedVariants": ["iron", "steel"],
-                "storeWildCard": "metal",
-                "quantity": 24
-              },
-              {
-                "type": "item",
-                "code": "metalnailsandstrips-{metal}",
-                "allowedVariants": ["iron", "steel"],
-                "storeWildCard": "metal",
-                "quantity": 12
               }
             ],
             "addElements": ["Root/Casing"]

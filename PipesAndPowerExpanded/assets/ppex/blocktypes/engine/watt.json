@@ -24,39 +24,35 @@
         "brokenDropsRatio": 0.8,
         "stages": [
           {
-            "requireStacks": [
-              {
-                "type": "item",
-                "code": "metalplate-*",
-                "allowedVariants": ["iron", "steel"],
-                "storeWildCard": "metal",
-                "quantity": 24
-              },
-              {
-                "type": "item",
-                "code": "rod-*",
-                "allowedVariants": ["iron", "steel"],
-                "storeWildCard": "metal",
-                "quantity": 8
-              }
-            ],
             "addElements": ["Root/Cylinder"]
           },
           {
             "requireStacks": [
               {
                 "type": "item",
-                "code": "metalplate-*",
+                "code": "metalplate-{metal}",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
-                "quantity": 12
+                "quantity": 2
               },
               {
                 "type": "item",
-                "code": "rod-*",
+                "code": "rod-{metal}",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
-                "quantity": 12
+                "quantity": 4
+              },
+              {
+                "type": "item",
+                "code": "metalnailsandstrips-{metal}",
+                "allowedVariants": ["iron", "steel"],
+                "storeWildCard": "metal",
+                "quantity": 4
+              },
+              {
+                "type": "item",
+                "code": "game:burnedbrick-fire",
+                "quantity": 36
               }
             ],
             "addElements": ["Root/BeamSupport"]
@@ -65,17 +61,17 @@
             "requireStacks": [
               {
                 "type": "item",
-                "code": "metalplate-*",
-                "allowedVariants": ["iron", "steel"],
-                "storeWildCard": "metal",
-                "quantity": 16
-              },
-              {
-                "type": "item",
-                "code": "rod-*",
+                "code": "rod-{metal}",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 8
+              },
+              {
+                "type": "item",
+                "code": "metalnailsandstrips-{metal}",
+                "allowedVariants": ["iron", "steel"],
+                "storeWildCard": "metal",
+                "quantity": 4
               }
             ],
             "addElements": ["Root/Beam"]
@@ -84,17 +80,24 @@
             "requireStacks": [
               {
                 "type": "item",
-                "code": "metalplate-*",
+                "code": "metalplate-{metal}",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
-                "quantity": 8
+                "quantity": 2
               },
               {
                 "type": "item",
-                "code": "rod-*",
+                "code": "rod-{metal}",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
-                "quantity": 6
+                "quantity": 4
+              },
+              {
+                "type": "item",
+                "code": "metalnailsandstrips-{metal}",
+                "allowedVariants": ["iron", "steel"],
+                "storeWildCard": "metal",
+                "quantity": 2
               }
             ],
             "addElements": ["Root/Piston"]
@@ -103,17 +106,17 @@
             "requireStacks": [
               {
                 "type": "item",
-                "code": "metalplate-*",
+                "code": "rod-{metal}",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
-                "quantity": 6
+                "quantity": 4
               },
               {
                 "type": "item",
-                "code": "metalnailsandstrips-*",
+                "code": "metalnailsandstrips-{metal}",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
-                "quantity": 6
+                "quantity": 2
               }
             ],
             "addElements": ["Root/ControlPiston"]
@@ -122,17 +125,10 @@
             "requireStacks": [
               {
                 "type": "item",
-                "code": "rod-*",
+                "code": "rod-{metal}",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
-                "quantity": 8
-              },
-              {
-                "type": "item",
-                "code": "metalnailsandstrips-*",
-                "allowedVariants": ["iron", "steel"],
-                "storeWildCard": "metal",
-                "quantity": 8
+                "quantity": 4
               }
             ],
             "addElements": ["Root/Rod"]

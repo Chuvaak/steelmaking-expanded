@@ -1,7 +1,7 @@
 [
   {
     "name": "Fluid Intake",
-    "ingredientPattern": "_H_,PIP,_N_",
+    "ingredientPattern": "_H_,PIP,NPN",
     "ingredients": {
       "I": {
         "type": "block",
@@ -36,23 +36,31 @@
   },
   {
     "name": "Steam Condenser",
-    "ingredientPattern": "_I_,CHC,CIC",
+    "ingredientPattern": "_H_,IPI,NP_",
     "ingredients": {
       "I": {
         "type": "block",
         "code": "ppex:pipe-straight-*",
         "quantity": 1
       },
-      "C": {
+      "P": {
         "type": "item",
-        "code": "game:metalplate-copper",
+        "code": "game:metalplate-{metal}",
         "quantity": 1
       },
       "H": {
         "type": "item",
         "code": "game:hammer-*",
         "isTool": true
+      },
+      "N": {
+        "type": "item",
+        "code": "game:metalnailsandstrips-{metal}",
+        "quantity": 2
       }
+    },
+    "allowedVariants": {
+      "metal": ["iron", "steel"]
     },
     "width": 3,
     "height": 3,
@@ -63,17 +71,17 @@
   },
   {
     "name": "Cornish Boiler",
-    "ingredientPattern": "PHP,BIB,PNP",
+    "ingredientPattern": "PHP,BNB",
     "ingredients": {
       "P": {
         "type": "item",
         "code": "game:metalplate-{metal}",
-        "quantity": 2
+        "quantity": 1
       },
       "B": {
         "type": "item",
         "code": "game:burnedbrick-fire",
-        "quantity": 4
+        "quantity": 2
       },
       "I": {
         "type": "block",
@@ -83,7 +91,7 @@
       "N": {
         "type": "item",
         "code": "game:metalnailsandstrips-{metal}",
-        "quantity": 4
+        "quantity": 2
       },
       "H": {
         "type": "item",
@@ -95,7 +103,7 @@
       "metal": ["iron", "steel"]
     },
     "width": 3,
-    "height": 3,
+    "height": 2,
     "output": {
       "type": "block",
       "code": "ppex:boilercornish-north"
@@ -103,22 +111,17 @@
   },
   {
     "name": "Lancashire Boiler",
-    "ingredientPattern": "PHP,BIB,PRP",
+    "ingredientPattern": "BHB,PRP",
     "ingredients": {
       "P": {
         "type": "item",
         "code": "game:metalplate-steel",
-        "quantity": 2
+        "quantity": 1
       },
       "B": {
         "type": "item",
         "code": "game:burnedbrick-fire",
-        "quantity": 4
-      },
-      "I": {
-        "type": "block",
-        "code": "ppex:pipe-straight-*",
-        "quantity": 1
+        "quantity": 2
       },
       "R": {
         "type": "item",
@@ -132,7 +135,7 @@
       }
     },
     "width": 3,
-    "height": 3,
+    "height": 2,
     "output": {
       "type": "block",
       "code": "ppex:boilerlancashire-north"
@@ -140,36 +143,38 @@
   },
   {
     "name": "Cornish Engine",
-    "ingredientPattern": "RHR,PGP,PIP",
+    "ingredientPattern": "GHR,PNP,PIP",
     "ingredients": {
       "P": {
         "type": "item",
-        "code": "game:metalplate-{metal}",
+        "code": "game:metalplate-steel",
         "quantity": 1
       },
       "R": {
         "type": "item",
-        "code": "game:rod-{metal}",
-        "quantity": 2
+        "code": "game:rod-steel",
+        "quantity": 4
       },
       "G": {
         "type": "item",
         "code": "game:gear-rusty",
-        "quantity": 2
+        "quantity": 4
       },
       "I": {
         "type": "block",
-        "code": "ppex:pipe-straight-*",
-        "quantity": 1
+        "code": "ppex:pipe-straight-*-steel",
+        "quantity": 2
       },
       "H": {
         "type": "item",
         "code": "game:hammer-*",
         "isTool": true
+      },
+      "N": {
+        "type": "item",
+        "code": "game:metalnailsandstrips-steel",
+        "quantity": 4
       }
-    },
-    "allowedVariants": {
-      "metal": ["iron", "steel"]
     },
     "width": 3,
     "height": 3,
@@ -180,7 +185,7 @@
   },
   {
     "name": "Watt Engine",
-    "ingredientPattern": "GHG,PRP,PIP",
+    "ingredientPattern": "_H_,PRP,PIP",
     "ingredients": {
       "P": {
         "type": "item",
@@ -219,8 +224,8 @@
     }
   },
   {
-    "name": "Cornish Fluid Pump",
-    "ingredientPattern": "_H_,PGP,IPI",
+    "name": "Fluid Pump",
+    "ingredientPattern": "_HG,PIP,RIR",
     "ingredients": {
       "P": {
         "type": "item",
@@ -241,6 +246,11 @@
         "type": "item",
         "code": "game:hammer-*",
         "isTool": true
+      },
+      "R": {
+        "type": "item",
+        "code": "game:rod-{metal}",
+        "quantity": 2
       }
     },
     "allowedVariants": {
@@ -254,13 +264,13 @@
     }
   },
   {
-    "name": "Cornish MP Generator",
+    "name": "Mechanical Power Generator",
     "ingredientPattern": "_H_,GAG,PRP",
     "ingredients": {
       "P": {
         "type": "item",
         "code": "game:metalplate-{metal}",
-        "quantity": 1
+        "quantity": 2
       },
       "R": {
         "type": "item",
@@ -270,7 +280,7 @@
       "G": {
         "type": "item",
         "code": "game:gear-rusty",
-        "quantity": 1
+        "quantity": 2
       },
       "A": {
         "type": "block",
