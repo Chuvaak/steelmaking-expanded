@@ -20,7 +20,7 @@ a hard dependency of [Steelmaking Expanded](../SteelmakingExpanded/README.md).
   construction stages over a fire-brick firebox, burn coal piles, and explode if left
   over-pressured.
 - **Steam engines** — the low-pressure **Watt** engine (2–4 atm) and high-pressure
-  **Cornish** engine (6–8 atm, three control-rod settings). Each engine drives one
+  **Cornish** engine (6–8 atm, three steam throttle settings). Each engine drives one
   attached sub-machine:
   - **MP Generator** — constant-power axle drive for vanilla machines,
   - **Fluid Pump** — moves water into a pressurised output line (boiler feed),
