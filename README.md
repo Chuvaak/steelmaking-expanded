@@ -10,11 +10,6 @@ steel making:
 | [Pipes and Power Expanded](PipesAndPowerExpanded/README.md) | `ppex`  | Pipe networks (gas + water), boilers, steam engines and their sub-machines (MP generator, fluid pump).        |
 | [Steelmaking Expanded](SteelmakingExpanded/README.md)     | `smex`  | Blast furnace, cowper stoves, molten-metal canals and casting, Bessemer converter. Depends on both above.     |
 
-![Diagram for the iron/steel production process](docs/smex/process.png)
-
-For the full survival production flow — what feeds what, gating, and tunables — see
-[`docs/smex/graph.txt`](docs/smex/graph.txt).
-
 ## Repository layout
 
 | Path                      | Purpose                                                                |
