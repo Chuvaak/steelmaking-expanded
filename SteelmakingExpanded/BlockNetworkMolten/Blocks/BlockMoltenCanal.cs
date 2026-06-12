@@ -230,10 +230,7 @@ public class BlockMoltenCanal : BlockNetworkNode
       if (!be.IsHardened)
       {
         if (world.Side == EnumAppSide.Server)
-          (byPlayer as IServerPlayer)?.SendIngameError(
-            "canaltoohot",
-            "smex:canal-err-toohot"
-          );
+          (byPlayer as IServerPlayer)?.SendIngameError("smex-canaltoohot");
         return true;
       }
 
@@ -271,10 +268,7 @@ public class BlockMoltenCanal : BlockNetworkNode
       if (be.HasMoltenMetal || be.Solidified)
       {
         if (world.Side == EnumAppSide.Server)
-          (byPlayer as IServerPlayer)?.SendIngameError(
-            "canalnotempty",
-            "smex:canal-err-sealnotempty"
-          );
+          (byPlayer as IServerPlayer)?.SendIngameError("smex-canalnotempty");
         return false;
       }
 

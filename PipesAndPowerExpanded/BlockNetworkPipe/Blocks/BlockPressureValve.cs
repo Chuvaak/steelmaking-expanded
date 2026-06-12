@@ -18,7 +18,7 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 [EntityRegister]
 public class BlockPressureValve : BlockValve
 {
-  public override Dictionary<string, string[]> AllowedOrientations =>
+  public override Dictionary<string, string[]> AllowedOrientations { get; } =
     new() { { "pressurevalve", ["ns", "we", "ud", "sn", "ew", "du"] } };
 
   public override bool IsNetworkEndPoint => true;

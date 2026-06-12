@@ -41,16 +41,7 @@ public abstract class BlockBoiler
     BlockPos boilerPos,
     string attr,
     Vec3i fallback
-  )
-  {
-    var node = Attributes?[attr];
-    Vec3i off =
-      node == null || !node.Exists
-        ? fallback
-        : new Vec3i(node["x"].AsInt(), node["y"].AsInt(), node["z"].AsInt());
-    Vec3i r = ExOrientation.RotateOffset(off, Angle);
-    return boilerPos.AddCopy(r.X, r.Y, r.Z);
-  }
+  ) => ExOrientation.WorldPosFromAttr(this, boilerPos, attr, fallback, Angle);
 
   /// <summary>
   /// World cell of the firebox slot.
@@ -74,16 +65,8 @@ public abstract class BlockBoiler
   /// World cell of the boiler's steam connector (the port filler at the top of the body); the
   /// steam pipe attaches in the cell directly above it. Rotated to the current orientation.
   /// </summary>
-  public BlockPos SteamPipeWorldPos(BlockPos boilerPos)
-  {
-    var node = Attributes?["steamConnectorOffset"];
-    Vec3i off =
-      node == null || !node.Exists
-        ? new Vec3i(0, 1, 2)
-        : new Vec3i(node["x"].AsInt(), node["y"].AsInt(), node["z"].AsInt());
-    Vec3i r = ExOrientation.RotateOffset(off, Angle);
-    return boilerPos.AddCopy(r.X, r.Y, r.Z);
-  }
+  public BlockPos SteamPipeWorldPos(BlockPos boilerPos) =>
+    OffsetWorldPos(boilerPos, "steamConnectorOffset", new Vec3i(0, 1, 2));
 
   /// <summary>
   /// World cell the animated vessel mesh is lit from. The boiler renders its whole footprint

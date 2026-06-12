@@ -67,12 +67,34 @@ public class BlockMoltenCanalTap : BlockMoltenCanal
 
       if (be.HasContent)
       {
-        var stack = be.IsBarrel ? be.RemoveBarrel() : be.RemoveMold();
-        if (!byPlayer.InventoryManager.TryGiveItemstack(stack))
-          world.SpawnItemEntity(
-            stack,
-            blockSel.Position.ToVec3d().Add(0.5, 1.0, 0.5)
+        // A mold full of still-liquid metal may only be taken into an empty
+        // hand — anywhere else in the inventory it instantly spills.
+        bool liquidMold =
+          !be.IsBarrel
+          && MoltenMoldSpill.IsLiquidContent(
+            world,
+            be.MoldMetalContent,
+            be.MoldCurrentUnits
           );
+        if (
+          liquidMold
+          && MoltenMoldSpill.DenyLiquidPickup(
+            world,
+            byPlayer,
+            be.MoldMetalContent,
+            be.MoldCurrentUnits
+          )
+        )
+          return true;
+
+        var stack = be.IsBarrel ? be.RemoveBarrel() : be.RemoveMold();
+        MoltenMoldSpill.GiveMoldStack(
+          world,
+          byPlayer,
+          stack,
+          liquidMold,
+          blockSel.Position.ToVec3d().Add(0.5, 1.0, 0.5)
+        );
       }
       else
       {
@@ -90,10 +112,7 @@ public class BlockMoltenCanalTap : BlockMoltenCanal
         }
         else if (heldStack.Block is BlockToolMold)
         {
-          (byPlayer as IServerPlayer)?.SendIngameError(
-            "moldtoosmall",
-            "smex:canal-err-moldtoosmall"
-          );
+          (byPlayer as IServerPlayer)?.SendIngameError("smex-moldtoosmall");
           return false;
         }
         else
@@ -133,7 +152,7 @@ public class BlockMoltenCanalTap : BlockMoltenCanal
     {
       new()
       {
-        ActionLangCode = "Toggle Pouring",
+        ActionLangCode = "smex:blockhelp-canal-togglepour",
         MouseButton = EnumMouseButton.Right,
         HotKeyCode = "sprint",
       },
@@ -150,7 +169,7 @@ public class BlockMoltenCanalTap : BlockMoltenCanal
       result.Add(
         new WorldInteraction
         {
-          ActionLangCode = "Place Barrel or Mold",
+          ActionLangCode = "smex:blockhelp-tap-placecontent",
           MouseButton = EnumMouseButton.Right,
           HotKeyCode = "sneak",
           Itemstacks = _acceptedContents,
@@ -162,7 +181,7 @@ public class BlockMoltenCanalTap : BlockMoltenCanal
       result.Add(
         new WorldInteraction
         {
-          ActionLangCode = "Remove Barrel or Mold",
+          ActionLangCode = "smex:blockhelp-tap-removecontent",
           MouseButton = EnumMouseButton.Right,
           HotKeyCode = "sneak",
         }

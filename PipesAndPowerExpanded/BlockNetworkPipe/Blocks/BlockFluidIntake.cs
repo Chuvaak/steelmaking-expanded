@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using ExpandedLib.BlockNetworks;
 using ExpandedLib.EntityRegistry;
 using Vintagestory.API.Common;
-using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 
 namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
@@ -12,7 +11,7 @@ public class BlockFluidIntake : BlockNetworkNode
 {
   public override string NetworkType => "pipe";
 
-  public override Dictionary<string, string[]> AllowedOrientations =>
+  public override Dictionary<string, string[]> AllowedOrientations { get; } =
     new() { { "fluidintake", ["s", "n", "e", "w"] } };
 
   protected override string GetFallbackOrientation(string? type) => "s";
@@ -44,7 +43,9 @@ public class BlockFluidIntake : BlockNetworkNode
     );
     if (below.LiquidCode != "water")
     {
-      failureCode = Lang.Get("ppex:fluidintake-placefail-nowater");
+      // Shown to the player as Lang.Get("placefailure-" + code), so this must be
+      // a plain code with a matching "game:placefailure-…" lang entry, not text.
+      failureCode = "ppex-fluidintake-nowater";
       return false;
     }
 

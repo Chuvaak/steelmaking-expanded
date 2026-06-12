@@ -74,7 +74,7 @@ public abstract class BlockNetworkNode
   {
     if (!world.BlockAccessor.GetBlock(blockSel.Position).IsReplacableBy(this))
     {
-      failureCode = "notreplacable";
+      failureCode = "notreplaceable";
       return false;
     }
     if (Type == null)
@@ -88,7 +88,9 @@ public abstract class BlockNetworkNode
     );
     if (safeChoices.Length == 0)
     {
-      failureCode = "Cannot find possible orientation!";
+      // Shown to the player as Lang.Get("placefailure-" + code), so this must be
+      // a plain code with a matching "game:placefailure-…" lang entry, not text.
+      failureCode = "exlib-noorientation";
       return false;
     }
 
@@ -125,13 +127,18 @@ public abstract class BlockNetworkNode
       return true;
     }
 
-    return base.TryPlaceBlock(
+    bool placed = base.TryPlaceBlock(
       world,
       byPlayer,
       itemstack,
       blockSel,
       ref failureCode
     );
+    // A failed placement never reaches OnBlockPlaced (which consumes the entry), so
+    // drop it here — otherwise the static store grows for every refused placement.
+    if (!placed)
+      _tempOrientationsStore.TryRemove(blockSel.Position, out _);
+    return placed;
   }
 
   /// <summary>
@@ -450,15 +457,6 @@ public abstract class BlockNetworkNode
   #endregion
 
   #region Interaction help
-  /// <summary>Wrench item stacks for the rotate interaction hint, resolved once.</summary>
-  private static ItemStack[]? _wrenchStacks;
-
-  private static ItemStack[] GetWrenchStacks(IWorldAccessor world) =>
-    _wrenchStacks ??= world
-      .SearchItems(new AssetLocation("wrench-*"))
-      .Select(item => new ItemStack(item))
-      .ToArray();
-
   /// <summary>
   /// Appends the "Rotate" wrench hint to the placed-block help, but only when the
   /// block can actually be rotated here (more than one valid orientation, and any
@@ -480,9 +478,9 @@ public abstract class BlockNetworkNode
       .Append(
         new WorldInteraction
         {
-          ActionLangCode = "Rotate",
+          ActionLangCode = "exlib:blockhelp-rotate",
           MouseButton = EnumMouseButton.Right,
-          Itemstacks = GetWrenchStacks(world),
+          Itemstacks = ExItems.WrenchStacks(world),
         }
       )
       .ToArray();
@@ -693,6 +691,14 @@ public abstract class BlockNetworkNode
 
   public override ItemStack OnPickBlock(IWorldAccessor world, BlockPos pos) =>
     GetDrops(world, pos, null)[0];
+
+  /// <summary>
+  /// Includes the node's material/rock/brick variant in its display name (e.g.
+  /// "Iron Piping (Straight)", "Granite Molten Canal"). The placed-block name
+  /// goes through <c>OnPickBlock</c> → <c>GetName</c>, so this covers both.
+  /// </summary>
+  public override string GetHeldItemName(ItemStack itemStack) =>
+    ExBlockNames.Decorate(this, base.GetHeldItemName(itemStack));
   #endregion
 
   #region Abstracts and virtuals

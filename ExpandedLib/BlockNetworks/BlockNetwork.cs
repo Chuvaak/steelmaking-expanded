@@ -118,5 +118,14 @@ public abstract class BlockNetwork(BlockNetworkModSystem system)
   /// </summary>
   public virtual void InheritStateFrom(BlockNetwork source) { }
 
+  /// <summary>
+  /// Called by the <see cref="BlockNetworkModSystem"/> after this network's
+  /// <see cref="Nodes"/> set changed (node added/removed, networks merged, fragment
+  /// built, rebuild). Override to drop caches derived from the node set (e.g. the
+  /// pipe network's weakest-pipe burst rating) instead of recomputing them per call.
+  /// Default: no-op.
+  /// </summary>
+  public virtual void OnTopologyChanged() { }
+
   #endregion
 }

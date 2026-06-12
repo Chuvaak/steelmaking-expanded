@@ -25,20 +25,36 @@ public static class PistonCycleSounds
   /// <summary>
   /// Plays the stroke sounds for any thresholds the cycle animation crossed between
   /// <paramref name="lastFrame"/> and <paramref name="currentFrame"/> this tick (handling the
-  /// loop wrap), at <paramref name="pos"/>.
+  /// loop wrap), at <paramref name="pos"/>. <paramref name="volumeMul"/> scales the stroke
+  /// loudness (and carry range) so a hard-driven engine sounds louder and more violent.
   /// </summary>
   public static void Fire(
     IWorldAccessor world,
     BlockPos pos,
     float lastFrame,
     float currentFrame,
-    int totalFrames
+    int totalFrames,
+    float volumeMul = 1f
   )
   {
     if (Crossed(lastFrame, currentFrame, totalFrames, UpFrame))
-      ExSounds.PlayLocal(world, pos, ExSounds.TorchUnequip, 1.5f, 16f, true);
+      ExSounds.PlayLocal(
+        world,
+        pos,
+        ExSounds.TorchUnequip,
+        1.5f * volumeMul,
+        16f * volumeMul,
+        true
+      );
     if (Crossed(lastFrame, currentFrame, totalFrames, DownFrame))
-      ExSounds.PlayLocal(world, pos, ExSounds.AnvilMergeHit, 0.2f, 16f, true);
+      ExSounds.PlayLocal(
+        world,
+        pos,
+        ExSounds.AnvilMergeHit,
+        0.2f * volumeMul,
+        16f * volumeMul,
+        true
+      );
   }
 
   /// <summary>True if the cycle animation crossed the piston's top-of-stroke frame

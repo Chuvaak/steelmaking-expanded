@@ -12,7 +12,8 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 /// <summary>
 /// A pipe node that draws water from the world. Once a second it scans the cube
 /// directly below itself; it only feeds water into the network (<see cref="CanIntake"/>)
-/// when that whole cube is water AND no other intake sits within the exclusion range
+/// when that whole cube is water (the frozen pond skin on the top-layer edges is tolerated,
+/// but not directly below the intake) AND no other intake sits within the exclusion range
 /// — the latter stops players packing intakes onto one pond. The status is re-checked
 /// on a timer so relocating intakes (or draining the pond) updates it live, and it is
 /// surfaced in the block info HUD.
@@ -47,10 +48,8 @@ public class BlockEntityFluidIntake : BlockEntityNetworkNode
     if (NetworkSystem?.GetNetworkAt(Pos) is not PipeNetwork net)
       return 0f;
 
-    float before = net.State?.Volume ?? 0f;
     // Gravity-fed source head; the output-side pressure is set by the pump's engine.
-    net.TryProduceLiquid(amount, temperature, 1f, ba);
-    return (net.State?.Volume ?? 0f) - before;
+    return net.ProduceLiquidMeasured(amount, temperature, 1f, ba);
   }
 
   public override void Initialize(ICoreAPI api)
@@ -76,7 +75,12 @@ public class BlockEntityFluidIntake : BlockEntityNetworkNode
     }
   }
 
-  /// <summary>True when every cell of the <c>depth³</c> cube directly below is water.</summary>
+  /// <summary>
+  /// True when every cell of the <c>depth³</c> cube directly below is water, with one
+  /// concession: the eight outer cells of the top layer may be frozen over (ice) and still
+  /// count — a skin of lake ice on the pond surface doesn't stop the intake. The cell
+  /// directly below the intake must stay liquid, so once it freezes the intake stops drawing.
+  /// </summary>
   private bool ScanWaterBelow()
   {
     var ba = Api.World.BlockAccessor;
@@ -88,8 +92,14 @@ public class BlockEntityFluidIntake : BlockEntityNetworkNode
     for (int dz = -half; dz <= half; dz++)
     {
       p.Set(Pos.X + dx, Pos.Y + dy, Pos.Z + dz);
-      if (ba.GetBlock(p, BlockLayersAccess.Fluid).LiquidCode != "water")
-        return false;
+      if (ba.GetBlock(p, BlockLayersAccess.Fluid).LiquidCode == "water")
+        continue;
+      // The top-layer outer cells may be frozen over; everything else (and the cell
+      // directly below the intake) must be liquid water.
+      bool topOuter = dy == -1 && (dx != 0 || dz != 0);
+      if (topOuter && ba.GetBlock(p).BlockMaterial == EnumBlockMaterial.Ice)
+        continue;
+      return false;
     }
     return true;
   }

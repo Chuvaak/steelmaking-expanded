@@ -25,10 +25,7 @@
       }
     },
     "allowedVariants": {
-      "metal": [
-        "iron",
-        "steel"
-      ]
+      "metal": ["iron", "steel"]
     },
     "width": 3,
     "height": 3,
@@ -73,16 +70,13 @@
       }
     },
     "allowedVariants": {
-      "metal": [
-        "iron",
-        "steel"
-      ]
+      "metal": ["iron", "steel"]
     },
     "width": 3,
     "height": 3,
     "output": {
       "type": "block",
-      "code": "smex:bessemertransmission-north"
+      "code": "smex:convertertransmission-north"
     }
   },
   {
@@ -116,16 +110,13 @@
       }
     },
     "allowedVariants": {
-      "metal": [
-        "iron",
-        "steel"
-      ]
+      "metal": ["iron", "steel"]
     },
     "width": 3,
     "height": 3,
     "output": {
       "type": "block",
-      "code": "smex:bessemer-gasintake-s"
+      "code": "smex:converter-intake-north"
     }
   }
 ]

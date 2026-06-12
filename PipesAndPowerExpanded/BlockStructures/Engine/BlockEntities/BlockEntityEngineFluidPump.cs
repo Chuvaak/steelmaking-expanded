@@ -33,7 +33,7 @@ public class BlockEntityEngineFluidPump : BlockEntityEngineSubmachine
 
     // Output pressure tracks the driving engine's inlet steam pressure × efficiency, and
     // the volume scales with the engine's power fraction (throttle / tier).
-    float power01 = power / Math.Max(0.01f, Engine?.MaxPower ?? 1f);
+    float power01 = power * 3 / Math.Max(0.01f, Engine?.MaxPower ?? 1f);
     float pressure =
       (Engine?.InletPressure ?? 0f) * PpexValues.SteamEngineEfficiency;
     float amount = PpexValues.PumpWaterPerSecond * power01 * dt;
@@ -73,6 +73,5 @@ public class BlockEntityEngineFluidPump : BlockEntityEngineSubmachine
   private static float OutputFreeCapacity(PipeNetwork? net) =>
     net == null
       ? 0f
-      : net.Nodes.Count * PpexValues.LitresPerPipe
-        - (net.State?.Volume ?? 0f);
+      : net.Nodes.Count * PpexValues.LitresPerPipe - (net.State?.Volume ?? 0f);
 }

@@ -34,12 +34,9 @@ public class BlockEntityHeatSink : BlockEntity
     }
   }
 
-  private byte GetLightLevel(float temp)
-  {
-    if (temp < 500f)
-      return 0;
-    return (byte)GameMath.Clamp((temp - 500f) / 30f, 0, 24);
-  }
+  // The shared incandescence scale (canals, barrels, heat sink all glow alike).
+  private static byte GetLightLevel(float temp) =>
+    BlockNetworkMolten.MoltenMetal.GlowLevel(temp);
 
   public override void ToTreeAttributes(ITreeAttribute tree)
   {

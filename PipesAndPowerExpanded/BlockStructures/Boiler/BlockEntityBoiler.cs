@@ -188,16 +188,7 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
   {
     if (BoilerBlock == null)
       return;
-
-    int angle = BoilerBlock.StructureAngle;
-    if (_structure == null || _currentAngle != angle)
-    {
-      _structure = Block.Attributes?[
-        "multiblockStructure"
-      ]?.AsObject<MultiblockStructure>();
-      _structure?.InitForUse(angle);
-      _currentAngle = angle;
-    }
+    SetStructureAngle(BoilerBlock.StructureAngle);
   }
 
   protected override string GetIncompleteMessage(int missingCount) =>
@@ -361,6 +352,12 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
   /// <summary>Seconds the boiler has sat fully choked while still boiling (drives the explosion).</summary>
   private float _overpressureSeconds;
 
+  /// <summary>Seconds the boiler has sat choked — fire lit but its exhaust outlet backed up so it can't expel exhaust (drives snuffing the fuel pile).</summary>
+  private float _chokedSeconds;
+
+  /// <summary>Whether the boiler is currently choked (can't expel exhaust). Synced for the HUD line.</summary>
+  private bool _choked;
+
   protected override void OnProductionTick(float dt)
   {
     if (!IsConstructed)
@@ -385,6 +382,26 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
       (exhaustNet?.State?.Pressure ?? 0f)
       >= PpexValues.ExhaustMaxOutputPressure;
     bool burning = fireOn && !draughtBlocked;
+
+    // A boiler whose fire is lit but whose exhaust outlet is backed up to the vent-pressure
+    // cap can't expel its combustion gas — it's choked. Sit choked too long and the fuel
+    // pile is snuffed out (the same way a blocked flue would smother the fire).
+    _choked = fireOn && draughtBlocked;
+    if (_choked)
+    {
+      _chokedSeconds += dt;
+      if (_chokedSeconds >= PpexValues.BoilerChokeExtinguishSeconds)
+      {
+        pile?.Extinguish();
+        ExSounds.Play(Api, fuelPos, ExSounds.Extinguish, 0.7f);
+        _chokedSeconds = 0f;
+        _choked = false;
+      }
+    }
+    else
+    {
+      _chokedSeconds = 0f;
+    }
 
     PipeNetwork? waterNet = ConnectedNetwork(BlockFacing.DOWN);
     if (waterNet != null && _waterVolume < MaxWaterIntakeFill)
@@ -486,9 +503,9 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
         _overpressureSeconds = 0f;
     }
 
-    if (burning && _state != BoilerState.Idle && exhaustNet != null)
+    if (burning && exhaustNet != null)
       exhaustNet.TryProduceGas(
-        SteamPerSecond * dt,
+        PpexValues.BoilerExhaustPerSecond * dt,
         SteamTemperature() * 0.6f,
         "Exhaust",
         ba,
@@ -579,18 +596,12 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
     if (transfer <= 0.001f)
       return false; // pipe already at/above the boiler's pressure — hold the steam in
 
-    float before = netVolume;
-    steamNet.TryProduceGas(
+    float accepted = steamNet.ProduceGasMeasured(
       transfer,
       SteamTemperature(),
       "Steam",
       ba,
       maxOutputPressure: InternalPressure
-    );
-    // TryProduceGas creates State if it was null, so read the live volume back off it.
-    float accepted = Math.Max(
-      0f,
-      (steamNet.State?.Volume ?? before) - before
     );
     if (accepted > 0f)
       _steamVolume = Math.Max(0f, _steamVolume - accepted);
@@ -969,6 +980,7 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
     tree.SetBool("burning", _burning);
     tree.SetBool("steamLeaking", _steamLeaking);
     tree.SetFloat("overpressure", _overpressureSeconds);
+    tree.SetBool("choked", _choked);
   }
 
   public override void FromTreeAttributes(
@@ -992,6 +1004,7 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
     if (Api?.Side == EnumAppSide.Client && prevLidOpen != LidOpen)
       ApplyPose();
     _overpressureSeconds = tree.GetFloat("overpressure");
+    _choked = tree.GetBool("choked");
   }
 
   #endregion
@@ -1035,6 +1048,9 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
 
     if (LidOpen)
       dsc.AppendLine(Lang.Get("ppex:boiler-info-lidopen"));
+
+    if (_choked)
+      dsc.AppendLine(Lang.Get("ppex:boiler-info-choked"));
 
     if (_overpressureSeconds > 0f)
       dsc.AppendLine(

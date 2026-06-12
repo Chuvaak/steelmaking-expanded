@@ -127,6 +127,38 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
   /// <summary>Recomputes the structure's rotation/angle from the block orientation.</summary>
   protected abstract void UpdateStructureRotation();
 
+  /// <summary>
+  /// Canonical body for <see cref="UpdateStructureRotation"/>: (re)loads the block's
+  /// <c>multiblockStructure</c> JSON attribute when the structure is missing or
+  /// <paramref name="angle"/> differs from the cached <see cref="_currentAngle"/>, calls
+  /// <c>InitForUse(angle + initAngleOffset)</c>, stores <paramref name="angle"/>, and
+  /// clears any stale client-side build projection (which was laid out for the old
+  /// rotation). Subclasses only derive the angle; the loading is identical everywhere.
+  /// <para>
+  /// <paramref name="initAngleOffset"/> covers machines whose local frame faces opposite
+  /// the stored angle (e.g. the bessemer control initialises at <c>angle + 180</c> while
+  /// its <c>GetGlobalPos</c> override compensates the same way) — see the
+  /// <c>_currentAngle</c>/<c>InitForUse</c> convention note on this class.
+  /// </para>
+  /// </summary>
+  protected void SetStructureAngle(int angle, int initAngleOffset = 0)
+  {
+    if (_structure != null && _currentAngle == angle)
+      return;
+
+    _structure = Block.Attributes?[
+      "multiblockStructure"
+    ]?.AsObject<MultiblockStructure>();
+    _structure?.InitForUse(angle + initAngleOffset);
+    _currentAngle = angle;
+
+    if (Api is ICoreClientAPI capi && _highlightedStructure != null)
+    {
+      _highlightedStructure.ClearHighlights(Api.World, capi.World.Player);
+      _highlightedStructure = null;
+    }
+  }
+
   /// <summary>Converts a structure-local offset into a world position for the current rotation.</summary>
   protected virtual BlockPos GetGlobalPos(int localX, int localY, int localZ) =>
     ExOrientation.GlobalPos(Pos, localX, localY, localZ, _currentAngle);

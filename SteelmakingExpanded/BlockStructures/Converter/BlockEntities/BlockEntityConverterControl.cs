@@ -66,6 +66,7 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
   // doesn't spam audio. Filling and pouring are mutually exclusive, so they
   // share one throttle.
   private long _lastProcessSoundMs;
+  private long _lastFireSoundMs;
   private long _lastMoltenSoundMs;
   #endregion
 
@@ -198,11 +199,23 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
     // Roaring blast through the molten bath while refining.
     ExSounds.PlayThrottled(
       Api,
-      Pos,
+      Pos.AddCopy(0, 0, 2),
       ExSounds.Embers,
       ref _lastProcessSoundMs,
       4000,
       0.5f
+    );
+
+    // Crackling fire layered over the blast while iron is being blown — the
+    // burning carbon roaring off in the bessemer. Offset from the embers throttle
+    // so the two loops overlap rather than firing in lockstep.
+    ExSounds.PlayThrottled(
+      Api,
+      Pos.AddCopy(0, 0, 2),
+      ExSounds.Fire,
+      ref _lastFireSoundMs,
+      3000,
+      1.5f
     );
 
     _processSeconds += dt;
@@ -268,25 +281,11 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
     if (drained <= 0f)
       return;
 
+    _content ??= MoltenMetal.CreateStack(Api.World, type, temp);
     if (_content == null)
-    {
-      Item? collectible =
-        type.Length > 0 ? Api.World.GetItem(new AssetLocation(type)) : null;
-      if (collectible == null)
-        return;
-      _content = new ItemStack(collectible, 1);
-      (_content.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
-        "cooldownSpeed",
-        SmexValues.MoltenCooldownSpeed
-      );
-    }
+      return;
 
-    _content.Collectible.SetTemperature(
-      Api.World,
-      _content,
-      temp,
-      delayCooldown: false
-    );
+    MoltenMetal.SetTemperature(Api.World, _content, temp);
     _contentUnits += (int)drained;
     // Molten metal hissing into the vessel.
     ExSounds.PlayThrottled(
@@ -373,17 +372,10 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
 
   private void CompleteRefining()
   {
-    Item? steel = Api.World.GetItem(new AssetLocation(SteelCode));
-    if (steel == null)
+    float temp = MoltenMetal.GetTemperature(Api.World, _content!);
+    ItemStack? steelStack = MoltenMetal.CreateStack(Api.World, SteelCode, temp);
+    if (steelStack == null)
       return;
-
-    float temp = _content!.Collectible.GetTemperature(Api.World, _content);
-    var steelStack = new ItemStack(steel, 1);
-    (steelStack.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
-      "cooldownSpeed",
-      SmexValues.MoltenCooldownSpeed
-    );
-    steelStack.Collectible.SetTemperature(Api.World, steelStack, temp, false);
     _content = steelStack;
     _processSeconds = ProcessDurationSec;
     SetStatus(Lang.Get("smex:bessemer-status-steelready"));
@@ -398,9 +390,9 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
   {
     if (_content == null)
       return;
-    float temp = _content.Collectible.GetTemperature(Api.World, _content);
+    float temp = MoltenMetal.GetTemperature(Api.World, _content);
     float target = Math.Max(temp, ProcessHoldTemp);
-    _content.Collectible.SetTemperature(Api.World, _content, target, false);
+    MoltenMetal.SetTemperature(Api.World, _content, target);
   }
 
   private void UpdateSolidified()
@@ -415,13 +407,9 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
       return;
     }
 
-    float temp = _content.Collectible.GetTemperature(Api.World, _content);
-    float meltPoint = _content.Collectible.GetMeltingPoint(
-      Api.World,
-      null,
-      new DummySlot(_content)
-    );
-    bool nowSolid = temp < meltPoint;
+    bool nowSolid =
+      MoltenMetal.GetTemperature(Api.World, _content)
+      < MoltenMetal.MeltingPointOf(Api.World, _content);
     if (nowSolid != _solidified)
     {
       _solidified = nowSolid;
@@ -554,20 +542,11 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
 
   #region Content queries
 
-  private bool IsMoltenIron()
-  {
-    if (_content == null || _contentUnits <= 0)
-      return false;
-    if (_content.Collectible.Code.ToString() != IronCode)
-      return false;
-    float temp = _content.Collectible.GetTemperature(Api.World, _content);
-    float meltPoint = _content.Collectible.GetMeltingPoint(
-      Api.World,
-      null,
-      new DummySlot(_content)
-    );
-    return temp > 0.8f * meltPoint;
-  }
+  private bool IsMoltenIron() =>
+    _content != null
+    && _contentUnits > 0
+    && _content.Collectible.Code.ToString() == IronCode
+    && MoltenMetal.IsLiquid(Api.World, _content);
 
   private string FormatProgress()
   {
@@ -635,8 +614,10 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
     OpState = newState;
     if (Api.Side == EnumAppSide.Server)
     {
-      // Heavy door-style clunk as the vessel lever is set to fill / pour / hold.
+      // Heavy door-style clunk as the vessel lever is set to fill / pour / hold,
+      // layered over the grind of the heavy vessel rotating on its trunnions.
       ExSounds.Play(Api, Pos, ExSounds.CokeOvenDoorOpen, 0.9f);
+      ExSounds.Play(Api, Pos.AddCopy(0, 0, 2), ExSounds.MetalGrinding, 0.7f);
       SyncConverter();
       MarkDirty(true);
     }
@@ -732,68 +713,32 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
     );
   }
 
-  private bool HasSpawnMaterials(IPlayer byPlayer)
-  {
-    CountMaterials(byPlayer, out int gears, out int rods);
-    return gears >= SmexValues.BessemerRequiredGears
-      && rods >= SmexValues.BessemerRequiredRods;
-  }
+  // Spawn materials are deliberately drawn from the hotbar only (the player presents
+  // them), unlike engine repairs which search the whole inventory.
+  private static bool IsSpawnGear(ItemStack stack) =>
+    stack.Collectible?.Code?.ToString() == "game:gear-rusty";
 
-  private static void CountMaterials(
-    IPlayer byPlayer,
-    out int gears,
-    out int rods
-  )
-  {
-    gears = 0;
-    rods = 0;
-    var hotbar = byPlayer.InventoryManager?.GetHotbarInventory();
-    if (hotbar == null)
-      return;
-    foreach (var slot in hotbar)
-    {
-      if (slot?.Itemstack?.Collectible?.Code is not { } code)
-        continue;
-      string path = code.ToString();
-      if (path == "game:gear-rusty")
-        gears += slot.Itemstack.StackSize;
-      else if (path == "game:rod-iron" || path == "game:rod-steel")
-        rods += slot.Itemstack.StackSize;
-    }
-  }
+  private static bool IsSpawnRod(ItemStack stack) =>
+    stack.Collectible?.Code?.ToString() is "game:rod-iron" or "game:rod-steel";
+
+  private bool HasSpawnMaterials(IPlayer byPlayer) =>
+    ExInventory.CountHotbar(byPlayer, IsSpawnGear)
+      >= SmexValues.BessemerRequiredGears
+    && ExInventory.CountHotbar(byPlayer, IsSpawnRod)
+      >= SmexValues.BessemerRequiredRods;
 
   private void ConsumeSpawnMaterials(IPlayer byPlayer)
   {
-    int gearsLeft = SmexValues.BessemerRequiredGears;
-    int rodsLeft = SmexValues.BessemerRequiredRods;
-    var hotbar = byPlayer.InventoryManager?.GetHotbarInventory();
-    if (hotbar == null)
-      return;
-    foreach (var slot in hotbar)
-    {
-      if (gearsLeft <= 0 && rodsLeft <= 0)
-        break;
-      if (slot?.Itemstack?.Collectible?.Code is not { } code)
-        continue;
-      string path = code.ToString();
-      if (path == "game:gear-rusty" && gearsLeft > 0)
-      {
-        int take = Math.Min(gearsLeft, slot.Itemstack.StackSize);
-        slot.TakeOut(take);
-        slot.MarkDirty();
-        gearsLeft -= take;
-      }
-      else if (
-        (path == "game:rod-iron" || path == "game:rod-steel")
-        && rodsLeft > 0
-      )
-      {
-        int take = Math.Min(rodsLeft, slot.Itemstack.StackSize);
-        slot.TakeOut(take);
-        slot.MarkDirty();
-        rodsLeft -= take;
-      }
-    }
+    ExInventory.TakeHotbar(
+      byPlayer,
+      IsSpawnGear,
+      SmexValues.BessemerRequiredGears
+    );
+    ExInventory.TakeHotbar(
+      byPlayer,
+      IsSpawnRod,
+      SmexValues.BessemerRequiredRods
+    );
   }
 
   #endregion
@@ -894,30 +839,13 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
     if (Block == null)
       return;
 
-    string orientation = Block.Variant["side"];
-    int angle = orientation switch
-    {
-      "north" => 0,
-      "east" => 270,
-      "south" => 180,
-      "west" => 90,
-      _ => 0,
-    };
-
-    if (_structure == null || _currentAngle != angle)
-    {
-      _structure = Block.Attributes?[
-        "multiblockStructure"
-      ]?.AsObject<MultiblockStructure>();
-      _structure?.InitForUse(angle + 180);
-      _currentAngle = angle;
-
-      if (Api is ICoreClientAPI capi && _highlightedStructure != null)
-      {
-        _highlightedStructure.ClearHighlights(Api.World, capi.World.Player);
-        _highlightedStructure = null;
-      }
-    }
+    // The control's local frame faces opposite the stored angle: the structure is
+    // initialised at angle + 180 while peripherals compensate the same way in
+    // GetGlobalPos (see the +180 convention note there).
+    SetStructureAngle(
+      ExOrientation.AngleFromSide(Block.Variant["side"]),
+      initAngleOffset: 180
+    );
   }
 
   protected override string GetIncompleteMessage(int missingCount) =>

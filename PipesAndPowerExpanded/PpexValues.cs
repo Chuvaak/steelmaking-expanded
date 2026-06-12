@@ -90,6 +90,12 @@ public class PpexConfig
   /// <summary>Steam (L/s) produced while boiling at full tilt (consumes this / <see cref="SteamExpansionFactor"/> litres of water).</summary>
   public float BoilerSteamPerSecond { get; set; } = 48f;
 
+  /// <summary>Exhaust (L/s) a burning boiler vents into its exhaust network — fixed for every boiler variant.</summary>
+  public float BoilerExhaustPerSecond { get; set; } = 16f;
+
+  /// <summary>Seconds a boiler may sit choked (fire lit but its exhaust outlet backed up to the vent-pressure cap) before its fuel pile is snuffed out.</summary>
+  public float BoilerChokeExtinguishSeconds { get; set; } = 10f;
+
   /// <summary>Block radius damaged when a boiler explodes.</summary>
   public int BoilerExplosionRadius { get; set; } = 4;
 
@@ -162,11 +168,18 @@ public class PpexConfig
   /// <summary>Hot condensed water (L/s) a Watt engine spits out its outlet while running.</summary>
   public float WattEngineWaterRate { get; set; } = 1f;
 
-  /// <summary>Inlet pressure (atm) at/above which the Cornish engine runs (fixed — control rods do not move the band).</summary>
-  public float CornishEngineEngagePressure { get; set; } = 6.0f;
+  /// <summary>Inlet pressure (atm) at/above which the Cornish engine runs, at the low / normal /
+  /// high control-rod settings. The throttle raises the whole operating band: low works on a
+  /// gentle 5–8 atm, normal on 6–8 atm, high demands a hot 7–8 atm.</summary>
+  public float CornishEngineEngagePressureLow { get; set; } = 5.0f;
+  public float CornishEngineEngagePressureNormal { get; set; } = 6.0f;
+  public float CornishEngineEngagePressureHigh { get; set; } = 7.0f;
 
-  /// <summary>Inlet pressure (atm) above which the Cornish engine wears toward a break.</summary>
-  public float CornishEngineBreakPressure { get; set; } = 8.0f;
+  /// <summary>Inlet pressure (atm) above which the Cornish engine wears toward a break, at the
+  /// low / normal / high control-rod settings.</summary>
+  public float CornishEngineBreakPressureLow { get; set; } = 8.0f;
+  public float CornishEngineBreakPressureNormal { get; set; } = 8.0f;
+  public float CornishEngineBreakPressureHigh { get; set; } = 8.0f;
 
   /// <summary>Nominal power the Cornish engine delivers at the normal control-rod setting (display reference).</summary>
   public float CornishEngineMaxPower { get; set; } = 1.0f;
@@ -177,14 +190,20 @@ public class PpexConfig
   public float CornishEngineSteamHigh { get; set; } = 32f;
 
   /// <summary>Cornish engine power at the low / normal / high control-rod settings.</summary>
-  public float CornishEnginePowerLow { get; set; } = 0.5f;
-  public float CornishEnginePowerNormal { get; set; } = 1.0f;
-  public float CornishEnginePowerHigh { get; set; } = 2.0f;
+  public float CornishEnginePowerLow { get; set; } = 0.2f;
+  public float CornishEnginePowerNormal { get; set; } = 0.4f;
+  public float CornishEnginePowerHigh { get; set; } = 0.8f;
 
   /// <summary>Cornish engine condensed-water output (L/s) at the low / normal / high settings.</summary>
   public float CornishEngineWaterLow { get; set; } = 0.3f;
   public float CornishEngineWaterNormal { get; set; } = 0.6f;
   public float CornishEngineWaterHigh { get; set; } = 1.2f;
+
+  /// <summary>When the Cornish engine is overclocked (high throttle) its running sounds are
+  /// scaled by these — louder strokes/hum and a lower, more violent gear growl. Normal and low
+  /// settings are left at 1 (unchanged).</summary>
+  public float CornishEngineOverclockVolume { get; set; } = 1.8f;
+  public float CornishEngineOverclockPitch { get; set; } = 0.8f;
 
   /// <summary>Steam-engine efficiency: an engine sets its sub-machine's output pressure
   /// (pump water, air blower) to its inlet steam pressure times this fraction.</summary>
@@ -308,6 +327,9 @@ public static class PpexValues
   public static float BoilerWaterIntakeFillFraction =>
     _config.BoilerWaterIntakeFillFraction;
   public static float BoilerSteamPerSecond => _config.BoilerSteamPerSecond;
+  public static float BoilerExhaustPerSecond => _config.BoilerExhaustPerSecond;
+  public static float BoilerChokeExtinguishSeconds =>
+    _config.BoilerChokeExtinguishSeconds;
   public static int BoilerExplosionRadius => _config.BoilerExplosionRadius;
   public static float BoilerBlastResistanceThreshold =>
     _config.BoilerBlastResistanceThreshold;
@@ -344,10 +366,18 @@ public static class PpexValues
     _config.WattEngineBreakPressure;
   public static float WattEngineMaxPower => _config.WattEngineMaxPower;
   public static float WattEngineSteamRate => _config.WattEngineSteamRate;
-  public static float CornishEngineEngagePressure =>
-    _config.CornishEngineEngagePressure;
-  public static float CornishEngineBreakPressure =>
-    _config.CornishEngineBreakPressure;
+  public static float CornishEngineEngagePressureLow =>
+    _config.CornishEngineEngagePressureLow;
+  public static float CornishEngineEngagePressureNormal =>
+    _config.CornishEngineEngagePressureNormal;
+  public static float CornishEngineEngagePressureHigh =>
+    _config.CornishEngineEngagePressureHigh;
+  public static float CornishEngineBreakPressureLow =>
+    _config.CornishEngineBreakPressureLow;
+  public static float CornishEngineBreakPressureNormal =>
+    _config.CornishEngineBreakPressureNormal;
+  public static float CornishEngineBreakPressureHigh =>
+    _config.CornishEngineBreakPressureHigh;
   public static float CornishEngineMaxPower => _config.CornishEngineMaxPower;
   public static float CornishEngineSteamLow => _config.CornishEngineSteamLow;
   public static float CornishEngineSteamNormal =>
@@ -362,6 +392,10 @@ public static class PpexValues
   public static float CornishEngineWaterNormal =>
     _config.CornishEngineWaterNormal;
   public static float CornishEngineWaterHigh => _config.CornishEngineWaterHigh;
+  public static float CornishEngineOverclockVolume =>
+    _config.CornishEngineOverclockVolume;
+  public static float CornishEngineOverclockPitch =>
+    _config.CornishEngineOverclockPitch;
   public static float SteamEngineEfficiency => _config.SteamEngineEfficiency;
   public static float EngineOverPressureSeconds =>
     _config.EngineOverPressureSeconds;

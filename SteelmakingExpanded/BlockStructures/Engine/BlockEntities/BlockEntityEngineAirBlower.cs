@@ -6,7 +6,7 @@ using PipesAndPowerExpanded.BlockNetworkPipe;
 using PipesAndPowerExpanded.BlockStructures.Engine;
 using Vintagestory.API.MathTools;
 
-namespace SteelmakingExpanded.BlockStructures.CowperStove.BlockEntities;
+namespace SteelmakingExpanded.BlockStructures.Engine.BlockEntities;
 
 /// <summary>
 /// Cornish-engine sub-machine: an air compressor. While powered it injects air into
@@ -51,7 +51,7 @@ public class BlockEntityEngineAirBlower : BlockEntityEngineSubmachine
     if (leftNet == null)
       return;
 
-    float power01 = power / Math.Max(0.01f, Engine?.MaxPower ?? 1f);
+    float power01 = power * 3 / Math.Max(0.01f, Engine?.MaxPower ?? 1f);
     float maxPressure =
       (Engine?.InletPressure ?? 0f) * PpexValues.SteamEngineEfficiency;
     float amount = SmexValues.AirBlowerOutputPerSecond * power01 * dt;

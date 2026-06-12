@@ -1,12 +1,11 @@
-using System;
-using System.Linq;
-using System.Reflection;
+using ExpandedLib;
 using ExpandedLib.BlockNetworks;
 using ExpandedLib.EntityRegistry;
+using HarmonyLib;
 using SteelmakingExpanded.BlockNetworkMolten;
 using SteelmakingExpanded.BlockNetworkMolten.Blocks;
 using SteelmakingExpanded.Compat;
-using SteelmakingExpanded.Overrides;
+using SteelmakingExpanded.Patches;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -20,43 +19,25 @@ namespace SteelmakingExpanded;
 /// Main mod system for Steelmaking Expanded. Auto-registers every block, block-entity, item
 /// and behavior class via <see cref="EntityRegistry"/>; adds the mod's creative tab; wires up
 /// global player-side effects (molten-mold burns and spills); registers the molten network
-/// type; and patches a few vanilla collectibles (coke crushing). The pipe network and all
+/// type; applies the Harmony patches that extend the vanilla tool mold / mold rack / coal
+/// pile; and patches a few vanilla collectibles (coke crushing). The pipe network and all
 /// pipe/steam-power content now live in the Pipes and Power Expanded mod (ppex).
 /// </summary>
 public class SteelmakingExpandedModSystem : ModSystem
 {
-  #region Creative category
-  public override void StartClientSide(ICoreClientAPI api)
-  {
-    var creativeCustomTab = Mod.Info.ModID;
-    foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-    {
-      Type? type = assembly.GetType(
-        "Vintagestory.Client.NoObf.GuiDialogCreativeTabs"
-      );
-      if (type != null)
-      {
-        FieldInfo? field = type.GetField(
-          "tabs",
-          BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
-        );
-        if (field != null)
-        {
-          var currentTabs = (string[]?)field.GetValue(null);
+  private Harmony? _harmony;
 
-          if (
-            currentTabs == null
-            || Array.IndexOf(currentTabs, creativeCustomTab) == -1
-          )
-          {
-            var newTabs = currentTabs?.Append(creativeCustomTab);
-            field.SetValue(null, newTabs);
-          }
-        }
-        break;
-      }
-    }
+  public override void Dispose()
+  {
+    ToolMoldPatches.ClearMeshCache();
+    _harmony?.UnpatchAll(Mod.Info.ModID);
+    _harmony = null;
+    base.Dispose();
   }
+
+  #region Creative category
+  public override void StartClientSide(ICoreClientAPI api) =>
+    ExCreativeTabs.EnsureTab(Mod.Info.ModID);
   #endregion
 
   #region Global player interactions
@@ -115,14 +96,12 @@ public class SteelmakingExpandedModSystem : ModSystem
     if (stack?.Block is not BlockToolMold)
       return;
 
-    var beData = stack.Attributes?.GetTreeAttribute("blockEntityAttributes");
-    var contents = beData?.GetItemstack("contents");
-    int fill = beData?.GetInt("fillLevel") ?? 0;
-    if (contents == null || fill <= 0)
-      return;
-
-    contents.ResolveBlockOrItem(api.World);
-    if (contents.Collectible == null)
+    var (contents, fill) = MoltenContents.Read(
+      stack,
+      MoltenContents.MoldUnitsKey,
+      api.World
+    );
+    if (contents?.Collectible == null || fill <= 0)
       return;
 
     float temp = contents.Collectible.GetTemperature(api.World, contents);
@@ -178,11 +157,20 @@ public class SteelmakingExpandedModSystem : ModSystem
     // Register other mod's iron ore types.
     IronOreCompat.Init(api);
 
+    // Harmony patches that extend the vanilla tool mold, mold rack and coal pile
+    // (filled-mold handling and blast-mix burn-to-slag) without replacing their
+    // registered classes, so other mods touching those blocks can coexist.
+    if (!Harmony.HasAnyPatches(Mod.Info.ModID))
+    {
+      _harmony = new Harmony(Mod.Info.ModID);
+      _harmony.PatchAll(GetType().Assembly);
+    }
+
     // The shared structure-filler block lives in exlib (a hard dependency); exlib points the
     // StructureFillers helper at exlib:structurefiller, which this mod's mega-blocks reuse.
 
     // Auto-register every [EntityRegister] block / block entity / item / behavior
-    // (and the vanilla-class overrides) declared in this assembly.
+    // declared in this assembly.
     EntityRegistry.RegisterAll(api, Mod, GetType().Assembly);
 
     // The molten-metal network. The unified "pipe" network is registered by ppex.
@@ -193,32 +181,5 @@ public class SteelmakingExpandedModSystem : ModSystem
     );
   }
 
-  public override void AssetsFinalize(ICoreAPI api)
-  {
-    base.AssetsFinalize(api);
-
-    Item? cokeItem = api.World.GetItem(new AssetLocation("game", "coke"));
-    Item? crushedCokeItem = api.World.GetItem(
-      new AssetLocation("game", "crushed-coke")
-    );
-
-    if (cokeItem != null && crushedCokeItem != null)
-    {
-      var outputStack = new JsonItemStack()
-      {
-        Code = crushedCokeItem.Code,
-        Type = EnumItemClass.Item,
-      };
-
-      outputStack.Resolve(api.World, "steelmaking-coke-override");
-
-      cokeItem.CrushingProps = new CrushingProperties()
-      {
-        CrushedStack = outputStack,
-        Quantity = NatFloat.createUniform(2, 0),
-        HardnessTier = 1,
-      };
-    }
-  }
   #endregion
 }

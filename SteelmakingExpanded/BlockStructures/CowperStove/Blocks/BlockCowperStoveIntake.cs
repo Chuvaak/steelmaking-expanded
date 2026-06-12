@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ExpandedLib;
 using ExpandedLib.BlockNetworks;
 using ExpandedLib.EntityRegistry;
 using Vintagestory.API.Common;
@@ -16,15 +17,15 @@ public class BlockCowperStoveIntake : Block, INetworkConnector
 {
   public string NetworkType => "pipe";
 
-  public bool HasConnectorAt(BlockFacing face)
-  {
-    var orient = Variant["side"];
-    return orient != null
-      && (
-        (orient == "north" && face == BlockFacing.SOUTH)
-        || (orient == "east" && face == BlockFacing.WEST)
-        || (orient == "south" && face == BlockFacing.NORTH)
-        || (orient == "west" && face == BlockFacing.EAST)
-      );
-  }
+  /// <summary>The exhaust connector sits on the intake's local-south face, rotated with the block.</summary>
+  public bool HasConnectorAt(BlockFacing face) =>
+    face
+    == ExOrientation.RotateFacing(
+      BlockFacing.SOUTH,
+      ExOrientation.AngleFromSide(Variant["side"])
+    );
+
+  /// <summary>Includes the refractory tier in the display name.</summary>
+  public override string GetHeldItemName(ItemStack itemStack) =>
+    ExBlockNames.Decorate(this, base.GetHeldItemName(itemStack));
 }

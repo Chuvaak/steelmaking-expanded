@@ -14,7 +14,7 @@ namespace SteelmakingExpanded.BlockStructures.SmokeStack.Blocks;
 [EntityRegister]
 public class BlockSmokeStackIntake : BlockPipePassthrough
 {
-  public override Dictionary<string, string[]> AllowedOrientations =>
+  public override Dictionary<string, string[]> AllowedOrientations { get; } =
     new() { { "intake", ["n", "s", "w", "e"] } };
 
   protected override string GetFallbackOrientation(string? type) => "n";

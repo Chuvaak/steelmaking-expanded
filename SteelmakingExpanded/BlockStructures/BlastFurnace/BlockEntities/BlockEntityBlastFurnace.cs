@@ -6,7 +6,7 @@ using ExpandedLib.BlockStructures;
 using ExpandedLib.EntityRegistry;
 using PipesAndPowerExpanded.BlockNetworkPipe;
 using PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
-using SteelmakingExpanded.Overrides;
+using SteelmakingExpanded.Patches;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -85,6 +85,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
   private int _blastMixPerMeltCycle;
   private float _maxMoltenIron;
   private float _maxMoltenSlag;
+  private float _tuyereIntakeVolume;
 
   protected override int CompletionTickMs => 3000;
 
@@ -108,22 +109,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
     if (snappedAngle < 0)
       snappedAngle += 360;
 
-    int rotated = snappedAngle % 360;
-
-    if (_structure == null || _currentAngle != rotated)
-    {
-      _structure = Block.Attributes?[
-        "multiblockStructure"
-      ]?.AsObject<MultiblockStructure>();
-      _structure?.InitForUse(snappedAngle);
-      _currentAngle = rotated;
-
-      if (Api is ICoreClientAPI capi && _highlightedStructure != null)
-      {
-        _highlightedStructure.ClearHighlights(Api.World, capi.World.Player);
-        _highlightedStructure = null;
-      }
-    }
+    SetStructureAngle(snappedAngle % 360);
   }
 
   protected override void OnStructureCompleted() => ScanForOutlets();
@@ -169,6 +155,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
     _blastMixPerMeltCycle = SmexValues.BfBlastMixPerMeltCycle;
     _maxMoltenIron = SmexValues.BfMaxMoltenIron;
     _maxMoltenSlag = SmexValues.BfMaxMoltenSlag;
+    _tuyereIntakeVolume = SmexValues.TuyereIntakeVolume;
   }
 
   #endregion
@@ -294,7 +281,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
     {
       foreach (var pos in _gasOutlets)
       {
-        if (Api.World.BlockAccessor.GetBlockEntity(pos) is IPipeProducer outlet)
+        if (Api.World.BlockAccessor.GetBlockEntity(pos) is IPipeNode outlet)
         {
           if (!outlet.TryProduce(24f, _internalTemp * 0.8f, "Exhaust"))
             failedAny = true;
@@ -328,9 +315,9 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
 
     foreach (var pos in _tuyeres)
     {
-      if (Api.World.BlockAccessor.GetBlockEntity(pos) is IPipeConsumer tuyere)
+      if (Api.World.BlockAccessor.GetBlockEntity(pos) is IPipeNode tuyere)
       {
-        float consumed = tuyere.TryConsume(12f);
+        float consumed = tuyere.TryConsume(_tuyereIntakeVolume);
         if (tuyere is BlockEntityPipe pipe)
         {
           if (pipe.Medium == "Exhaust")
@@ -341,7 +328,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
             && pipe.Pressure >= SmexValues.BlastPressureThreshold
           )
           {
-            hotBlastTemp = Math.Max(hotBlastTemp, pipe.NetworkTemperature);
+            hotBlastTemp = Math.Max(hotBlastTemp, pipe.Temperature);
             receivingBlast = true;
           }
         }
@@ -533,12 +520,9 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
   /// found. All per-tick pile reads/writes share this list so the region is walked
   /// at most once per production tick.
   /// </summary>
-  private List<(
-    BlockPos pos,
-    CustomBlockEntityCoalPile pile
-  )> CollectHearthPiles()
+  private List<(BlockPos pos, BlockEntityCoalPile pile)> CollectHearthPiles()
   {
-    var piles = new List<(BlockPos, CustomBlockEntityCoalPile)>();
+    var piles = new List<(BlockPos, BlockEntityCoalPile)>();
     BlockPos centerHearth = GetGlobalPos(0, 0, 2);
     Api.World.BlockAccessor.WalkBlocks(
       centerHearth.AddCopy(-1, -3, -1),
@@ -550,7 +534,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
         BlockPos pos = new(x, y, z, Pos.dimension);
         if (
           Api.World.BlockAccessor.GetBlockEntity(pos)
-          is CustomBlockEntityCoalPile pileBe
+          is BlockEntityCoalPile pileBe
         )
           piles.Add((pos, pileBe));
       }
@@ -559,7 +543,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
   }
 
   private static void CheckHearthBurning(
-    List<(BlockPos pos, CustomBlockEntityCoalPile pile)> piles,
+    List<(BlockPos pos, BlockEntityCoalPile pile)> piles,
     out bool anyBurning,
     out bool allBurning
   )
@@ -586,7 +570,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
   }
 
   private void ConsumeForMelting(
-    List<(BlockPos pos, CustomBlockEntityCoalPile pile)> piles,
+    List<(BlockPos pos, BlockEntityCoalPile pile)> piles,
     int blastmixToConsume,
     float ironProduced,
     float slagProduced
@@ -687,11 +671,11 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
           BlockPos pos = new BlockPos(x, y, z, Pos.dimension);
           if (
             Api.World.BlockAccessor.GetBlockEntity(pos)
-            is CustomBlockEntityCoalPile pileBe
+            is BlockEntityCoalPile pileBe
           )
           {
-            pileBe.IsManagedByFurnace = false;
-            pileBe.ConvertToSlag();
+            BlastmixPiles.SetManagedByFurnace(pileBe, false);
+            BlastmixPiles.ConvertToSlag(pileBe);
           }
         }
       }
@@ -701,7 +685,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
   }
 
   private int GetBlastMixCount(
-    List<(BlockPos pos, CustomBlockEntityCoalPile pile)> piles,
+    List<(BlockPos pos, BlockEntityCoalPile pile)> piles,
     out bool isFull
   )
   {
@@ -711,7 +695,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
       // While lit, the furnace manages and keeps its hearth piles burning.
       if (State != BlastFurnaceState.Idle)
       {
-        pileBe.IsManagedByFurnace = true;
+        BlastmixPiles.SetManagedByFurnace(pileBe, true);
         if (!pileBe.IsBurning)
           pileBe.TryIgnite();
       }

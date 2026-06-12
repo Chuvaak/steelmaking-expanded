@@ -4,7 +4,7 @@ using ExpandedLib.EntityRegistry;
 using PipesAndPowerExpanded.BlockStructures.Engine.Blocks;
 using Vintagestory.API.MathTools;
 
-namespace SteelmakingExpanded.BlockStructures.CowperStove.Blocks;
+namespace SteelmakingExpanded.BlockStructures.Engine.Blocks;
 
 /// <summary>
 /// The air-blower sub-machine. Exposes a single pipe connector on its left face

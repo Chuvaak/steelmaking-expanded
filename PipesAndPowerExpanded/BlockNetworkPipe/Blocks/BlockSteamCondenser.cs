@@ -24,6 +24,23 @@ public class BlockSteamCondenser : Block, INetworkConnector
 
   private int Angle => ExOrientation.AngleFromSide(Variant["side"]);
 
+  // JSON collision/selection boxes are authored in the north orientation and do not
+  // auto-rotate with the placed variant, so rotate them to match the shape's rotateY.
+  private Cuboidf[]? _rotatedCollisionBoxes;
+  private Cuboidf[]? _rotatedSelectionBoxes;
+
+  public override Cuboidf[] GetCollisionBoxes(
+    IBlockAccessor blockAccessor,
+    BlockPos pos
+  ) =>
+    _rotatedCollisionBoxes ??= ExOrientation.RotateBoxes(CollisionBoxes, Angle);
+
+  public override Cuboidf[] GetSelectionBoxes(
+    IBlockAccessor blockAccessor,
+    BlockPos pos
+  ) =>
+    _rotatedSelectionBoxes ??= ExOrientation.RotateBoxes(SelectionBoxes, Angle);
+
   /// <summary>Facing of one of the two horizontal water connectors (local west).</summary>
   public BlockFacing SideAFace =>
     ExOrientation.RotateFacing(BlockFacing.WEST, Angle);

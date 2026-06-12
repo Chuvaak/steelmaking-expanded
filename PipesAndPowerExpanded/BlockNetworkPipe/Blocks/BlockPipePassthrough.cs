@@ -6,12 +6,17 @@ using Vintagestory.API.MathTools;
 namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 
 /// <summary>
-/// Passthrough pipe: carries gas straight through a wall and seals against an
-/// <see cref="IPipeSealingBlock"/> neighbour without registering it as a leak.
+/// Passthrough pipe: carries gas straight through a wall. A connector butted against a
+/// solid (non-air) block is not treated as a leak, so it seals against machine housings
+/// without any cooperation from those blocks.
 /// </summary>
 [EntityRegister]
 public class BlockPipePassthrough : BlockPipe
 {
+  /// <summary>Passthroughs never burst — they're embedded in walls/machine housings where a
+  /// fracture would be unreachable, so they're exempt from over-pressure failure.</summary>
+  public override float BurstPressure => float.MaxValue;
+
   public override Dictionary<string, string[]> AllowedOrientations { get; } =
     new()
     {
@@ -32,11 +37,6 @@ public class BlockPipePassthrough : BlockPipe
     BlockFacing blockFace,
     Cuboidi attachmentArea
   ) => SideSolid[blockFace.Index] || HasConnectorAt(blockFace);
-
-  public override bool IsValidNonNetworkConnection(
-    Block neighborBlock,
-    BlockFacing face
-  ) => neighborBlock is IPipeSealingBlock;
 
   public override void OnNeighbourBlockChange(
     IWorldAccessor world,

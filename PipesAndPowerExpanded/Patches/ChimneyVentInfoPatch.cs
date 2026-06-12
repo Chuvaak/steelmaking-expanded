@@ -42,7 +42,7 @@ public static class ChimneyVentInfoPatch
 
     bool hasGas =
       world.BlockAccessor.GetBlockEntity(below) is BlockEntityPipe pipe
-      && pipe.ClientGasVolume > 0f;
+      && pipe.Volume > 0f;
 
     __result +=
       Lang.Get(

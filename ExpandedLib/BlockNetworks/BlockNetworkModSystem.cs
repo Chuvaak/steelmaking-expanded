@@ -121,6 +121,7 @@ public class BlockNetworkModSystem : ModSystem
       net.Nodes.Add(pos);
       _networks[net.Id] = net;
       _posToNetwork[pos] = net.Id;
+      net.OnTopologyChanged();
     }
     else
     {
@@ -145,6 +146,7 @@ public class BlockNetworkModSystem : ModSystem
         _networks.Remove(netToMerge.Id);
       }
 
+      primaryNet.OnTopologyChanged();
       if (broadcast)
         primaryNet.BroadcastUpdate(world);
     }
@@ -233,6 +235,7 @@ public class BlockNetworkModSystem : ModSystem
 
         // Let the fragment inherit its proportional share of the original state.
         newNet.OnSplitFragment(network, world);
+        newNet.OnTopologyChanged();
 
         if (broadcast)
           newNet.BroadcastUpdate(world);
@@ -241,6 +244,7 @@ public class BlockNetworkModSystem : ModSystem
     else
     {
       // No fracture — network is still fully connected.
+      network.OnTopologyChanged();
       if (broadcast)
         network.BroadcastUpdate(world);
     }
@@ -318,6 +322,7 @@ public class BlockNetworkModSystem : ModSystem
     }
 
     _networks[newNet.Id] = newNet;
+    newNet.OnTopologyChanged();
 
     if (broadcast)
       newNet.BroadcastUpdate(world);

@@ -243,6 +243,33 @@ public class PipeNetwork : BlockNetwork
   }
 
   /// <summary>
+  /// Same as <see cref="TryProduceGas"/> but returns the litres actually accepted
+  /// (0 when nothing fit or the medium was rejected). The canonical call for producers
+  /// that must know the accepted volume — boiler steam push, pressure-valve overflow —
+  /// instead of each measuring a before/after <c>State.Volume</c> delta themselves.
+  /// </summary>
+  public float ProduceGasMeasured(
+    float volume,
+    float temperature,
+    string gasType,
+    IBlockAccessor blockAccessor,
+    float maxOutputPressure = 1f,
+    bool bypassLeakCap = false
+  )
+  {
+    float before = State?.Volume ?? 0f;
+    TryProduceGas(
+      volume,
+      temperature,
+      gasType,
+      blockAccessor,
+      maxOutputPressure,
+      bypassLeakCap
+    );
+    return Math.Max(0f, (State?.Volume ?? 0f) - before);
+  }
+
+  /// <summary>
   /// Withdraws up to <paramref name="requestedVolume"/> litres of gas from this network.
   /// Returns the actual amount consumed (0 on a water run). Broadcasts if volume changed.
   /// </summary>
@@ -305,6 +332,23 @@ public class PipeNetwork : BlockNetwork
     _producedAccum += actual;
     BroadcastUpdate(blockAccessor);
     return true;
+  }
+
+  /// <summary>
+  /// Same as <see cref="TryProduceLiquid"/> but returns the litres actually accepted.
+  /// The canonical call for producers that must know the accepted volume (fluid
+  /// intake), instead of measuring a before/after <c>State.Volume</c> delta.
+  /// </summary>
+  public float ProduceLiquidMeasured(
+    float volume,
+    float temperature,
+    float setPressure,
+    IBlockAccessor blockAccessor
+  )
+  {
+    float before = State?.Volume ?? 0f;
+    TryProduceLiquid(volume, temperature, setPressure, blockAccessor);
+    return Math.Max(0f, (State?.Volume ?? 0f) - before);
   }
 
   /// <summary>
@@ -458,6 +502,10 @@ public class PipeNetwork : BlockNetwork
     _producedAccum = 0f;
     _consumedAccum = 0f;
 
+    // Refresh the weakest-pipe rating once per tick so chunk load/unload changes are
+    // picked up; producer calls between ticks then reuse it at O(1).
+    _minBurstCache = null;
+
     if (State == null)
       return;
 
@@ -517,7 +565,7 @@ public class PipeNetwork : BlockNetwork
     foreach (var pos in Nodes)
     {
       var be = blockAccessor.GetBlockEntity(pos);
-      if (be is IPipeConsumer)
+      if (be is IPipeNode)
         consumers++;
 
       if (blockAccessor.GetBlock(pos) is not BlockNetworkNode node)
@@ -613,6 +661,19 @@ public class PipeNetwork : BlockNetwork
           _chimneyFireMs[chimneyPos] = last;
         }
       }
+    }
+
+    // Drop sound-throttle stamps for chimneys no longer venting this network, so the
+    // map can't grow without bound as chimneys are added and removed over a long uptime.
+    if (_chimneyFireMs.Count > chimneyVents.Count)
+    {
+      List<BlockPos>? stale = null;
+      foreach (var key in _chimneyFireMs.Keys)
+        if (!chimneyVents.Contains(key))
+          (stale ??= []).Add(key);
+      if (stale != null)
+        foreach (var key in stale)
+          _chimneyFireMs.Remove(key);
     }
 
     // Leak loss — a gas leak is a pressure relief (it only bleeds the volume above 1 atm,
@@ -729,10 +790,26 @@ public class PipeNetwork : BlockNetwork
     }
   }
 
+  // The weakest-pipe rating is consulted by EVERY TryProduceGas call (each producer,
+  // each tick), so walking all nodes per call scaled O(producers × nodes) per second.
+  // Cache it; the value only changes when the node set changes (invalidated via
+  // OnTopologyChanged) — plus a once-per-tick refresh in OnTick so pipes in chunks
+  // that load/unload mid-session are picked up within a second.
+  private float? _minBurstCache;
+
+  /// <summary>Drops topology-derived caches when the manager changes the node set.</summary>
+  public override void OnTopologyChanged()
+  {
+    _minBurstCache = null;
+  }
+
   /// <summary>The weakest pipe's burst pressure (atm) across the whole run — the rating
   /// that caps how far the gas pool can be pressurised. <see cref="float.MaxValue"/> when
   /// the run holds no pipes (e.g. only machine ports).</summary>
-  private float MinBurstPressure(IBlockAccessor world)
+  private float MinBurstPressure(IBlockAccessor world) =>
+    _minBurstCache ??= ComputeMinBurstPressure(world);
+
+  private float ComputeMinBurstPressure(IBlockAccessor world)
   {
     float minBurst = float.MaxValue;
     foreach (var pos in Nodes)

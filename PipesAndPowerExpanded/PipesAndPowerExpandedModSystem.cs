@@ -1,6 +1,4 @@
-using System;
-using System.Linq;
-using System.Reflection;
+using ExpandedLib;
 using ExpandedLib.BlockNetworks;
 using ExpandedLib.EntityRegistry;
 using HarmonyLib;
@@ -51,35 +49,7 @@ public class PipesAndPowerExpandedModSystem : ModSystem
   }
 
   #region Creative category
-  public override void StartClientSide(ICoreClientAPI api)
-  {
-    var creativeCustomTab = Mod.Info.ModID;
-    foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-    {
-      Type? type = assembly.GetType(
-        "Vintagestory.Client.NoObf.GuiDialogCreativeTabs"
-      );
-      if (type == null)
-        continue;
-
-      FieldInfo? field = type.GetField(
-        "tabs",
-        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
-      );
-      if (field != null)
-      {
-        var currentTabs = (string[]?)field.GetValue(null);
-        if (
-          currentTabs == null
-          || Array.IndexOf(currentTabs, creativeCustomTab) == -1
-        )
-          field.SetValue(
-            null,
-            currentTabs?.Append(creativeCustomTab).ToArray()
-          );
-      }
-      break;
-    }
-  }
+  public override void StartClientSide(ICoreClientAPI api) =>
+    ExCreativeTabs.EnsureTab(Mod.Info.ModID);
   #endregion
 }

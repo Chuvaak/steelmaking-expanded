@@ -87,29 +87,23 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
       Item? item = Api.World.GetItem(new AssetLocation(CellMetalType));
       if (item == null)
         return false;
-      float meltPoint = item.GetMeltingPoint(
+      float meltPoint = MoltenMetal.MeltingPointOf(
         Api.World,
-        null,
-        new DummySlot(new ItemStack(item))
+        new ItemStack(item)
       );
-      return _cellTemperature < 0.3f * meltPoint;
+      return _cellTemperature < MoltenMetal.HardenedThreshold * meltPoint;
     }
   }
 
   #region Incandescent block light
-  /// <summary>Below this temperature (°C) the metal emits no block light.</summary>
-  private const float GlowMinTemp = 500f;
-
   /// <summary>
-  /// Block-light value (0–24) this cell emits from its hot metal, scaled from
-  /// temperature above <see cref="GlowMinTemp"/>. Read by
+  /// Block-light value (0–24) this cell emits from its hot metal (the shared
+  /// <see cref="MoltenMetal.GlowLevel"/> scale). Read by
   /// <see cref="Blocks.BlockMoltenCanal.GetLightHsv"/>; 0 when empty or cool.
   /// Liquid or solidified — a freshly hardened cell still glows until it cools.
   /// </summary>
   public byte GlowLightLevel =>
-    CellAmount > 0 && _cellTemperature > GlowMinTemp
-      ? (byte)GameMath.Clamp((_cellTemperature - GlowMinTemp) / 30f, 0, 24)
-      : (byte)0;
+    CellAmount > 0 ? MoltenMetal.GlowLevel(_cellTemperature) : (byte)0;
 
   /// <summary>
   /// Re-lights the block when the emitted glow level has shifted from
@@ -252,14 +246,9 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
   {
     if (_cellMetalStack == null)
       return;
-    _cellMetalStack.Collectible.SetTemperature(
-      world,
+    MoltenMetal.SetTemperature(world, _cellMetalStack, temp);
+    MoltenMetal.SetCooldownSpeed(
       _cellMetalStack,
-      temp,
-      delayCooldown: false
-    );
-    (_cellMetalStack.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
-      "cooldownSpeed",
       SmexValues.MoltenCooldownSpeed
     );
   }
@@ -316,15 +305,8 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
       return;
 
     byte oldGlow = GlowLightLevel;
-    float temp = _cellMetalStack.Collectible.GetTemperature(
-      world,
-      _cellMetalStack
-    );
-    float meltPoint = _cellMetalStack.Collectible.GetMeltingPoint(
-      world,
-      null,
-      new DummySlot(_cellMetalStack)
-    );
+    float temp = MoltenMetal.GetTemperature(world, _cellMetalStack);
+    float meltPoint = MoltenMetal.MeltingPointOf(world, _cellMetalStack);
 
     bool changed = false;
     bool retesselate = false;
@@ -389,12 +371,7 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
       return null;
 
     var drop = new ItemStack(item, count);
-    drop.Collectible.SetTemperature(
-      world,
-      drop,
-      _cellTemperature,
-      delayCooldown: false
-    );
+    MoltenMetal.SetTemperature(world, drop, _cellTemperature);
     return drop;
   }
   #endregion
@@ -448,36 +425,14 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     {
       foreach (var face in OpenConnectorFaces)
       {
-        if (_cachedEndingMeshes.TryGetValue(face, out var cachedMesh))
+        if (!_cachedEndingMeshes.TryGetValue(face, out var endMesh))
         {
-          mesher.AddMeshData(cachedMesh);
-          continue;
-        }
-        var endShapeLoc = new AssetLocation(
-          "smex:shapes/molten/canal/end.json"
-        );
-        var endShape = Api.Assets.Get<Shape>(endShapeLoc);
-        if (endShape != null)
-        {
-          tesselator.TesselateShape(Block, endShape, out var endMesh);
-          float rotX = 0f * GameMath.DEG2RAD;
-          float rotZ = 0f * GameMath.DEG2RAD;
-
-          float rotY =
-            face.Index switch
-            {
-              BlockFacing.indexNORTH => 180f,
-              BlockFacing.indexEAST => 90f,
-              BlockFacing.indexWEST => 270f,
-              _ => 0f,
-            } * GameMath.DEG2RAD;
-
-          Vec3f center = new(0.5f, 0.5f, 0.5f);
-          endMesh.Rotate(center, rotX, rotY, rotZ);
-
+          endMesh = MoltenMeshes.TesselateEndCap(Api, tesselator, Block!, face);
+          if (endMesh == null)
+            continue;
           _cachedEndingMeshes.Add(face, endMesh);
-          mesher.AddMeshData(endMesh);
         }
+        mesher.AddMeshData(endMesh);
       }
     }
 
@@ -544,21 +499,18 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     if (Block is not BlockMoltenCanal)
       return;
 
-    Cuboidf[] boxes;
-    var quadDefs = Block.Attributes?[
-      "fillQuadsByLevel"
-    ]?.AsObject<FillQuadDef[]>();
-    if (quadDefs != null && quadDefs.Length > 0)
-      boxes = quadDefs
-        .Select(q => new Cuboidf(q.x1, 0f, q.z1, q.x2, 16f, q.z2))
-        .ToArray();
-    else
-      boxes = [new Cuboidf(7f, 0f, 0f, 9f, 16f, 16f)];
-
-    int fillStartPx = Block.Attributes?["fillStart"]?.AsInt(2) ?? 2;
-    int fillHeightLevels = Block.Attributes?["fillHeight"]?.AsInt(12) ?? 12;
-    float fillStartY = fillStartPx / 16f;
-    float rotY = (float)((Block.Shape?.rotateY ?? 0f) * Math.PI / 180.0);
+    Cuboidf[] boxes = FillQuads.ReadBoxes(
+      Block,
+      "fillQuadsByLevel",
+      new Cuboidf(7f, 0f, 0f, 9f, 16f, 16f)
+    );
+    float fillStartY = FillQuads.ReadStartY(Block, "fillStart", 2f);
+    float fillHeightLevels = FillQuads.ReadHeightLevels(
+      Block,
+      "fillHeight",
+      12f
+    );
+    float rotY = (Block.Shape?.rotateY ?? 0f) * GameMath.DEG2RAD;
 
     _renderer = new MoltenRenderer(
       Pos,
@@ -676,7 +628,21 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
 
     if (Solidified)
     {
-      dsc.AppendLine(Lang.Get("smex:canal-solidified"));
+      string solidMetalName = MoltenMetal.DisplayName(CellMetalType);
+      dsc.AppendLine(
+        Lang.Get(
+          "smex:canal-solidified",
+          CellAmount,
+          MaxUnitCapacity,
+          solidMetalName,
+          _cellTemperature
+        )
+      );
+      // Hot solid plug: still glowing, too hot to chip out. Tell the player to
+      // wait for it to cool below the chisellable (hardened) threshold.
+      dsc.AppendLine(
+        Lang.Get(IsHardened ? "smex:canal-chiselready" : "smex:canal-cooling")
+      );
       return;
     }
 
@@ -686,7 +652,7 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     }
     else
     {
-      string metalName = MetalDisplayName(CellMetalType);
+      string metalName = MoltenMetal.DisplayName(CellMetalType);
       dsc.AppendLine(
         Lang.Get(
           "smex:canal-content2",
@@ -699,14 +665,5 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     }
   }
 
-  // "game:ingot-iron" → "Iron", "smex:slag" → "Slag", "" → "unknown"
-  private static string MetalDisplayName(string metalItemCode)
-  {
-    if (metalItemCode.Length == 0)
-      return Lang.Get("smex:metal-unknown");
-    string path = new AssetLocation(metalItemCode).Path;
-    string name = path.StartsWith("ingot-") ? path[6..] : path;
-    return name.Length > 0 ? char.ToUpper(name[0]) + name[1..] : name;
-  }
   #endregion
 }

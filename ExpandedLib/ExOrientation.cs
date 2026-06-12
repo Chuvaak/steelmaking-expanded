@@ -19,14 +19,18 @@ namespace ExpandedLib;
 /// </summary>
 public static class ExOrientation
 {
-  /// <summary>Maps a horizontal "side" variant to its rotation angle (north 0, west 90, south 180, east 270).</summary>
+  /// <summary>
+  /// Maps a horizontal "side" variant to its rotation angle (north 0, west 90, south 180,
+  /// east 270). Accepts both the full names used by <c>side</c> variants and the
+  /// single-letter codes used by <c>orientation</c> variants ("n"/"w"/"s"/"e").
+  /// </summary>
   public static int AngleFromSide(string? side) =>
     side switch
     {
-      "east" => 270,
-      "south" => 180,
-      "west" => 90,
-      _ => 0, // "north" or default
+      "east" or "e" => 270,
+      "south" or "s" => 180,
+      "west" or "w" => 90,
+      _ => 0, // "north"/"n" or default
     };
 
   /// <summary>Rotates a structure-local offset by <paramref name="angle"/> (Y is untouched).</summary>
@@ -81,6 +85,62 @@ public static class ExOrientation
       node["y"].AsInt(fallback.Y),
       node["z"].AsInt(fallback.Z)
     );
+  }
+
+  /// <summary>
+  /// Reads a single structure-local <c>{ x, y, z }</c> offset with fractional (block-unit
+  /// double) coordinates from a block's JSON attributes (e.g. <c>cylinderVentOffset</c>),
+  /// falling back to <paramref name="fallback"/> when the attribute is absent. The double
+  /// counterpart of <see cref="ReadOffset"/> for continuous points (particle anchors).
+  /// </summary>
+  public static Vec3d ReadOffsetD(Block block, string attr, Vec3d fallback)
+  {
+    var node = block.Attributes?[attr];
+    if (node == null || !node.Exists)
+      return fallback;
+    return new Vec3d(
+      node["x"].AsDouble(fallback.X),
+      node["y"].AsDouble(fallback.Y),
+      node["z"].AsDouble(fallback.Z)
+    );
+  }
+
+  /// <summary>
+  /// Resolves an attribute-declared structure-local offset straight to a world cell:
+  /// <c>origin + RotateOffset(ReadOffset(attr), angle)</c>. The one canonical way a
+  /// machine block turns a JSON offset (firebox, lid, port, sub-machine cell, …) into
+  /// the world position for its placed rotation.
+  /// </summary>
+  public static BlockPos WorldPosFromAttr(
+    Block block,
+    BlockPos origin,
+    string attr,
+    Vec3i fallback,
+    int angle
+  )
+  {
+    Vec3i off = ReadOffset(block, attr, fallback);
+    Vec3i r = RotateOffset(off, angle);
+    return origin.AddCopy(r.X, r.Y, r.Z);
+  }
+
+  /// <summary>
+  /// Returns copies of <paramref name="boxes"/> rotated around the block centre by
+  /// <paramref name="angle"/> degrees (Y axis). JSON collision/selection boxes are
+  /// authored in the north orientation and do not auto-rotate with a placed "side"
+  /// variant, so oriented port blocks rotate them to match the shape's rotateY.
+  /// Returns the input array unchanged for angle 0.
+  /// </summary>
+  public static Cuboidf[] RotateBoxes(Cuboidf[] boxes, int angle)
+  {
+    angle = ((angle % 360) + 360) % 360;
+    if (angle == 0 || boxes.Length == 0)
+      return boxes;
+    var origin = new Vec3d(0.5, 0.5, 0.5);
+    var rotated = new Cuboidf[boxes.Length];
+    for (int i = 0; i < boxes.Length; i++)
+      rotated[i] = boxes[i].RotatedCopy(0, angle, 0, origin);
+    return rotated;
   }
 
   /// <summary>

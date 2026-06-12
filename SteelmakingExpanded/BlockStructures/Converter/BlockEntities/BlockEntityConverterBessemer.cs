@@ -110,7 +110,11 @@ public class BlockEntityConverterBessemer : BlockEntity
       resolvedShape,
       new Vec3f(0, Block.Shape.rotateY, 0)
     );
-    _animatorReady = true;
+    // CreateMesh returns a null shape when the block's shape asset fails to resolve,
+    // leaving animUtil.animator null — only mark ready when it truly exists, so
+    // ApplyPose never queues a pose against a null animator (vanilla GetBlockInfo
+    // would then NRE under extendedDebugInfo). Same guard as the boiler and engine.
+    _animatorReady = _animatable.animUtil.animator != null;
   }
 
   #endregion

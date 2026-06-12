@@ -37,26 +37,17 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
 
   /// <summary>Whether the stored metal has cooled below its liquid threshold.</summary>
   public bool IsHardened =>
-    MetalContent != null
-    && Temperature
-      < 0.3f
-        * MetalContent.Collectible.GetMeltingPoint(
-          Api.World,
-          null,
-          new DummySlot(MetalContent)
-        );
+    MetalContent != null && MoltenMetal.IsHardened(Api.World, MetalContent);
 
   /// <summary>Whether the barrel is filled to capacity.</summary>
   public bool IsFull => CurrentUnitAmount >= MaxUnitAmount;
 
   #region Incandescent block light
-  /// <summary>Below this temperature (°C) the metal emits no block light.</summary>
-  private const float GlowMinTemp = 500f;
   private byte _lastGlow;
 
   /// <summary>
-  /// Block-light value (0–24) emitted from the hot metal, scaled from temperature
-  /// above <see cref="GlowMinTemp"/>. Read by
+  /// Block-light value (0–24) emitted from the hot metal (the shared
+  /// <see cref="MoltenMetal.GlowLevel"/> scale). Read by
   /// <see cref="Blocks.BlockMoltenBarrel.GetLightHsv"/>; 0 when empty or cool.
   /// </summary>
   public byte GlowLightLevel
@@ -65,13 +56,9 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
     {
       if (Api?.World == null || MetalContent == null || CurrentUnitAmount <= 0)
         return 0;
-      float t = MetalContent.Collectible.GetTemperature(
-        Api.World,
-        MetalContent
+      return MoltenMetal.GlowLevel(
+        MoltenMetal.GetTemperature(Api.World, MetalContent)
       );
-      return t > GlowMinTemp
-        ? (byte)GameMath.Clamp((t - GlowMinTemp) / 30f, 0, 24)
-        : (byte)0;
     }
   }
 
@@ -142,26 +129,16 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
     {
       MetalContent = metal.Clone();
       MetalContent.ResolveBlockOrItem(Api.World);
-      MetalContent.Collectible.SetTemperature(
-        Api.World,
-        MetalContent,
-        temperature,
-        delayCooldown: false
-      );
+      MoltenMetal.SetTemperature(Api.World, MetalContent, temperature);
       MetalContent.StackSize = 1;
-      (MetalContent.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
-        "cooldownSpeed",
+      MoltenMetal.SetCooldownSpeed(
+        MetalContent,
         SmexValues.MoltenCooldownSpeed
       );
     }
     else
     {
-      MetalContent.Collectible.SetTemperature(
-        Api.World,
-        MetalContent,
-        temperature,
-        delayCooldown: false
-      );
+      MoltenMetal.SetTemperature(Api.World, MetalContent, temperature);
     }
 
     int accepted = Math.Min(amount, MaxUnitAmount - CurrentUnitAmount);
@@ -205,28 +182,17 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
 
   private void InitRenderer(ICoreClientAPI capi)
   {
-    var quadDefs = Block?.Attributes?[
-      "fillQuadsByLevel"
-    ]?.AsObject<FillQuadDef[]>();
-    Cuboidf[] boxes;
-    if (quadDefs != null && quadDefs.Length > 0)
-    {
-      boxes = new Cuboidf[quadDefs.Length];
-      for (int i = 0; i < quadDefs.Length; i++)
-        boxes[i] = new Cuboidf(
-          quadDefs[i].x1,
-          0f,
-          quadDefs[i].z1,
-          quadDefs[i].x2,
-          16f,
-          quadDefs[i].z2
-        );
-    }
-    else
-      boxes = [new Cuboidf(4f, 0f, 4f, 12f, 16f, 12f)];
-
-    float fillStartY = (Block?.Attributes?["fillStart"]?.AsInt(2) ?? 2) / 16f;
-    int fillHeightLevels = Block?.Attributes?["fillHeight"]?.AsInt(8) ?? 8;
+    Cuboidf[] boxes = FillQuads.ReadBoxes(
+      Block,
+      "fillQuadsByLevel",
+      new Cuboidf(4f, 0f, 4f, 12f, 16f, 12f)
+    );
+    float fillStartY = FillQuads.ReadStartY(Block, "fillStart", 2f);
+    float fillHeightLevels = FillQuads.ReadHeightLevels(
+      Block,
+      "fillHeight",
+      8f
+    );
 
     _renderer = new MoltenRenderer(
       Pos,
@@ -292,12 +258,7 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
       if (item != null)
       {
         var drop = new ItemStack(item, count);
-        drop.Collectible.SetTemperature(
-          Api.World,
-          drop,
-          Temperature,
-          delayCooldown: false
-        );
+        MoltenMetal.SetTemperature(Api.World, drop, Temperature);
         if (!byPlayer.InventoryManager.TryGiveItemstack(drop))
           Api.World.SpawnItemEntity(drop, Pos.ToVec3d().Add(0.5, 0.5, 0.5));
       }
@@ -381,12 +342,7 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
     if (item == null)
       return [];
     var drop = new ItemStack(item, count);
-    drop.Collectible.SetTemperature(
-      Api.World,
-      drop,
-      Temperature,
-      delayCooldown: false
-    );
+    MoltenMetal.SetTemperature(Api.World, drop, Temperature);
     return [drop];
   }
 
@@ -433,27 +389,22 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
       return;
     }
 
-    float meltPoint = MetalContent.Collectible.GetMeltingPoint(
-      Api.World,
-      null,
-      new DummySlot(MetalContent)
-    );
+    // The barrel labels its in-between state "soft" (re-meltable) rather than "cooling".
     string state = Lang.Get(
-      Temperature > 0.8f * meltPoint ? "smex:metalstate-liquid"
-      : IsHardened ? "smex:metalstate-hardened"
-      : "smex:metalstate-soft"
+      MoltenMetal.StateOf(Api.World, MetalContent) switch
+      {
+        MoltenState.Liquid => "smex:metalstate-liquid",
+        MoltenState.Hardened => "smex:metalstate-hardened",
+        _ => "smex:metalstate-soft",
+      }
     );
-    string tempStr =
-      Temperature < 21f
-        ? Lang.Get("smex:metalstate-cold")
-        : $"{Temperature:F0}°C";
     dsc.AppendLine(
       Lang.Get(
         "smex:moltenbarrel-info-units-state",
         CurrentUnitAmount,
         MaxUnitAmount,
         state,
-        tempStr
+        MoltenMetal.FormatTemperature(Temperature)
       )
     );
   }

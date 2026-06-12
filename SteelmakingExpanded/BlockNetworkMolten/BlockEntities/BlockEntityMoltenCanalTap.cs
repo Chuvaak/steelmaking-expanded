@@ -259,16 +259,13 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     out float fillHeightLevels
   )
   {
-    var quadDefs = block.Attributes?[
-      "fillQuadsByLevel"
-    ]?.AsObject<FillQuadDef[]>();
-    Cuboidf[] boxes = quadDefs is { Length: > 0 }
-      ? [.. quadDefs.Select(q => new Cuboidf(q.x1, 0f, q.z1, q.x2, 16f, q.z2))]
-      : [new Cuboidf(4f, 0f, 4f, 12f, 16f, 12f)];
-
-    fillStartY = (block.Attributes?["fillStart"]?.AsFloat(1f) ?? 1f) / 16f;
-    fillHeightLevels = block.Attributes?["fillHeight"]?.AsFloat(8f) ?? 8f;
-    return boxes;
+    fillStartY = FillQuads.ReadStartY(block, "fillStart", 1f);
+    fillHeightLevels = FillQuads.ReadHeightLevels(block, "fillHeight", 8f);
+    return FillQuads.ReadBoxes(
+      block,
+      "fillQuadsByLevel",
+      new Cuboidf(4f, 0f, 4f, 12f, 16f, 12f)
+    );
   }
 
   #endregion
@@ -278,19 +275,11 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
   /// <summary>Parks <paramref name="barrelStack"/> under the tap, adopting any metal it already holds.</summary>
   public void AddBarrel(ItemStack barrelStack)
   {
-    if (
-      barrelStack.Attributes["blockEntityAttributes"] is ITreeAttribute beData
-    )
-    {
-      BarrelMetalContent = beData.GetItemstack("contents");
-      BarrelMetalContent?.ResolveBlockOrItem(Api.World);
-      BarrelCurrentUnits = beData.GetInt("currentUnitAmount");
-    }
-    else
-    {
-      BarrelMetalContent = null;
-      BarrelCurrentUnits = 0;
-    }
+    (BarrelMetalContent, BarrelCurrentUnits) = MoltenContents.Read(
+      barrelStack,
+      MoltenContents.BarrelUnitsKey,
+      Api.World
+    );
     BarrelMaxUnits =
       barrelStack.Block?.Attributes?["maxUnits"].AsInt(
         SmexValues.BarrelDefaultMaxUnits
@@ -307,13 +296,12 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
       new AssetLocation("smex:moltenbarrel")
     );
     var stack = new ItemStack(barrelBlock);
-    if (BarrelMetalContent != null || BarrelCurrentUnits > 0)
-    {
-      var beData = new TreeAttribute();
-      beData.SetItemstack("contents", BarrelMetalContent);
-      beData.SetInt("currentUnitAmount", BarrelCurrentUnits);
-      stack.Attributes["blockEntityAttributes"] = beData;
-    }
+    MoltenContents.Write(
+      stack,
+      MoltenContents.BarrelUnitsKey,
+      BarrelMetalContent,
+      BarrelCurrentUnits
+    );
     BarrelMetalContent = null;
     BarrelCurrentUnits = 0;
     BarrelMaxUnits = SmexValues.BarrelDefaultMaxUnits;
@@ -330,17 +318,11 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     MoldStack = itemStack.Clone();
     MoldStack.StackSize = 1;
 
-    if (itemStack.Attributes?["blockEntityAttributes"] is ITreeAttribute beData)
-    {
-      MoldMetalContent = beData.GetItemstack("contents");
-      MoldMetalContent?.ResolveBlockOrItem(Api.World);
-      MoldCurrentUnits = beData.GetInt("fillLevel");
-    }
-    else
-    {
-      MoldMetalContent = null;
-      MoldCurrentUnits = 0;
-    }
+    (MoldMetalContent, MoldCurrentUnits) = MoltenContents.Read(
+      itemStack,
+      MoltenContents.MoldUnitsKey,
+      Api.World
+    );
 
     MoldMaxUnits =
       MoldStack.Block?.Attributes?["requiredUnits"].AsInt(
@@ -356,15 +338,12 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     IsMold = false;
     var stack = MoldStack!.Clone();
 
-    if (MoldMetalContent != null && MoldCurrentUnits > 0)
-    {
-      var beData = new TreeAttribute();
-      beData.SetItemstack("contents", MoldMetalContent.Clone());
-      beData.SetInt("fillLevel", MoldCurrentUnits);
-      beData.SetBool("shattered", false);
-      beData.SetFloat("meshAngle", 0f);
-      stack.Attributes["blockEntityAttributes"] = beData;
-    }
+    MoltenContents.Write(
+      stack,
+      MoltenContents.MoldUnitsKey,
+      MoldMetalContent,
+      MoldCurrentUnits
+    );
 
     MoldStack = null;
     MoldMetalContent = null;
@@ -478,37 +457,19 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
 
     if (content == null)
     {
-      Item? collectible =
-        type.Length > 0 ? Api.World.GetItem(new AssetLocation(type)) : null;
-      if (collectible == null)
+      content = MoltenMetal.CreateStack(Api.World, type, temp, cooldownSpeed);
+      if (content == null)
         return 0;
-      content = new ItemStack(collectible, 1);
-      (content.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
-        "cooldownSpeed",
-        cooldownSpeed
-      );
     }
-    content.Collectible.SetTemperature(
-      Api.World,
-      content,
-      temp,
-      delayCooldown: false
-    );
+    else
+    {
+      MoltenMetal.SetTemperature(Api.World, content, temp);
+    }
     return (int)drained;
   }
 
-  private bool IsContentHardened(ItemStack? content)
-  {
-    if (content == null)
-      return false;
-    float temp = content.Collectible.GetTemperature(Api.World, content);
-    float meltPoint = content.Collectible.GetMeltingPoint(
-      Api.World,
-      null,
-      new DummySlot(content)
-    );
-    return temp < 0.3f * meltPoint;
-  }
+  private bool IsContentHardened(ItemStack? content) =>
+    content != null && MoltenMetal.IsHardened(Api.World, content);
 
   #endregion
 
@@ -613,34 +574,24 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
       return;
     }
 
-    float temp = content.Collectible.GetTemperature(Api.World, content);
-    float meltPoint = content.Collectible.GetMeltingPoint(
-      Api.World,
-      null,
-      new DummySlot(content)
-    );
+    float temp = MoltenMetal.GetTemperature(Api.World, content);
     string state = Lang.Get(
-      temp > 0.8f * meltPoint ? "smex:metalstate-liquid"
-      : temp < 0.3f * meltPoint ? "smex:metalstate-hardened"
-      : "smex:metalstate-cooling"
+      MoltenMetal.StateOf(Api.World, content) switch
+      {
+        MoltenState.Liquid => "smex:metalstate-liquid",
+        MoltenState.Hardened => "smex:metalstate-hardened",
+        _ => "smex:metalstate-cooling",
+      }
     );
-    string tempStr =
-      temp < 21f ? Lang.Get("smex:metalstate-cold") : $"{temp:F0}°C";
-    string path = content.Collectible.Code.Path;
-    string metalName = path.StartsWith("ingot-") ? path[6..] : path;
-    metalName =
-      metalName.Length > 0
-        ? char.ToUpper(metalName[0]) + metalName[1..]
-        : metalName;
     dsc.AppendLine(
       Lang.Get(
         "smex:canal-content",
         label,
         currentUnits,
         maxUnits,
-        metalName,
+        MoltenMetal.DisplayName(content.Collectible.Code.ToString()),
         state,
-        tempStr
+        MoltenMetal.FormatTemperature(temp)
       )
     );
   }
@@ -690,26 +641,12 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     if (!IsPouring)
     {
       if (_tapEndMesh == null && Orientation != null)
-      {
-        var endShape = Api.Assets.Get<Shape>(
-          new AssetLocation("smex:shapes/molten/canal/end.json")
+        _tapEndMesh = MoltenMeshes.TesselateEndCap(
+          Api,
+          tesselator,
+          Block!,
+          BlockFacing.FromFirstLetter(Orientation)
         );
-        if (endShape != null)
-        {
-          tesselator.TesselateShape(Block, endShape, out _tapEndMesh);
-          var face = BlockFacing.FromFirstLetter(Orientation);
-          float rotY =
-            face.Index switch
-            {
-              BlockFacing.indexNORTH => 180f,
-              BlockFacing.indexEAST => 90f,
-              BlockFacing.indexWEST => 270f,
-              _ => 0f,
-            } * GameMath.DEG2RAD;
-          if (rotY != 0f)
-            _tapEndMesh.Rotate(new Vec3f(0.5f, 0.5f, 0.5f), 0f, rotY, 0f);
-        }
-      }
       if (_tapEndMesh != null)
         mesher.AddMeshData(_tapEndMesh);
     }

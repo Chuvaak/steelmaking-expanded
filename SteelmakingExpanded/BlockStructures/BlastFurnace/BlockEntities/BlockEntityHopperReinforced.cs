@@ -4,6 +4,7 @@ using SteelmakingExpanded.Compat;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
+using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 
@@ -18,6 +19,14 @@ namespace SteelmakingExpanded.BlockStructures.BlastFurnace.BlockEntities;
 public class BlockEntityHopperReinforced : BlockEntityContainer
 {
   private InventoryGeneric _inventory;
+
+  // Cached, untranslated mesh of the blast-mix contents pile (built lazily client-side).
+  private MeshData? _contentsBaseMesh;
+
+  // The contents pile is drawn between these heights (in 1/16 block units) inside the
+  // hopper, scaling with how full the bell hopper's magazine is below.
+  private const float ContentsMinY = 9f;
+  private const float ContentsMaxY = 14f;
 
   public override InventoryBase Inventory => _inventory;
   public override string InventoryClassName => "hopperreinforced";
@@ -103,6 +112,58 @@ public class BlockEntityHopperReinforced : BlockEntityContainer
     {
       dsc.AppendLine(Lang.Get("smex:hopper-info-nobell"));
     }
+  }
+
+  /// <summary>
+  /// Draws the blast-mix contents pile on top of the normal hopper mesh, raised
+  /// between <see cref="ContentsMinY"/> and <see cref="ContentsMaxY"/> in proportion
+  /// to how full the bell hopper's magazine is below. The bell re-triggers this
+  /// tessellation whenever its magazine changes.
+  /// </summary>
+  public override bool OnTesselation(
+    ITerrainMeshPool mesher,
+    ITesselatorAPI tesselator
+  )
+  {
+    if (
+      Api.World.BlockAccessor.GetBlockEntity(Pos.DownCopy())
+        is BlockEntityHopperBell bell
+      && bell.BlastMixMagazine > 0
+    )
+    {
+      _contentsBaseMesh ??= BuildContentsMesh(tesselator);
+      if (_contentsBaseMesh != null)
+      {
+        float fill = GameMath.Clamp(
+          (float)bell.BlastMixMagazine / bell.MaxMagazineCapacity,
+          0f,
+          1f
+        );
+        float yOffset =
+          (ContentsMinY + fill * (ContentsMaxY - ContentsMinY)) / 16f;
+
+        MeshData mesh = _contentsBaseMesh.Clone();
+        mesh.Translate(0f, yOffset, 0f);
+        mesher.AddMeshData(mesh);
+      }
+    }
+
+    // Keep the default hopper block mesh as well.
+    return base.OnTesselation(mesher, tesselator);
+  }
+
+  private MeshData? BuildContentsMesh(ITesselatorAPI tesselator)
+  {
+    Shape? shape = Api
+      .Assets.TryGet(
+        new AssetLocation("smex:shapes/blastfurnace/contents-blastmix.json")
+      )
+      ?.ToObject<Shape>();
+    if (shape == null)
+      return null;
+
+    tesselator.TesselateShape(Block, shape, out MeshData mesh);
+    return mesh;
   }
 }
 

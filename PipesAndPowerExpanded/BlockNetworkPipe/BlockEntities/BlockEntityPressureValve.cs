@@ -25,7 +25,7 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 /// (iron 5 / steel 10 atm).
 /// </summary>
 [EntityRegister]
-public class BlockEntityPressureValve : BlockEntityPipe, IPressureValve
+public class BlockEntityPressureValve : BlockEntityPipe
 {
   /// <summary>Lowest gate pressure the valve can be dialled to (atm, gauge).</summary>
   public const float MinGatePressure = 0f;
@@ -152,8 +152,7 @@ public class BlockEntityPressureValve : BlockEntityPipe, IPressureValve
       // instead of filling the run. TryProduceGas creates the State on demand.
       bool leaking = outNet.State?.IsLeaking ?? false;
       float push = leaking ? Math.Min(excess, PpexValues.GasLeakRate) : excess;
-      float before = outNet.State?.Volume ?? 0f;
-      outNet.TryProduceGas(
+      float accepted = outNet.ProduceGasMeasured(
         push,
         temp,
         gasType,
@@ -161,7 +160,6 @@ public class BlockEntityPressureValve : BlockEntityPipe, IPressureValve
         maxOutputPressure: float.MaxValue,
         bypassLeakCap: leaking
       );
-      float accepted = (outNet.State?.Volume ?? 0f) - before;
       if (accepted > 0f)
         inNet!.TryConsumeGas(accepted, ba);
       return accepted;
@@ -240,18 +238,6 @@ public class BlockEntityPressureValve : BlockEntityPipe, IPressureValve
       ExSounds.SplashSound(Api.World, Pos);
     }
     return spilled;
-  }
-
-  /// <inheritdoc/>
-  public BlockFacing? GetPriorityFace()
-  {
-    if (
-      Block is BlockPipe pipe
-      && pipe.Orientation != null
-      && pipe.Orientation.Length >= 2
-    )
-      return BlockFacing.FromCode(pipe.Orientation[1].ToString());
-    return null;
   }
 
   public override void OnBlockRemoved()

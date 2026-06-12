@@ -27,7 +27,7 @@ namespace SteelmakingExpanded.BlockStructures.SmokeStack.BlockEntities;
 public class BlockEntitySmokeStack
   : BlockEntityMultiblockStructure,
     INetworkNode,
-    IPipeConsumer
+    IPipeNode
 {
   private float _lastConsumedAmount;
   private BlockNetworkModSystem? _system;
@@ -81,7 +81,31 @@ public class BlockEntitySmokeStack
 
   #endregion
 
-  #region IPipeConsumer
+  #region IPipeNode
+
+  /// <summary>
+  /// Injects gas into the network at this block's position. The smoke stack only ever
+  /// vents the network, so this delegates to the network for completeness but is unused.
+  /// </summary>
+  public bool TryProduce(
+    float volume,
+    float temperature,
+    string gasType = "Air",
+    float maxOutputPressure = 1.0f,
+    bool bypassLeakCap = false
+  )
+  {
+    if (_system?.GetNetworkAt(Pos) is not PipeNetwork gasNet)
+      return false;
+    return gasNet.TryProduceGas(
+      volume,
+      temperature,
+      gasType,
+      Api.World.BlockAccessor,
+      maxOutputPressure: maxOutputPressure,
+      bypassLeakCap: bypassLeakCap
+    );
+  }
 
   /// <summary>
   /// Consumes up to <paramref name="requestedVolume"/> litres from the gas network
@@ -95,16 +119,37 @@ public class BlockEntitySmokeStack
   }
 
   /// <inheritdoc/>
-  public float CurrentNetworkPressure =>
-    _system?.GetNetworkAt(Pos) is not PipeNetwork gasNet
-      ? 0f
-      : gasNet.State?.Pressure ?? 0f;
+  public float Temperature =>
+    _system?.GetNetworkAt(Pos) is PipeNetwork gasNet
+      ? gasNet.State?.Temperature ?? 20f
+      : 20f;
 
   /// <inheritdoc/>
-  public float CurrentNetworkVolume =>
-    _system?.GetNetworkAt(Pos) is not PipeNetwork gasNet
-      ? 0f
-      : gasNet.State?.Volume ?? 0f;
+  public string Medium =>
+    _system?.GetNetworkAt(Pos) is PipeNetwork gasNet
+      ? gasNet.State?.MediumType ?? ""
+      : "";
+
+  /// <inheritdoc/>
+  public bool IsLiquid => Medium == "Water";
+
+  /// <inheritdoc/>
+  public float Pressure =>
+    _system?.GetNetworkAt(Pos) is PipeNetwork gasNet
+      ? gasNet.State?.Pressure ?? 0f
+      : 0f;
+
+  /// <inheritdoc/>
+  public float Volume =>
+    _system?.GetNetworkAt(Pos) is PipeNetwork gasNet
+      ? gasNet.State?.Volume ?? 0f
+      : 0f;
+
+  /// <inheritdoc/>
+  public float MaxVolume =>
+    _system?.GetNetworkAt(Pos) is PipeNetwork gasNet
+      ? gasNet.State?.MaxVolume ?? 0f
+      : 0f;
 
   #endregion
 
@@ -115,30 +160,10 @@ public class BlockEntitySmokeStack
     if (Block == null)
       return;
 
-    string orientation = Block.Variant["orientation"];
-    int angle = orientation switch
-    {
-      "n" => 0,
-      "w" => 90,
-      "s" => 180,
-      "e" => 270,
-      _ => 0,
-    };
-
-    if (_structure == null || _currentAngle != angle)
-    {
-      _structure = Block.Attributes?[
-        "multiblockStructure"
-      ]?.AsObject<MultiblockStructure>();
-      _structure?.InitForUse(angle);
-      _currentAngle = angle;
-
-      if (Api is ICoreClientAPI capi && _highlightedStructure != null)
-      {
-        _highlightedStructure.ClearHighlights(Api.World, capi.World.Player);
-        _highlightedStructure = null;
-      }
-    }
+    // Single-letter orientation codes share the side-angle convention.
+    SetStructureAngle(
+      ExOrientation.AngleFromSide(Block.Variant["orientation"])
+    );
   }
 
   protected override string GetIncompleteMessage(int missingCount) =>
@@ -158,6 +183,11 @@ public class BlockEntitySmokeStack
 
     var gasIntakeVolume = SmexValues.SmokestackGasIntakeVolume;
 
+    // Read the medium before drawing — TryConsume can empty the pool and clear its label.
+    // Water is never pulled: TryConsume refuses a liquid run, so this only ever vents
+    // exhaust, steam or plain air.
+    string medium = Medium;
+
     // Delegates to IGasConsumer; GasNetwork updates state and broadcasts.
     float consumed = TryConsume(gasIntakeVolume);
 
@@ -171,24 +201,29 @@ public class BlockEntitySmokeStack
       _lastConsumedAmount = consumed;
     }
 
-    if (_lastConsumedAmount > 0)
-    {
-      SpawnSmokeParticles();
-      // Soft draught of exhaust venting up the stack.
-      ExSounds.PlayThrottled(
-        Api,
-        Pos,
-        ExSounds.Fire,
-        ref _lastVentSoundMs,
-        6000,
-        0.3f,
-        32f
-      );
-    }
+    if (_lastConsumedAmount <= 0)
+      return;
+
+    SpawnSmokeParticles(medium);
+    // Soft draught of exhaust venting up the stack.
+    ExSounds.PlayThrottled(
+      Api,
+      Pos,
+      ExSounds.Fire,
+      ref _lastVentSoundMs,
+      6000,
+      0.3f,
+      32f
+    );
   }
 
-  private void SpawnSmokeParticles()
+  private void SpawnSmokeParticles(string medium)
   {
+    // Colour the plume by what's venting: dark soot for exhaust, white vapour for steam,
+    // and nothing at all for plain air.
+    if (ExParticles.GasColor(medium, ventAir: false) is not int color)
+      return;
+
     // The smoke column sits over the cell in front of the stack — structure-local
     // (0, *, 1) rotated by the placed orientation, same as GetGlobalPos resolves it.
     Vec3i d = ExOrientation.RotateOffset(0, 0, 1, _currentAngle);
@@ -200,7 +235,7 @@ public class BlockEntitySmokeStack
 
     ExParticles.RisingPlume(
       Api.World,
-      ExParticles.Smoke,
+      color,
       minPos,
       maxPos,
       new Vec3f(-0.5f, 1f, -0.5f),

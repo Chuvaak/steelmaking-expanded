@@ -1,5 +1,6 @@
 using System.Text;
 using ExpandedLib;
+using ExpandedLib.BlockNetworks;
 using ExpandedLib.BlockStructures;
 using ExpandedLib.EntityRegistry;
 using PipesAndPowerExpanded;
@@ -36,10 +37,16 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
   private float _coolingSpeedExhaust;
   private float _coolingSpeedAir;
   private float _maxTemperature;
+  private float _intakeVolume;
+
+  private BlockNetworkModSystem? _netSystem;
 
   public override void Initialize(ICoreAPI api)
   {
     base.Initialize(api);
+
+    if (api.Side == EnumAppSide.Server)
+      _netSystem = api.ModLoader.GetModSystem<BlockNetworkModSystem>();
 
     _factorAnthracite = SmexValues.CowperHeatingSpeedAnthracite;
     _factorOtherCoal = SmexValues.CowperHeatingSpeedOtherCoal;
@@ -47,15 +54,13 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
     _coolingSpeedExhaust = SmexValues.CowperCoolingSpeedExhaust;
     _coolingSpeedAir = SmexValues.CowperCoolingSpeedAir;
     _maxTemperature = SmexValues.CowperMaxTemperature;
+    _intakeVolume = SmexValues.CowperIntakeVolume;
 
-    _connectorFace = Block.Variant["side"] switch
-    {
-      "north" => BlockFacing.SOUTH,
-      "east" => BlockFacing.WEST,
-      "south" => BlockFacing.NORTH,
-      "west" => BlockFacing.EAST,
-      _ => BlockFacing.SOUTH,
-    };
+    // The exhaust connector sits on the stove's local-south face, rotated with the block.
+    _connectorFace = ExOrientation.RotateFacing(
+      BlockFacing.SOUTH,
+      ExOrientation.AngleFromSide(Block.Variant["side"])
+    );
   }
 
   #region Abstract implementations
@@ -65,29 +70,11 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
     if (Block == null)
       return;
 
-    int angle = Block.Variant["side"] switch
-    {
-      "north" => 180,
-      "west" => 270,
-      "south" => 0,
-      "east" => 90,
-      _ => 0,
-    };
-
-    if (_structure == null || _currentAngle != angle)
-    {
-      _structure = Block.Attributes?[
-        "multiblockStructure"
-      ]?.AsObject<MultiblockStructure>();
-      _structure?.InitForUse(angle);
-      _currentAngle = angle;
-
-      if (Api is ICoreClientAPI capi && _highlightedStructure != null)
-      {
-        _highlightedStructure.ClearHighlights(Api.World, capi.World.Player);
-        _highlightedStructure = null;
-      }
-    }
+    // The cowper's structure layout faces opposite its "side" variant (the same +180
+    // convention as the boiler body).
+    SetStructureAngle(
+      (ExOrientation.AngleFromSide(Block.Variant["side"]) + 180) % 360
+    );
   }
 
   protected override string GetIncompleteMessage(int missingCount) =>
@@ -105,16 +92,27 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
     if (!StructureComplete)
       return;
 
+    // The stove is a fixed machine port: only draw from a run whose pipe actually
+    // presents a connector back at the stove's exhaust face — a pipe merely routed
+    // through the adjacent cell with its connectors pointing elsewhere is not
+    // plumbed in (same reciprocity rule as the converter intake and the engines).
     var consumedExhaustVol = 0f;
     float inputExhaustTemp = 20f;
     bool isReceivingExhaust = false;
     if (
-      Api.World.BlockAccessor.GetBlockEntity(Pos.AddCopy(_connectorFace))
-      is BlockEntityPipe exhaustPipe
+      _netSystem?.GetConnectedNetworkAcross(
+        Api.World.BlockAccessor,
+        Pos,
+        _connectorFace
+      )
+      is PipeNetwork exhaustNet
     )
     {
-      consumedExhaustVol = exhaustPipe.TryConsume(24f);
-      inputExhaustTemp = exhaustPipe.NetworkTemperature;
+      inputExhaustTemp = exhaustNet.State?.Temperature ?? 20f;
+      consumedExhaustVol = exhaustNet.TryConsumeGas(
+        _intakeVolume,
+        Api.World.BlockAccessor
+      );
       isReceivingExhaust = consumedExhaustVol > 0;
     }
 
@@ -151,14 +149,14 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
       Api.World.BlockAccessor.GetBlockEntity(passthroughPos)
       as BlockEntityPipePassthrough;
 
-    if (passthrough?.CurrentNetworkVolume > 0)
+    if (passthrough?.Volume > 0)
     {
-      airTemp = passthrough.NetworkTemperature;
+      airTemp = passthrough.Temperature;
       inGasType = passthrough.Medium;
       airVol =
-        passthrough.CurrentNetworkVolume <= 24f
-          ? 24f
-          : passthrough.CurrentNetworkVolume;
+        passthrough.Volume <= _intakeVolume
+          ? _intakeVolume
+          : passthrough.Volume;
     }
 
     string newStatus = Lang.Get("smex:cowperstove-status-idle");
@@ -199,7 +197,7 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
       BlockPos exhaustOutletPos2 = GetGlobalPos(0, 0, 2);
       if (
         Api.World.BlockAccessor.GetBlockEntity(exhaustOutletPos2)
-        is IPipeProducer outlet2
+        is IPipeNode outlet2
       )
         outlet2.TryProduce(
           consumedExhaustVol,
@@ -220,10 +218,10 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
       BlockPos hotAirOutletPos = GetGlobalPos(0, 1, 0);
       if (
         Api.World.BlockAccessor.GetBlockEntity(hotAirOutletPos)
-        is IPipeProducer hotOutlet
+        is IPipeNode hotOutlet
       )
       {
-        float inputPressure = passthrough?.CurrentNetworkPressure ?? 1f;
+        float inputPressure = passthrough?.Pressure ?? 1f;
         var accepted = hotOutlet.TryProduce(
           airVol,
           airTemp,
@@ -231,7 +229,7 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
           maxOutputPressure: inputPressure > 1f ? inputPressure : 1f
         );
         if (accepted && passthrough != null)
-          passthrough.TryConsume(24f);
+          passthrough.TryConsume(_intakeVolume);
       }
     }
 

@@ -12,16 +12,12 @@ using Vintagestory.API.MathTools;
 namespace PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 
 /// <summary>
-/// Block entity for all gas-pipe blocks.  Implements <see cref="IPipeProducer"/> and
-/// <see cref="IPipeConsumer"/> by delegating entirely to the owning
-/// <see cref="PipeNetwork"/> — the BE holds no internal network state and never
-/// calls <c>BroadcastUpdate</c> directly.
+/// Block entity for all gas-pipe blocks.  Implements <see cref="IPipeNode"/> by
+/// delegating entirely to the owning <see cref="PipeNetwork"/> — the BE holds no
+/// internal network state and never calls <c>BroadcastUpdate</c> directly.
 /// </summary>
 [EntityRegister]
-public class BlockEntityPipe
-  : BlockEntityNetworkNode,
-    IPipeProducer,
-    IPipeConsumer
+public class BlockEntityPipe : BlockEntityNetworkNode, IPipeNode
 {
   public sealed override string NetworkType
   {
@@ -31,7 +27,7 @@ public class BlockEntityPipe
 
   /// <summary>Gas temperature (°C) of this pipe's network, cached from the last broadcast.
   /// Every pipe in a run reports the same value — the network has no spatial gradient.</summary>
-  public float NetworkTemperature { get; protected set; }
+  public float Temperature { get; protected set; }
 
   /// <summary>Current medium of this pipe's network ("Air"/"Steam"/"Exhaust"/"Water", or
   /// "" when empty), cached from the last network broadcast.</summary>
@@ -47,7 +43,10 @@ public class BlockEntityPipe
 
   /// <summary>Client-synced gas volume (L) in this pipe's network; used by external
   /// look-at info such as the vanilla-chimney venting patch.</summary>
-  public float ClientGasVolume => _clientVolume;
+  public float Volume => _clientVolume;
+
+  /// <summary>Client-synced maximum volume (L) of this pipe's network at its current node count.</summary>
+  public float MaxVolume => _clientMaxVolume;
 
   // Client-side display data populated from network broadcasts.
   protected float _clientVolume;
@@ -62,7 +61,7 @@ public class BlockEntityPipe
   private float _lastSyncFlow = -1;
   private float _lastSyncPressure = -1;
 
-  #region IGasProducer / IGasConsumer
+  #region IPipeNode
 
   /// <inheritdoc/>
   public virtual bool TryProduce(
@@ -90,18 +89,6 @@ public class BlockEntityPipe
     NetworkSystem?.GetNetworkAt(Pos) is not PipeNetwork pipeNet
       ? 0f
       : pipeNet.TryConsumeGas(requestedVolume, Api.World.BlockAccessor);
-
-  /// <inheritdoc/>
-  public virtual float CurrentNetworkPressure =>
-    NetworkSystem?.GetNetworkAt(Pos) is PipeNetwork pipeNet
-      ? pipeNet.State?.Pressure ?? 0f
-      : 0f;
-
-  /// <inheritdoc/>
-  public virtual float CurrentNetworkVolume =>
-    NetworkSystem?.GetNetworkAt(Pos) is PipeNetwork pipeNet
-      ? pipeNet.State?.Volume ?? 0f
-      : 0f;
 
   #endregion
 
@@ -224,7 +211,7 @@ public class BlockEntityPipe
       newMaxVol = netState.MaxVolume;
     }
 
-    NetworkTemperature = newTemp;
+    Temperature = newTemp;
     Medium = newMedium;
     Pressure = newPressure;
 
@@ -300,7 +287,7 @@ public class BlockEntityPipe
     base.ToTreeAttributes(tree);
     // Ensure the synced display fields are present even when _savedNetworkState is null
     // (empty network), so the client display/glow always has a value.
-    tree.SetFloat("temp", NetworkTemperature);
+    tree.SetFloat("temp", Temperature);
     tree.SetString("medium", Medium);
     tree.SetFloat("pressure", Pressure);
   }
@@ -315,7 +302,7 @@ public class BlockEntityPipe
     // Populate client display fields from the same tree keys for rendering.
     _clientVolume = tree.GetFloat("vol");
     _clientMaxVolume = tree.GetFloat("max");
-    NetworkTemperature = tree.GetFloat("temp", 20f);
+    Temperature = tree.GetFloat("temp", 20f);
     Medium = tree.GetString("medium", "");
     _openingsCount = tree.GetInt("openings");
     _clientFlowRate = tree.GetFloat("flow");
@@ -350,7 +337,7 @@ public class BlockEntityPipe
           "ppex:pipe-info-flow",
           _clientFlowRate,
           Lang.Get("ppex:pipe-medium-water"),
-          NetworkTemperature
+          Temperature
         )
       );
       dsc.AppendLine(Lang.Get("ppex:pipe-info-pressure", Pressure));
@@ -358,12 +345,7 @@ public class BlockEntityPipe
     else if (_clientMaxVolume > 0 && Medium.Length > 0)
     {
       dsc.AppendLine(
-        Lang.Get(
-          "ppex:pipe-info-flow",
-          _clientFlowRate,
-          Medium,
-          NetworkTemperature
-        )
+        Lang.Get("ppex:pipe-info-flow", _clientFlowRate, Medium, Temperature)
       );
       dsc.AppendLine(Lang.Get("ppex:pipe-info-pressure", Pressure));
 

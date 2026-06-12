@@ -1,77 +1,98 @@
 using System;
 using System.Collections.Generic;
 using ExpandedLib;
-using ExpandedLib.EntityRegistry;
+using HarmonyLib;
+using SteelmakingExpanded.BlockNetworkMolten;
+using SteelmakingExpanded.BlockNetworkMolten.Blocks;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
+using Vintagestory.API.Server;
 using Vintagestory.API.Util;
 using Vintagestory.GameContent;
 
-namespace SteelmakingExpanded.Overrides;
+namespace SteelmakingExpanded.Patches;
 
 /// <summary>
-/// Drop-in replacement for the vanilla <see cref="BlockToolMold"/> with a
-/// tweaked right-click flow so filled molds produced by the mold pedestal can
-/// be retrieved cleanly:
+/// Harmony patches on the vanilla tool mold that adjust its right-click flow so
+/// filled molds produced by the mold pedestal can be retrieved cleanly:
 ///
 /// <list type="bullet">
 ///   <item>A hardened, full mold yields the cast item first; the (now empty)
 ///   mold stays in the world.</item>
 ///   <item>Any other state — empty, still-liquid, or unfinished — picks up the
 ///   mold itself and removes the block, carrying any remaining contents along
-///   in <c>blockEntityAttributes</c> so they survive replacement.</item>
+///   in <c>blockEntityAttributes</c> so they survive replacement. A mold whose
+///   metal is still liquid may only be taken into an empty hand (anywhere else
+///   it would instantly spill).</item>
 /// </list>
 ///
-/// Vanilla routes this through the non-virtual
-/// <c>BlockEntityToolMold.OnPlayerInteract</c>, which can't be overridden from
-/// the block entity, so the logic lives here instead.
+/// Implemented as patches (not a re-registered block class) so other mods that
+/// touch the tool mold can coexist.
 /// </summary>
-[EntityRegister("BlockToolMold", PrefixModId = false)]
-public class CustomBlockToolMold : BlockToolMold
+[HarmonyPatch]
+public static class ToolMoldPatches
 {
   // Cache of baked held-item meshes (mold body + molten metal surface), keyed
   // by block + metal + quantised fill level + quantised glow so the number of
-  // uploaded meshes stays bounded.
-  private readonly Dictionary<string, MultiTextureMeshRef> _heldContentMeshes =
-  [];
+  // uploaded meshes stays bounded. Cleared when the mod system is disposed.
+  private static readonly Dictionary<
+    string,
+    MultiTextureMeshRef
+  > _heldContentMeshes = [];
 
-  public override void OnBeforeRender(
+  /// <summary>Disposes and clears the cached held-content meshes (client shutdown).</summary>
+  public static void ClearMeshCache()
+  {
+    foreach (var meshRef in _heldContentMeshes.Values)
+      meshRef?.Dispose();
+    _heldContentMeshes.Clear();
+  }
+
+  /// <summary>
+  /// Renders the molten-metal surface inside a held filled mold. Declared on
+  /// <see cref="CollectibleObject"/> (the mold does not override it), so the
+  /// patch guards on the instance type before doing any work.
+  /// </summary>
+  [HarmonyPostfix]
+  [HarmonyPatch(
+    typeof(CollectibleObject),
+    nameof(CollectibleObject.OnBeforeRender)
+  )]
+  public static void OnBeforeRenderPostfix(
+    CollectibleObject __instance,
     ICoreClientAPI capi,
     ItemStack itemstack,
-    EnumItemRenderTarget target,
     ref ItemRenderInfo renderinfo
   )
   {
-    base.OnBeforeRender(capi, itemstack, target, ref renderinfo);
+    if (__instance is not BlockToolMold mold)
+      return;
 
-    var beData = itemstack.Attributes?.GetTreeAttribute(
-      "blockEntityAttributes"
+    var (contents, fill) = MoltenContents.Read(
+      itemstack,
+      MoltenContents.MoldUnitsKey,
+      capi.World
     );
-    var contents = beData?.GetItemstack("contents");
-    int fill = beData?.GetInt("fillLevel") ?? 0;
-    if (contents == null || fill <= 0)
-      return;
-    contents.ResolveBlockOrItem(capi.World);
-    if (contents.Collectible == null)
+    if (contents?.Collectible == null || fill <= 0)
       return;
 
-    int required = Attributes?["requiredUnits"].AsInt(100) ?? 100;
-    float fillHeight = Attributes?["fillHeight"].AsFloat(1f) ?? 1f;
+    int required = mold.Attributes?["requiredUnits"].AsInt(100) ?? 100;
+    float fillHeight = mold.Attributes?["fillHeight"].AsFloat(1f) ?? 1f;
     float level = required > 0 ? fill * fillHeight / required : 0f;
 
     float temp = contents.Collectible.GetTemperature(capi.World, contents);
     int glow = (int)GameMath.Clamp((temp - 550f) / 2f, 0f, 255f);
 
     string key =
-      $"{Code}|{contents.Collectible.Code}|{(int)(level * 16)}|{(int)temp / 50}";
+      $"{mold.Code}|{contents.Collectible.Code}|{(int)(level * 16)}|{(int)temp / 50}";
 
     if (
       !_heldContentMeshes.TryGetValue(key, out var meshRef) || meshRef.Disposed
     )
     {
-      meshRef = BuildHeldContentMesh(capi, contents, level, glow, temp);
+      meshRef = BuildHeldContentMesh(mold, capi, contents, level, glow, temp);
       if (meshRef == null)
         return;
       _heldContentMeshes[key] = meshRef;
@@ -80,7 +101,8 @@ public class CustomBlockToolMold : BlockToolMold
     renderinfo.ModelRef = meshRef;
   }
 
-  private MultiTextureMeshRef? BuildHeldContentMesh(
+  private static MultiTextureMeshRef? BuildHeldContentMesh(
+    BlockToolMold mold,
     ICoreClientAPI capi,
     ItemStack contents,
     float level,
@@ -88,7 +110,7 @@ public class CustomBlockToolMold : BlockToolMold
     float temp
   )
   {
-    MeshData? mesh = capi.TesselatorManager.GetDefaultBlockMesh(this)?.Clone();
+    MeshData? mesh = capi.TesselatorManager.GetDefaultBlockMesh(mold)?.Clone();
     if (mesh == null)
       return null;
 
@@ -106,11 +128,11 @@ public class CustomBlockToolMold : BlockToolMold
       return capi.Render.UploadMultiTextureMesh(mesh);
 
     Cuboidf[] boxes =
-      Attributes?["fillQuadsByLevel"]?.AsObject<Cuboidf[]>()
+      mold.Attributes?["fillQuadsByLevel"]?.AsObject<Cuboidf[]>()
       ?? [new Cuboidf(2f, 0f, 2f, 14f, 0f, 14f)];
     Cuboidf box = boxes[(int)GameMath.Clamp(level, 0, boxes.Length - 1)];
 
-    float shapeRotY = (Shape?.rotateY ?? 0f) * GameMath.DEG2RAD;
+    float shapeRotY = (mold.Shape?.rotateY ?? 0f) * GameMath.DEG2RAD;
 
     // GetQuad() yields a unit quad; vanilla's ToolMoldRenderer transform places
     // it as the liquid surface at the right height. We additionally apply the
@@ -172,24 +194,23 @@ public class CustomBlockToolMold : BlockToolMold
     return capi.Render.UploadMultiTextureMesh(mesh);
   }
 
-  public override void OnUnloaded(ICoreAPI api)
-  {
-    foreach (var meshRef in _heldContentMeshes.Values)
-      meshRef?.Dispose();
-    _heldContentMeshes.Clear();
-    base.OnUnloaded(api);
-  }
-
-  public override WorldInteraction[] GetPlacedBlockInteractionHelp(
+  /// <summary>
+  /// Vanilla only shows the "pick up" hint when the mold is empty
+  /// (MetalContent == null). Our interaction also lets the player pick up a
+  /// filled-but-unfinished mold (still molten / not a hardened full casting),
+  /// so advertise that case too.
+  /// </summary>
+  [HarmonyPostfix]
+  [HarmonyPatch(
+    typeof(BlockToolMold),
+    nameof(BlockToolMold.GetPlacedBlockInteractionHelp)
+  )]
+  public static void InteractionHelpPostfix(
     IWorldAccessor world,
-    BlockSelection selection,
-    IPlayer forPlayer
+    IPlayer forPlayer,
+    ref WorldInteraction[] __result
   )
   {
-    // Vanilla only shows the "pick up" hint when the mold is empty
-    // (MetalContent == null). Our interaction also lets the player pick up a
-    // filled-but-unfinished mold (still molten / not a hardened full casting),
-    // so advertise that case too.
     var pickupFilled = new WorldInteraction
     {
       ActionLangCode = "blockhelp-toolmold-pickup",
@@ -204,8 +225,7 @@ public class CustomBlockToolMold : BlockToolMold
         && !(be.IsHardened && be.IsFull),
     };
 
-    return base.GetPlacedBlockInteractionHelp(world, selection, forPlayer)
-      .Append(pickupFilled);
+    __result = __result.Append(pickupFilled);
   }
 
   /// <summary>
@@ -216,24 +236,29 @@ public class CustomBlockToolMold : BlockToolMold
   /// gate the "finished casting" path so non-castable charges (e.g. slag) skip it
   /// without triggering vanilla's resolver — which would log a resolve warning.
   /// </summary>
-  private bool CanCastInto(IWorldAccessor world, BlockEntityToolMold be)
+  private static bool CanCastInto(
+    BlockToolMold mold,
+    IWorldAccessor world,
+    BlockEntityToolMold be
+  )
   {
-    if (Attributes == null || be.MetalContent?.Collectible == null)
+    if (mold.Attributes == null || be.MetalContent?.Collectible == null)
       return false;
 
     string metal = be.MetalContent.Collectible.LastCodePart();
 
     var templates = new List<JsonItemStack>();
-    if (Attributes["drop"].Exists)
+    if (mold.Attributes["drop"].Exists)
     {
-      var one = Attributes["drop"].AsObject<JsonItemStack>(null, Code.Domain);
+      var one = mold.Attributes["drop"]
+        .AsObject<JsonItemStack>(null, mold.Code.Domain);
       if (one != null)
         templates.Add(one);
     }
     else
     {
-      var many = Attributes["drops"]
-        .AsObject<JsonItemStack[]>(null, Code.Domain);
+      var many = mold.Attributes["drops"]
+        .AsObject<JsonItemStack[]>(null, mold.Code.Domain);
       if (many != null)
         templates.AddRange(many);
     }
@@ -254,10 +279,23 @@ public class CustomBlockToolMold : BlockToolMold
     return false;
   }
 
-  public override bool OnBlockInteractStart(
+  /// <summary>
+  /// Replaces the vanilla right-click flow for plain clicks (no sneak, no held
+  /// interaction): hand over a finished casting, otherwise pick the mold up with
+  /// its contents. Returns true (run vanilla) for every case this flow does not
+  /// claim.
+  /// </summary>
+  [HarmonyPrefix]
+  [HarmonyPatch(
+    typeof(BlockToolMold),
+    nameof(BlockToolMold.OnBlockInteractStart)
+  )]
+  public static bool OnBlockInteractStartPrefix(
+    BlockToolMold __instance,
     IWorldAccessor world,
     IPlayer byPlayer,
-    BlockSelection blockSel
+    BlockSelection blockSel,
+    ref bool __result
   )
   {
     if (
@@ -265,17 +303,20 @@ public class CustomBlockToolMold : BlockToolMold
         is not BlockEntityToolMold be
       || be.Shattered
     )
-      return base.OnBlockInteractStart(world, byPlayer, blockSel);
+      return true;
 
     // Leave shift-clicks and held-item interactions (chiseling, pouring) to vanilla.
     if (
       byPlayer.Entity.Controls.ShiftKey
       || byPlayer.Entity.Controls.HandUse != EnumHandInteract.None
     )
-      return base.OnBlockInteractStart(world, byPlayer, blockSel);
+      return true;
 
     if (world.Side == EnumAppSide.Client)
-      return true;
+    {
+      __result = true;
+      return false;
+    }
 
     bool hasMetal = be.MetalContent != null && be.FillLevel > 0;
     var dropPos = blockSel.Position.ToVec3d().Add(0.5, 0.2, 0.5);
@@ -285,7 +326,12 @@ public class CustomBlockToolMold : BlockToolMold
     //    otherwise (e.g. a mold full of slag) fall through to picking the mold up,
     //    rather than letting vanilla's resolver build a bogus "...-slag" stack and
     //    log a "could not resolve" warning.
-    if (hasMetal && be.IsHardened && be.IsFull && CanCastInto(world, be))
+    if (
+      hasMetal
+      && be.IsHardened
+      && be.IsFull
+      && CanCastInto(__instance, world, be)
+    )
     {
       ItemStack[]? molded = be.GetStateAwareMoldedStacks();
       if (molded is { Length: > 0 })
@@ -315,12 +361,32 @@ public class CustomBlockToolMold : BlockToolMold
           byPlayer,
           randomizePitch: false
         );
-        return true;
+        __result = true;
+        return false;
       }
     }
 
     // 2) Otherwise pick up the mold itself, preserving any remaining contents.
-    var moldStack = new ItemStack(this);
+    //    Still-liquid metal may only travel in an empty hand — anywhere else in
+    //    the inventory it instantly spills, so refuse the pickup outright.
+    bool liquid =
+      hasMetal
+      && MoltenMoldSpill.IsLiquidContent(world, be.MetalContent, be.FillLevel);
+    if (
+      liquid
+      && MoltenMoldSpill.DenyLiquidPickup(
+        world,
+        byPlayer,
+        be.MetalContent,
+        be.FillLevel
+      )
+    )
+    {
+      __result = true;
+      return false;
+    }
+
+    var moldStack = new ItemStack(__instance);
     if (hasMetal)
     {
       var beData = new TreeAttribute();
@@ -331,8 +397,7 @@ public class CustomBlockToolMold : BlockToolMold
       moldStack.Attributes["blockEntityAttributes"] = beData;
     }
 
-    if (!byPlayer.InventoryManager.TryGiveItemstack(moldStack))
-      world.SpawnItemEntity(moldStack, dropPos);
+    MoltenMoldSpill.GiveMoldStack(world, byPlayer, moldStack, liquid, dropPos);
     world.Logger.Audit(
       "{0} took 1x{1} from tool mold at {2}.",
       byPlayer.PlayerName,
@@ -341,8 +406,14 @@ public class CustomBlockToolMold : BlockToolMold
     );
 
     world.BlockAccessor.SetBlock(0, blockSel.Position);
-    if (Sounds?.Place != null)
-      world.PlaySoundAt(Sounds.Place, blockSel.Position, -0.5, byPlayer);
-    return true;
+    if (__instance.Sounds?.Place != null)
+      world.PlaySoundAt(
+        __instance.Sounds.Place,
+        blockSel.Position,
+        -0.5,
+        byPlayer
+      );
+    __result = true;
+    return false;
   }
 }

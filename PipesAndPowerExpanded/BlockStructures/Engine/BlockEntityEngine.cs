@@ -8,6 +8,7 @@ using PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 using PipesAndPowerExpanded.BlockStructures.Engine.Blocks;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
@@ -88,6 +89,18 @@ public abstract class BlockEntityEngine : BlockEntity
 
   /// <summary>Hot condensed water (L/s) the engine spits out its outlet while running at its current setting.</summary>
   protected abstract float RunWaterOutput { get; }
+
+  /// <summary>Particles vented out the cylinder top on each power stroke. Overridden per variant
+  /// to scale with the running setting (the Cornish throttle); 0 suppresses the cylinder puff.</summary>
+  protected virtual int CylinderSteamPuffCount => 2;
+
+  /// <summary>Volume multiplier for the engine's running sounds (piston strokes + gear hum),
+  /// 1 = unchanged. Overridden per variant so the Cornish engine roars louder when overclocked.</summary>
+  protected virtual float SoundVolumeFactor => 1f;
+
+  /// <summary>Pitch multiplier for the gear hum, 1 = unchanged. Below 1 drops it to a heavier,
+  /// more violent growl when the engine is driven hard.</summary>
+  protected virtual float SoundPitchFactor => 1f;
 
   #endregion
 
@@ -370,7 +383,8 @@ public abstract class BlockEntityEngine : BlockEntity
     ApplyPose();
   }
 
-  public override void OnBlockRemoved()
+  /// <summary>Shared teardown for removal and unload (the two paths are identical).</summary>
+  private void Cleanup()
   {
     if (_rcc != null)
       _rcc.OnShapeChanged -= OnConstructShapeChanged;
@@ -381,20 +395,17 @@ public abstract class BlockEntityEngine : BlockEntity
     if (_engineTickId != 0)
       UnregisterGameTickListener(_engineTickId);
     DisposeGearHum();
+  }
+
+  public override void OnBlockRemoved()
+  {
+    Cleanup();
     base.OnBlockRemoved();
   }
 
   public override void OnBlockUnloaded()
   {
-    if (_rcc != null)
-      _rcc.OnShapeChanged -= OnConstructShapeChanged;
-    if (_submachineWatchId != 0)
-      UnregisterGameTickListener(_submachineWatchId);
-    if (_engineClientTickId != 0)
-      UnregisterGameTickListener(_engineClientTickId);
-    if (_engineTickId != 0)
-      UnregisterGameTickListener(_engineTickId);
-    DisposeGearHum();
+    Cleanup();
     base.OnBlockUnloaded();
   }
 
@@ -453,27 +464,18 @@ public abstract class BlockEntityEngine : BlockEntity
 
     if (IsBroken)
     {
-      dsc.AppendLine(
-        Vintagestory.API.Config.Lang.Get("ppex:engine-info-broken")
-      );
+      dsc.AppendLine(Lang.Get("ppex:engine-info-broken"));
       return;
     }
 
     // How the inlet steam pressure sits against the operating band, plus the steam it draws
     // while running — instead of the raw internal power figure.
-    dsc.AppendLine(
-      Vintagestory.API.Config.Lang.Get("ppex:engine-info-clock-" + ClockState)
-    );
+    dsc.AppendLine(Lang.Get("ppex:engine-info-clock-" + ClockState));
     if (IsRunning)
-      dsc.AppendLine(
-        Vintagestory.API.Config.Lang.Get("ppex:engine-info-steam", RunSteamRate)
-      );
+      dsc.AppendLine(Lang.Get("ppex:engine-info-steam", RunSteamRate));
     if (_overPressureSeconds > 0f)
       dsc.AppendLine(
-        Vintagestory.API.Config.Lang.Get(
-          "ppex:engine-info-overpressure",
-          OverPressureRemaining
-        )
+        Lang.Get("ppex:engine-info-overpressure", OverPressureRemaining)
       );
   }
 
@@ -772,18 +774,28 @@ public abstract class BlockEntityEngine : BlockEntity
       {
         if (_lastCycleFrame >= 0f)
         {
-          PistonCycleSounds.Fire(Api.World, Pos, _lastCycleFrame, frame, total);
+          PistonCycleSounds.Fire(
+            Api.World,
+            Pos,
+            _lastCycleFrame,
+            frame,
+            total,
+            SoundVolumeFactor
+          );
           // A steam puff out of the cylinder top at the top of each power stroke — but only
           // while the engine is actually making power (_running), not merely coasting on the
-          // MP flywheel. This is the visible sign that it's producing power.
+          // MP flywheel. This is the visible sign that it's producing power. The count is a
+          // per-variant hook so the Cornish engine can scale it with its throttle (and a 0
+          // count suppresses the puff entirely).
           if (
             _running
+            && CylinderSteamPuffCount > 0
             && PistonCycleSounds.CrossedUpStroke(_lastCycleFrame, frame, total)
           )
             ExParticles.SteamPuff(
               Api.World,
               EngineBlock!.CylinderVentPos(Pos),
-              2
+              CylinderSteamPuffCount
             );
         }
         _lastCycleFrame = frame;
@@ -818,6 +830,10 @@ public abstract class BlockEntityEngine : BlockEntity
     );
     if (_gearSound is { IsPlaying: false })
       _gearSound.Start();
+    // Apply the current sound profile live (called every running tick) so a throttle change is
+    // heard on the already-looping hum without restarting it.
+    _gearSound?.SetVolume(0.5f * SoundVolumeFactor);
+    _gearSound?.SetPitch(0.65f * SoundPitchFactor);
   }
 
   /// <summary>Stops the gear hum (kept allocated so it can resume when the engine restarts).</summary>

@@ -93,16 +93,12 @@ public class BlockMoltenBarrel : Block
   {
     base.OnBeforeRender(capi, itemstack, target, ref renderinfo);
 
-    var beData = itemstack.Attributes?.GetTreeAttribute(
-      "blockEntityAttributes"
+    var (metal, units) = MoltenContents.Read(
+      itemstack,
+      MoltenContents.BarrelUnitsKey,
+      capi.World
     );
-    int units = beData?.GetInt("currentUnitAmount") ?? 0;
-    if (units <= 0)
-      return;
-
-    var metal = beData!.GetItemstack("contents");
-    metal?.ResolveBlockOrItem(capi.World);
-    if (metal?.Collectible == null)
+    if (units <= 0 || metal?.Collectible == null)
       return;
 
     int maxUnits =
@@ -149,26 +145,13 @@ public class BlockMoltenBarrel : Block
     _barrelBaseMesh ??= TesselateBaseMesh(capi);
     MeshData combined = _barrelBaseMesh.Clone();
 
-    var quadDefs = Attributes?["fillQuadsByLevel"]?.AsObject<FillQuadDef[]>();
-    Cuboidf[] boxes;
-    if (quadDefs != null && quadDefs.Length > 0)
-    {
-      boxes = new Cuboidf[quadDefs.Length];
-      for (int i = 0; i < quadDefs.Length; i++)
-        boxes[i] = new Cuboidf(
-          quadDefs[i].x1,
-          0f,
-          quadDefs[i].z1,
-          quadDefs[i].x2,
-          16f,
-          quadDefs[i].z2
-        );
-    }
-    else
-      boxes = [new Cuboidf(4f, 0f, 4f, 12f, 16f, 12f)];
-
-    float fillStartY = (Attributes?["fillStart"]?.AsInt(2) ?? 2) / 16f;
-    int fillHeightLevels = Attributes?["fillHeight"]?.AsInt(8) ?? 8;
+    Cuboidf[] boxes = FillQuads.ReadBoxes(
+      this,
+      "fillQuadsByLevel",
+      new Cuboidf(4f, 0f, 4f, 12f, 16f, 12f)
+    );
+    float fillStartY = FillQuads.ReadStartY(this, "fillStart", 2f);
+    float fillHeightLevels = FillQuads.ReadHeightLevels(this, "fillHeight", 8f);
     float yLevel = fillStartY + fillRatio * fillHeightLevels / 16f;
 
     var tex = metal.Item?.FirstTexture ?? metal.Block?.FirstTextureInventory;
@@ -283,13 +266,12 @@ public class BlockMoltenBarrel : Block
         return true;
 
       var stack = new ItemStack(this);
-      if (be.MetalContent != null && be.CurrentUnitAmount > 0)
-      {
-        var beData = new TreeAttribute();
-        beData.SetItemstack("contents", be.MetalContent);
-        beData.SetInt("currentUnitAmount", be.CurrentUnitAmount);
-        stack.Attributes["blockEntityAttributes"] = beData;
-      }
+      MoltenContents.Write(
+        stack,
+        MoltenContents.BarrelUnitsKey,
+        be.MetalContent,
+        be.CurrentUnitAmount
+      );
       if (!byPlayer.InventoryManager.TryGiveItemstack(stack))
         world.SpawnItemEntity(
           stack,
@@ -310,10 +292,7 @@ public class BlockMoltenBarrel : Block
   {
     base.OnBlockPlaced(world, blockPos, byItemStack);
 
-    if (
-      byItemStack?.Attributes?.GetTreeAttribute("blockEntityAttributes")
-      is not ITreeAttribute beData
-    )
+    if (byItemStack == null)
       return;
 
     if (
@@ -323,9 +302,11 @@ public class BlockMoltenBarrel : Block
       // Assign fields directly instead of FromTreeAttributes: the base
       // deserializer rebuilds Pos from posx/posy/posz, which this partial tree
       // lacks, corrupting the block entity position to (0,0,0) on reload.
-      be.MetalContent = beData.GetItemstack("contents");
-      be.MetalContent?.ResolveBlockOrItem(world);
-      be.CurrentUnitAmount = beData.GetInt("currentUnitAmount");
+      (be.MetalContent, be.CurrentUnitAmount) = MoltenContents.Read(
+        byItemStack,
+        MoltenContents.BarrelUnitsKey,
+        world
+      );
       be.MarkDirty(true);
     }
   }
@@ -339,13 +320,14 @@ public class BlockMoltenBarrel : Block
   {
     base.GetHeldItemInfo(inSlot, dsc, world, withDebugInfo);
 
-    var beData = inSlot.Itemstack?.Attributes?.GetTreeAttribute(
-      "blockEntityAttributes"
-    );
-    if (beData == null)
+    if (inSlot.Itemstack?.Attributes?["blockEntityAttributes"] == null)
       return;
 
-    int currentUnits = beData.GetInt("currentUnitAmount");
+    var (metalContent, currentUnits) = MoltenContents.Read(
+      inSlot.Itemstack,
+      MoltenContents.BarrelUnitsKey,
+      world
+    );
     int maxUnits =
       Attributes?["maxUnits"].AsInt(SmexValues.BarrelDefaultMaxUnits)
       ?? SmexValues.BarrelDefaultMaxUnits;
@@ -356,9 +338,6 @@ public class BlockMoltenBarrel : Block
       return;
     }
 
-    var metalContent = beData.GetItemstack("contents");
-    metalContent?.ResolveBlockOrItem(world);
-
     if (metalContent == null)
     {
       dsc.AppendLine(
@@ -367,34 +346,25 @@ public class BlockMoltenBarrel : Block
       return;
     }
 
-    float temp = metalContent.Collectible.GetTemperature(world, metalContent);
-    float meltPoint = metalContent.Collectible.GetMeltingPoint(
-      world,
-      null,
-      new DummySlot(metalContent)
-    );
     string state = Lang.Get(
-      temp > 0.8f * meltPoint ? "smex:metalstate-liquid"
-      : temp < 0.3f * meltPoint ? "smex:metalstate-hardened"
-      : "smex:metalstate-soft"
+      MoltenMetal.StateOf(world, metalContent) switch
+      {
+        MoltenState.Liquid => "smex:metalstate-liquid",
+        MoltenState.Hardened => "smex:metalstate-hardened",
+        _ => "smex:metalstate-soft",
+      }
     );
-    string tempStr =
-      temp < 21f ? Lang.Get("smex:metalstate-cold") : $"{temp:F0}°C";
-    string path = metalContent.Collectible.Code.Path;
-    string metalName = path.StartsWith("ingot-") ? path[6..] : path;
-    metalName =
-      metalName.Length > 0
-        ? char.ToUpper(metalName[0]) + metalName[1..]
-        : metalName;
 
     dsc.AppendLine(
       Lang.Get(
         "smex:moltenbarrel-info-content",
         currentUnits,
         maxUnits,
-        metalName,
+        MoltenMetal.DisplayName(metalContent.Collectible.Code.ToString()),
         state,
-        tempStr
+        MoltenMetal.FormatTemperature(
+          MoltenMetal.GetTemperature(world, metalContent)
+        )
       )
     );
   }
@@ -418,7 +388,7 @@ public class BlockMoltenBarrel : Block
     {
       new()
       {
-        ActionLangCode = "Pick up barrel",
+        ActionLangCode = "smex:blockhelp-barrel-pickup",
         MouseButton = EnumMouseButton.Right,
         HotKeyCode = "ctrl",
       },
@@ -429,7 +399,7 @@ public class BlockMoltenBarrel : Block
       result.Add(
         new WorldInteraction
         {
-          ActionLangCode = "Pour liquid metal",
+          ActionLangCode = "smex:blockhelp-barrel-pour",
           MouseButton = EnumMouseButton.Right,
           Itemstacks = _smeltedCrucibles,
         }
@@ -441,7 +411,7 @@ public class BlockMoltenBarrel : Block
       result.Add(
         new WorldInteraction
         {
-          ActionLangCode = "Chisel out hardened metal",
+          ActionLangCode = "smex:blockhelp-barrel-chisel",
           MouseButton = EnumMouseButton.Right,
           Itemstacks = _chisels,
         }

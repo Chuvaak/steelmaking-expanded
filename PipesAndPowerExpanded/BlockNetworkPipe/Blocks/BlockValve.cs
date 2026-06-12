@@ -18,7 +18,9 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 [EntityRegister]
 public class BlockValve : BlockPipe
 {
-  public override Dictionary<string, string[]> AllowedOrientations =>
+  // Cached once — this is consulted on every placement/neighbour recalculation, so it
+  // must not allocate a fresh dictionary per read.
+  public override Dictionary<string, string[]> AllowedOrientations { get; } =
     new() { { "valve", ["ns", "we", "ud", "sn", "ew", "du"] } };
 
   protected override string GetFallbackOrientation(string? type) => "ns";

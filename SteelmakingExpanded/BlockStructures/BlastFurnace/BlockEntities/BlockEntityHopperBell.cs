@@ -82,8 +82,16 @@ public class BlockEntityHopperBell : BlockEntity
   )
   {
     base.FromTreeAttributes(tree, worldForResolving);
+    int oldMagazine = _blastMixMagazine;
     _blastMixMagazine = tree.GetInt("blastMixMagazine");
     IsDropping = tree.GetBool("isDropping", false);
+
+    // The reinforced hopper above renders its contents pile from our magazine level,
+    // so nudge it to re-tessellate whenever that level changes on the client.
+    if (oldMagazine != _blastMixMagazine && Api?.Side == EnumAppSide.Client)
+    {
+      Api.World.BlockAccessor.GetBlockEntity(Pos.UpCopy())?.MarkDirty(true);
+    }
   }
 
   public override void ToTreeAttributes(ITreeAttribute tree)

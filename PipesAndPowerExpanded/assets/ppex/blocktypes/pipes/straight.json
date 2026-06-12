@@ -48,11 +48,9 @@
   },
   "texturesByType": {
     "*-iron": {
-      "normal4": { "base": "game:block/metal/sheet-plain/iron4" },
       "iron4": { "base": "game:block/metal/sheet-plain/iron4" }
     },
     "*-steel": {
-      "normal4": { "base": "game:block/metal/sheet-plain/steel4" },
       "iron4": { "base": "game:block/metal/sheet-plain/steel4" }
     }
   },

@@ -116,17 +116,11 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
     MoldStack = itemStack.Clone();
     MoldStack.StackSize = 1;
 
-    if (itemStack.Attributes?["blockEntityAttributes"] is ITreeAttribute beData)
-    {
-      MoldMetalContent = beData.GetItemstack("contents");
-      MoldMetalContent?.ResolveBlockOrItem(Api.World);
-      MoldCurrentUnits = beData.GetInt("fillLevel");
-    }
-    else
-    {
-      MoldMetalContent = null;
-      MoldCurrentUnits = 0;
-    }
+    (MoldMetalContent, MoldCurrentUnits) = MoltenContents.Read(
+      itemStack,
+      MoltenContents.MoldUnitsKey,
+      Api.World
+    );
 
     MoldMaxUnits =
       MoldStack.Block?.Attributes?["requiredUnits"].AsInt(
@@ -141,17 +135,12 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
     IsMold = false;
     var stack = MoldStack!.Clone();
 
-    if (MoldMetalContent != null && MoldCurrentUnits > 0)
-    {
-      var beData = new TreeAttribute();
-      beData.SetItemstack("contents", MoldMetalContent.Clone());
-      beData.SetInt("fillLevel", MoldCurrentUnits);
-      beData.SetBool("shattered", false);
-      // vanilla writes meshAngle too; without it hasMeshAngle triggers the
-      // server-side block-exchange path in OnLoadWithoutMeshAngle
-      beData.SetFloat("meshAngle", 0f);
-      stack.Attributes["blockEntityAttributes"] = beData;
-    }
+    MoltenContents.Write(
+      stack,
+      MoltenContents.MoldUnitsKey,
+      MoldMetalContent,
+      MoldCurrentUnits
+    );
 
     MoldStack = null;
     MoldMetalContent = null;
@@ -198,22 +187,14 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
 
     if (MoldMetalContent == null)
     {
-      Item? collectible =
-        type.Length > 0 ? Api.World.GetItem(new AssetLocation(type)) : null;
-      if (collectible == null)
+      MoldMetalContent = MoltenMetal.CreateStack(Api.World, type, temp);
+      if (MoldMetalContent == null)
         return;
-      MoldMetalContent = new ItemStack(collectible, 1);
-      (MoldMetalContent.Attributes["temperature"] as ITreeAttribute)?.SetFloat(
-        "cooldownSpeed",
-        SmexValues.MoltenCooldownSpeed
-      );
     }
-    MoldMetalContent.Collectible.SetTemperature(
-      Api.World,
-      MoldMetalContent,
-      temp,
-      delayCooldown: false
-    );
+    else
+    {
+      MoltenMetal.SetTemperature(Api.World, MoldMetalContent, temp);
+    }
     MoldCurrentUnits += (int)drained;
     ExSounds.PlayThrottled(
       Api,
@@ -226,21 +207,10 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
     MarkDirty(true);
   }
 
-  private bool IsMoldHardened()
-  {
-    if (MoldMetalContent == null || MoldCurrentUnits <= 0)
-      return false;
-    float temp = MoldMetalContent.Collectible.GetTemperature(
-      Api.World,
-      MoldMetalContent
-    );
-    float meltPoint = MoldMetalContent.Collectible.GetMeltingPoint(
-      Api.World,
-      null,
-      new DummySlot(MoldMetalContent)
-    );
-    return temp < 0.3f * meltPoint;
-  }
+  private bool IsMoldHardened() =>
+    MoldMetalContent != null
+    && MoldCurrentUnits > 0
+    && MoltenMetal.IsHardened(Api.World, MoldMetalContent);
 
   #endregion
 
@@ -250,17 +220,18 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
   {
     base.InitRenderer(capi);
 
-    var quadDefs = Block?.Attributes?[
-      "moldFillQuadsByLevel"
-    ]?.AsObject<FillQuadDef[]>();
-    Cuboidf[] boxes = quadDefs is { Length: > 0 }
-      ? [.. quadDefs.Select(q => new Cuboidf(q.x1, 0f, q.z1, q.x2, 16f, q.z2))]
-      : [new Cuboidf(7f, 0f, 0f, 9f, 16f, 5f)];
-
-    int fillStartPx = Block?.Attributes?["moldFillStart"]?.AsInt(14) ?? 14;
-    int fillHeightLevels = Block?.Attributes?["moldFillHeight"]?.AsInt(1) ?? 1;
-    float fillStartY = fillStartPx / 16f;
-    float rotY = (float)((Block?.Shape?.rotateY ?? 0f) * Math.PI / 180.0);
+    Cuboidf[] boxes = FillQuads.ReadBoxes(
+      Block,
+      "moldFillQuadsByLevel",
+      new Cuboidf(7f, 0f, 0f, 9f, 16f, 5f)
+    );
+    float fillStartY = FillQuads.ReadStartY(Block, "moldFillStart", 14f);
+    float fillHeightLevels = FillQuads.ReadHeightLevels(
+      Block,
+      "moldFillHeight",
+      1f
+    );
+    float rotY = (Block?.Shape?.rotateY ?? 0f) * GameMath.DEG2RAD;
 
     _moldRenderer = new MoltenRenderer(
       Pos,
@@ -311,26 +282,12 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
     if (!IsPouring)
     {
       if (_endMesh == null && Orientation != null)
-      {
-        var endShape = Api.Assets.Get<Shape>(
-          new AssetLocation("smex:shapes/molten/canal/end.json")
+        _endMesh = MoltenMeshes.TesselateEndCap(
+          Api,
+          tesselator,
+          Block!,
+          BlockFacing.FromFirstLetter(Orientation)
         );
-        if (endShape != null)
-        {
-          tesselator.TesselateShape(Block, endShape, out _endMesh);
-          var face = BlockFacing.FromFirstLetter(Orientation);
-          float endRotY =
-            face.Index switch
-            {
-              BlockFacing.indexNORTH => 180f,
-              BlockFacing.indexEAST => 90f,
-              BlockFacing.indexWEST => 270f,
-              _ => 0f,
-            } * GameMath.DEG2RAD;
-          if (endRotY != 0f)
-            _endMesh.Rotate(new Vec3f(0.5f, 0.5f, 0.5f), 0f, endRotY, 0f);
-        }
-      }
       if (_endMesh != null)
         mesher.AddMeshData(_endMesh);
     }
@@ -422,36 +379,24 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
       return;
     }
 
-    float temp = MoldMetalContent.Collectible.GetTemperature(
-      Api.World,
-      MoldMetalContent
-    );
-    float meltPoint = MoldMetalContent.Collectible.GetMeltingPoint(
-      Api.World,
-      null,
-      new DummySlot(MoldMetalContent)
-    );
     string state = Lang.Get(
-      temp > 0.8f * meltPoint ? "smex:metalstate-liquid"
-      : temp < 0.3f * meltPoint ? "smex:metalstate-hardened"
-      : "smex:metalstate-cooling"
+      MoltenMetal.StateOf(Api.World, MoldMetalContent) switch
+      {
+        MoltenState.Liquid => "smex:metalstate-liquid",
+        MoltenState.Hardened => "smex:metalstate-hardened",
+        _ => "smex:metalstate-cooling",
+      }
     );
-    string tempStr =
-      temp < 21f ? Lang.Get("smex:metalstate-cold") : $"{temp:F0}°C";
-    string path = MoldMetalContent.Collectible.Code.Path;
-    string metalName = path.StartsWith("ingot-") ? path[6..] : path;
-    metalName =
-      metalName.Length > 0
-        ? char.ToUpper(metalName[0]) + metalName[1..]
-        : metalName;
     dsc.AppendLine(
       Lang.Get(
         "smex:mold-content",
         MoldCurrentUnits,
         MoldMaxUnits,
-        metalName,
+        MoltenMetal.DisplayName(MoldMetalContent.Collectible.Code.ToString()),
         state,
-        tempStr
+        MoltenMetal.FormatTemperature(
+          MoltenMetal.GetTemperature(Api.World, MoldMetalContent)
+        )
       )
     );
   }

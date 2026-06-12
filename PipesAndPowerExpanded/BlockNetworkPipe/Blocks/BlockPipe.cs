@@ -23,7 +23,7 @@ public class BlockPipe : BlockNetworkNode
   /// Pressure (atm) above which this pipe bursts — the weakest pipe limits a run.
   /// Iron 5, steel 10.
   /// </summary>
-  public float BurstPressure =>
+  public virtual float BurstPressure =>
     Material switch
     {
       "steel" => PpexValues.SteelPipeBurstPressure,

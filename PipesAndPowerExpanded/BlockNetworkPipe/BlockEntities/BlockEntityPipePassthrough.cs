@@ -2,6 +2,6 @@ using ExpandedLib.EntityRegistry;
 
 namespace PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 
-/// <summary>Block entity for the gas passthrough; behaves as a plain pipe node that also acts as a gas consumer.</summary>
+/// <summary>Block entity for the gas passthrough; a plain pipe node, used as a gas consumer by adjacent machines.</summary>
 [EntityRegister]
-public class BlockEntityPipePassthrough : BlockEntityPipe, IPipeConsumer { }
+public class BlockEntityPipePassthrough : BlockEntityPipe { }

@@ -133,7 +133,10 @@ public class BlockEntitySteamCondenser : BlockEntity
       if (!steam)
         return false;
       float ventGas = steamNet!.TryConsumeGas(
-        Math.Min(PpexValues.CondenserSteamPerSecond * dt, PpexValues.GasLeakRate),
+        Math.Min(
+          PpexValues.CondenserSteamPerSecond * dt,
+          PpexValues.GasLeakRate
+        ),
         ba
       );
       if (ventGas > 0f)
@@ -144,7 +147,13 @@ public class BlockEntitySteamCondenser : BlockEntity
           outFace,
           steamNet.State!.MediumType
         );
-        ExSounds.PlayAt(Api.World, Pos, ExSounds.Swoosh, range: 24f, volume: 0.6f);
+        ExSounds.PlayAt(
+          Api.World,
+          Pos,
+          ExSounds.Swoosh,
+          range: 24f,
+          volume: 0.6f
+        );
       }
       return false;
     }

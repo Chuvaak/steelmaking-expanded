@@ -12,6 +12,10 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 [EntityRegister]
 public class BlockPipeOutlet : BlockPipe
 {
+  /// <summary>Outlets never burst — a machine-port connector is a fixed fitting, not a length
+  /// of run that should fail under pressure, so it's exempt from over-pressure failure.</summary>
+  public override float BurstPressure => float.MaxValue;
+
   public override Dictionary<string, string[]> AllowedOrientations { get; } =
     new() { { "outlet", ["s", "n", "e", "w", "u", "d"] } };
 

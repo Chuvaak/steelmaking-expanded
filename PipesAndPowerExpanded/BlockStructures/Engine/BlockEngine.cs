@@ -23,7 +23,10 @@ namespace PipesAndPowerExpanded.BlockStructures.Engine;
 /// (steam intake) and the east face (condensed water out); both rotate with the block.
 /// </para>
 /// </summary>
-public abstract class BlockEngine : Block, INetworkConnector
+public abstract class BlockEngine
+  : Block,
+    INetworkConnector,
+    IFillerInteractionTarget
 {
   // Pipe ports in north orientation, rotated to the placed orientation at runtime.
   private static readonly BlockFacing[] BaseConnectorFaces =
@@ -72,16 +75,14 @@ public abstract class BlockEngine : Block, INetworkConnector
   /// attribute and placed in the engine's visual-front frame. The same offset is inverted by
   /// the sub-machine's back-reference in <c>BlockEntityEngineSubmachine.FindEngine</c>.
   /// </summary>
-  public BlockPos SubmachinePos(BlockPos enginePos)
-  {
-    Vec3i off = ExOrientation.ReadOffset(
+  public BlockPos SubmachinePos(BlockPos enginePos) =>
+    ExOrientation.WorldPosFromAttr(
       this,
+      enginePos,
       "submachineOffset",
-      DefaultSubmachineOffset
+      DefaultSubmachineOffset,
+      BodyAngle
     );
-    Vec3i r = ExOrientation.RotateOffset(off, BodyAngle);
-    return enginePos.AddCopy(r.X, r.Y, r.Z);
-  }
 
   /// <summary>
   /// Compass-clockwise mapping from an engine's facing to the facing its sub-machine must take
@@ -115,7 +116,11 @@ public abstract class BlockEngine : Block, INetworkConnector
   {
     foreach (var f in BlockFacing.HORIZONTALS)
     {
-      BlockPos cand = submachinePos.AddCopy(f.Normali.X * 2, 0, f.Normali.Z * 2);
+      BlockPos cand = submachinePos.AddCopy(
+        f.Normali.X * 2,
+        0,
+        f.Normali.Z * 2
+      );
       if (
         blockAccessor.GetBlock(cand) is BlockEngine eng
         && eng.SubmachinePos(cand).Equals(submachinePos)
@@ -137,16 +142,14 @@ public abstract class BlockEngine : Block, INetworkConnector
   /// Uses the same visual-front frame as the sub-machine so the sound sits on the rendered
   /// front of the engine rather than behind it.
   /// </summary>
-  public BlockPos GearHousingPos(BlockPos enginePos)
-  {
-    Vec3i off = ExOrientation.ReadOffset(
+  public BlockPos GearHousingPos(BlockPos enginePos) =>
+    ExOrientation.WorldPosFromAttr(
       this,
+      enginePos,
       "gearHousingOffset",
-      DefaultGearHousingOffset
+      DefaultGearHousingOffset,
+      BodyAngle
     );
-    Vec3i r = ExOrientation.RotateOffset(off, BodyAngle);
-    return enginePos.AddCopy(r.X, r.Y, r.Z);
-  }
 
   /// <summary>Default cylinder-vent point (master-cell frame): the top of the piston cylinder,
   /// on the engine's centre line a few cells up. Both stock engines share this piston layout.</summary>
@@ -168,17 +171,8 @@ public abstract class BlockEngine : Block, INetworkConnector
     return new Vec3d(enginePos.X + x, enginePos.Y + off.Y, enginePos.Z + z);
   }
 
-  private Vec3d ReadVentOffset()
-  {
-    var node = Attributes?["cylinderVentOffset"];
-    if (node == null || !node.Exists)
-      return DefaultCylinderVent;
-    return new Vec3d(
-      node["x"].AsDouble(DefaultCylinderVent.X),
-      node["y"].AsDouble(DefaultCylinderVent.Y),
-      node["z"].AsDouble(DefaultCylinderVent.Z)
-    );
-  }
+  private Vec3d ReadVentOffset() =>
+    ExOrientation.ReadOffsetD(this, "cylinderVentOffset", DefaultCylinderVent);
 
   public override bool CanPlaceBlock(
     IWorldAccessor world,
@@ -276,48 +270,93 @@ public abstract class BlockEngine : Block, INetworkConnector
   public string RepairDescription =>
     string.Join(", ", RepairItems.Select(r => $"{r.Quantity}× {r.Display}"));
 
-  /// <summary>Wrench icons for the broken-engine repair help line — only the tool is shown; the
-  /// required materials are printed to chat on interaction instead.</summary>
-  private ItemStack[] _wrenches = [];
-
-  public override void OnLoaded(ICoreAPI api)
-  {
-    base.OnLoaded(api);
-    // Same "wrench" code-path test the repair uses, so the help icon matches what works.
-    _wrenches =
-    [
-      .. api
-        .World.Items.Where(i => i.Code?.Path?.Contains("wrench") == true)
-        .Select(i => new ItemStack(i)),
-    ];
-  }
-
   public override WorldInteraction[] GetPlacedBlockInteractionHelp(
     IWorldAccessor world,
     BlockSelection selection,
     IPlayer forPlayer
+  ) =>
+    RepairInteractionHelp(
+      world,
+      selection.Position,
+      base.GetPlacedBlockInteractionHelp(world, selection, forPlayer)
+    );
+
+  /// <summary>
+  /// Appends the wrench-repair action to <paramref name="baseHelp"/> when the engine at
+  /// <paramref name="enginePos"/> is broken (the materials it needs are printed to chat
+  /// on interaction). Shared by the engine cell and the footprint fillers so the repair
+  /// hint shows wherever the player looks at the burst engine.
+  /// </summary>
+  private WorldInteraction[] RepairInteractionHelp(
+    IWorldAccessor world,
+    BlockPos enginePos,
+    WorldInteraction[]? baseHelp
   )
   {
-    WorldInteraction[] baseHelp =
-      base.GetPlacedBlockInteractionHelp(world, selection, forPlayer) ?? [];
+    baseHelp ??= [];
 
     // Only a broken engine is repairable — show the wrench action then.
     if (
-      world.BlockAccessor.GetBlockEntity(selection.Position)
-        is not BlockEntityEngine be
+      world.BlockAccessor.GetBlockEntity(enginePos) is not BlockEntityEngine be
       || !be.IsBroken
     )
       return baseHelp;
 
-    // Just the wrench action — the materials needed are printed to chat on interaction.
     var repairHelp = new WorldInteraction
     {
       ActionLangCode = "ppex:blockhelp-engine-repair",
       MouseButton = EnumMouseButton.Right,
-      Itemstacks = _wrenches,
+      Itemstacks = ExItems.WrenchStacks(world),
     };
     return [.. baseHelp, repairHelp];
   }
+
+  #region IFillerInteractionTarget
+
+  // The engine renders across a footprint reserved with invisible structure fillers, which
+  // forward player interaction to the engine here. By default a filler cell behaves exactly
+  // like clicking the engine itself (repair, the held-block build passthrough). Cornish
+  // overrides these to add its per-cell steam-throttle control rods, which only respond on
+  // the engine cell and the filler directly above it. Forwarding goes through the vanilla
+  // base help (not the virtual GetPlacedBlockInteractionHelp) so a subclass's per-cell extras
+  // aren't shown on every footprint cell.
+
+  public virtual bool OnFillerInteractStart(
+    IWorldAccessor world,
+    IPlayer byPlayer,
+    BlockSelection principalSel,
+    BlockPos clickedCell
+  ) => OnBlockInteractStart(world, byPlayer, principalSel);
+
+  public bool OnFillerInteractStep(
+    float secondsUsed,
+    IWorldAccessor world,
+    IPlayer byPlayer,
+    BlockSelection principalSel,
+    BlockPos clickedCell
+  ) => OnBlockInteractStep(secondsUsed, world, byPlayer, principalSel);
+
+  public void OnFillerInteractStop(
+    float secondsUsed,
+    IWorldAccessor world,
+    IPlayer byPlayer,
+    BlockSelection principalSel,
+    BlockPos clickedCell
+  ) => OnBlockInteractStop(secondsUsed, world, byPlayer, principalSel);
+
+  public virtual WorldInteraction[] GetFillerInteractionHelp(
+    IWorldAccessor world,
+    BlockSelection principalSel,
+    IPlayer forPlayer,
+    BlockPos clickedCell
+  ) =>
+    RepairInteractionHelp(
+      world,
+      principalSel.Position,
+      base.GetPlacedBlockInteractionHelp(world, principalSel, forPlayer)
+    );
+
+  #endregion
 
   public override bool OnBlockInteractStart(
     IWorldAccessor world,
@@ -376,7 +415,8 @@ public abstract class BlockEngine : Block, INetworkConnector
     if (!creative)
     {
       bool hasAll = RepairItems.All(r =>
-        CountMatching(byPlayer, r.Codes) >= r.Quantity
+        ExInventory.Count(byPlayer, stack => Matches(stack, r.Codes))
+        >= r.Quantity
       );
       if (!hasAll)
       {
@@ -386,7 +426,11 @@ public abstract class BlockEngine : Block, INetworkConnector
       }
 
       foreach (var r in RepairItems)
-        TakeMatching(byPlayer, r.Codes, r.Quantity);
+        ExInventory.Take(
+          byPlayer,
+          stack => Matches(stack, r.Codes),
+          r.Quantity
+        );
     }
 
     be.Repair();
@@ -409,36 +453,6 @@ public abstract class BlockEngine : Block, INetworkConnector
   private static bool Matches(ItemStack stack, string[] codes) =>
     stack.Collectible?.Code != null
     && codes.Contains(stack.Collectible.Code.Path);
-
-  private static int CountMatching(IPlayer player, string[] codes)
-  {
-    int count = 0;
-    player.Entity.WalkInventory(slot =>
-    {
-      if (slot?.Itemstack != null && Matches(slot.Itemstack, codes))
-        count += slot.Itemstack.StackSize;
-      return true;
-    });
-    return count;
-  }
-
-  private static void TakeMatching(IPlayer player, string[] codes, int qty)
-  {
-    int remaining = qty;
-    player.Entity.WalkInventory(slot =>
-    {
-      if (remaining <= 0)
-        return false;
-      if (slot?.Itemstack != null && Matches(slot.Itemstack, codes))
-      {
-        int take = Math.Min(remaining, slot.Itemstack.StackSize);
-        slot.TakeOut(take);
-        slot.MarkDirty();
-        remaining -= take;
-      }
-      return remaining > 0;
-    });
-  }
 
   #endregion
 }

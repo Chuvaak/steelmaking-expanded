@@ -8,15 +8,17 @@ namespace PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 
 /// <summary>
 /// The Cornish engine — the steel, high-pressure, efficient tier. Its steam control
-/// rods (sneak + right-click) set how much steam it admits, which sets its power:
+/// rods (wrench right-click to raise, wrench ctrl + right-click to lower) set how much
+/// steam it admits, which sets its power:
 /// <list type="bullet">
-///   <item><b>Low</b> — 12 L/s steam, half power.</item>
-///   <item><b>Normal</b> — 24 L/s steam, nominal power.</item>
-///   <item><b>High</b> — 48 L/s steam, double power.</item>
+///   <item><b>Low</b> — half steam, half power.</item>
+///   <item><b>Normal</b> — nominal steam, nominal power.</item>
+///   <item><b>High</b> — double steam, double power.</item>
 /// </list>
-/// The operating band is fixed (6–8 atm) — the control rods do not move it, so the
-/// engine never sits over-pressure just from a throttle change. The break itself lives
-/// in <see cref="BlockEntityEngine"/>.
+/// The control rods also raise the operating band with the steam admission: low works on
+/// a gentle 4–6 atm, normal on 6–8 atm, high demands a hot 8–9 atm — so throttling up needs
+/// a hotter line to engage and breaks sooner once it does. The break itself lives in
+/// <see cref="BlockEntityEngine"/>.
 /// </summary>
 [EntityRegister]
 public class BlockEntityEngineCornish : BlockEntityEngine
@@ -33,10 +35,43 @@ public class BlockEntityEngineCornish : BlockEntityEngine
   public string ThrottleKey => ThrottleKeys[ThrottleIndex];
 
   protected override float MaxPowerValue => PpexValues.CornishEngineMaxPower;
+
+  // The control rods raise the whole operating band with the steam admission: low runs on a
+  // gentle 4–6 atm, normal on 6–8 atm, high demands a hot 8–9 atm. Throttling up therefore
+  // needs a hotter line, and throttling down lets the engine work off a softer one.
   protected override float EngagePressure =>
-    PpexValues.CornishEngineEngagePressure;
+    ThrottleIndex switch
+    {
+      0 => PpexValues.CornishEngineEngagePressureLow,
+      2 => PpexValues.CornishEngineEngagePressureHigh,
+      _ => PpexValues.CornishEngineEngagePressureNormal,
+    };
+
   protected override float BreakPressure =>
-    PpexValues.CornishEngineBreakPressure;
+    ThrottleIndex switch
+    {
+      0 => PpexValues.CornishEngineBreakPressureLow,
+      2 => PpexValues.CornishEngineBreakPressureHigh,
+      _ => PpexValues.CornishEngineBreakPressureNormal,
+    };
+
+  // Cylinder steam scales with the throttle: double the puff when running high, none at all
+  // when throttled down to its gentle low setting.
+  protected override int CylinderSteamPuffCount =>
+    ThrottleIndex switch
+    {
+      0 => 0,
+      2 => 4,
+      _ => 2,
+    };
+
+  // Overclocked, the engine works a hotter, harder cycle — its strokes hit louder and the gear
+  // train growls lower and meaner. Normal and low settings are left unchanged.
+  protected override float SoundVolumeFactor =>
+    ThrottleIndex == 2 ? PpexValues.CornishEngineOverclockVolume : 1f;
+
+  protected override float SoundPitchFactor =>
+    ThrottleIndex == 2 ? PpexValues.CornishEngineOverclockPitch : 1f;
 
   protected override float RunSteamRate =>
     ThrottleIndex switch
@@ -62,11 +97,20 @@ public class BlockEntityEngineCornish : BlockEntityEngine
       _ => PpexValues.CornishEngineWaterNormal,
     };
 
-  /// <summary>Advances the control rods one step, wrapping high → low. Called server-side.</summary>
-  public void CycleThrottle()
+  /// <summary>
+  /// Moves the control rods one step in <paramref name="direction"/> (positive raises
+  /// toward <c>high</c>, negative lowers toward <c>low</c>), clamped at either end.
+  /// Returns <c>true</c> when the setting actually changed (so the caller can give the
+  /// "already at max/min" feedback otherwise). Called server-side.
+  /// </summary>
+  public bool AdjustThrottle(int direction)
   {
-    _throttle = (ThrottleIndex + 1) % 3;
+    int next = Math.Clamp(ThrottleIndex + Math.Sign(direction), 0, 2);
+    if (next == ThrottleIndex)
+      return false;
+    _throttle = next;
     MarkDirty(true);
+    return true;
   }
 
   public override void ToTreeAttributes(ITreeAttribute tree)

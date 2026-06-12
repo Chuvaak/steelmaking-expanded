@@ -30,15 +30,21 @@ public class MoltenNetwork(BlockNetworkModSystem system) : BlockNetwork(system)
     return metalItemLoc;
   }
 
+  // Resolved once from the first loaded node's BE; a network instance never moves
+  // between worlds, so walking every node per tick to re-find it was wasted work.
+  private IWorldAccessor? _world;
+
   private IWorldAccessor? GetWorld(IBlockAccessor blockAccessor)
   {
+    if (_world != null)
+      return _world;
     foreach (var pos in Nodes)
     {
       if (
         blockAccessor.GetBlockEntity(pos) is BlockEntity be
         && be.Api?.World != null
       )
-        return be.Api.World;
+        return _world = be.Api.World;
     }
     return null;
   }
@@ -248,14 +254,14 @@ public class MoltenNetwork(BlockNetworkModSystem system) : BlockNetwork(system)
     )
       return;
 
-    // Flow moves whole units only, and never less than the minimum per tick.
+    // Flow moves whole units only, and never less than the minimum per tick —
+    // except into a drain fitting (pedestal/tap), which must still receive the
+    // final sub-minimum dregs so a run can empty completely into its mold/barrel.
     var transfer = diff > maxFlow ? maxFlow : diff;
     if (
       transfer < SmexValues.MoltenMinFlowAmount
-      && (
-        receiver is not BlockEntityMoltenCanalMoldPedestal
-        || receiver is not BlockEntityMoltenCanalTap
-      )
+      && receiver is not BlockEntityMoltenCanalMoldPedestal
+      && receiver is not BlockEntityMoltenCanalTap
     )
       return;
 

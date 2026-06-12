@@ -3,7 +3,7 @@
   "heldTpIdleAnimation": "holdbothhands",
   "heldRightReadyAnimation": "holdbothhands",
   "shape": { "base": "game:item/resource/crushed/normal" },
-  "texture": { "base": "game:block/coal/orecoalmix" },
+  "textures": { "quartz": { "base": "game:block/coal/orecoalmix" } },
   "creativeinventory": {
     "general": ["*"],
     "items": ["*"],
