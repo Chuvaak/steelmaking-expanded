@@ -1,0 +1,11 @@
+{
+  "name": "Slag Path",
+  "ingredientPattern": "L,S",
+  "ingredients": {
+    "L": { "type": "item", "code": "smex:slag", "quantity": 4 },
+    "S": { "type": "block", "code": "game:soil-*" }
+  },
+  "width": 1,
+  "height": 2,
+  "output": { "type": "block", "code": "smex:slagpath-free", "quantity": 2 }
+}

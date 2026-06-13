@@ -34,6 +34,7 @@
   "blockdesc-blastfurnace-tuyere*": "A hot blast intake for the furnace shaft.",
   "blockdesc-blastfurnacetap*": "Drains the furnace's molten reservoir into a canal below.",
   "blockdesc-slag*": "A block of solidified slag from the blast furnace.\n",
+  "blockdesc-slagpath*": "A sturdy road paved with crushed blast furnace slag.\n",
   "blockdesc-solidifiediron*": "Iron that cooled and hardened before it could be tapped or poured.\n",
 
   "blockdesc-cowperstove-intake*": "The intake face of a cowper stove.",
@@ -109,6 +110,7 @@
   "block-blastmix": "Blast Mix",
   "item-blastmix": "Blast Mix",
   "block-slag": "Solidified Slag",
+  "block-slagpath-*": "Slag Path",
   "item-slag": "Slag",
   "item-powderedslag": "Powdered Slag",
   "block-solidifiediron": "Solidified Iron",
