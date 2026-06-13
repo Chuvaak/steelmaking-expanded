@@ -31,6 +31,7 @@
               {
                 "type": "item",
                 "code": "metalplate-*",
+                "name": "ppex:rcc-ingredient-metalplate",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 12
@@ -38,6 +39,7 @@
               {
                 "type": "item",
                 "code": "rod-*",
+                "name": "ppex:rcc-ingredient-rod",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 12
@@ -50,6 +52,7 @@
               {
                 "type": "item",
                 "code": "metalplate-*",
+                "name": "ppex:rcc-ingredient-metalplate",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 16
@@ -57,6 +60,7 @@
               {
                 "type": "item",
                 "code": "rod-*",
+                "name": "ppex:rcc-ingredient-rod",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 8
@@ -69,6 +73,7 @@
               {
                 "type": "item",
                 "code": "metalplate-*",
+                "name": "ppex:rcc-ingredient-metalplate",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 8
@@ -76,6 +81,7 @@
               {
                 "type": "item",
                 "code": "rod-*",
+                "name": "ppex:rcc-ingredient-rod",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 6
@@ -88,6 +94,7 @@
               {
                 "type": "item",
                 "code": "metalplate-*",
+                "name": "ppex:rcc-ingredient-metalplate",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 6
@@ -95,6 +102,7 @@
               {
                 "type": "item",
                 "code": "metalnailsandstrips-*",
+                "name": "ppex:rcc-ingredient-nailsandstrips",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 6
@@ -107,6 +115,7 @@
               {
                 "type": "item",
                 "code": "metalplate-*",
+                "name": "ppex:rcc-ingredient-metalplate",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 4
@@ -114,6 +123,7 @@
               {
                 "type": "item",
                 "code": "rod-*",
+                "name": "ppex:rcc-ingredient-rod",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 8
@@ -126,6 +136,7 @@
               {
                 "type": "item",
                 "code": "rod-*",
+                "name": "ppex:rcc-ingredient-rod",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 8
@@ -133,6 +144,7 @@
               {
                 "type": "item",
                 "code": "metalnailsandstrips-*",
+                "name": "ppex:rcc-ingredient-nailsandstrips",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 8

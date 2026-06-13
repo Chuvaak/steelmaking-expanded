@@ -1,7 +1,11 @@
 using System;
+using ExpandedLib;
 using ExpandedLib.EntityRegistry;
 using PipesAndPowerExpanded.BlockNetworkPipe;
 using PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
+using Vintagestory.API.Client;
+using Vintagestory.API.Common;
+using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 
 namespace PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
@@ -17,10 +21,19 @@ namespace PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 [EntityRegister]
 public class BlockEntityEngineFluidPump : BlockEntityEngineSubmachine
 {
+  /// <summary>True while the pump has an active intake on its source line and is moving water;
+  /// synced to clients to drive the water-drawing loop sound.</summary>
+  private bool _drawingWater;
+
+  private ILoadedSound? _waterSound;
+
   protected override void DoWork(float power, float dt)
   {
     if (power <= 0f)
+    {
+      SetDrawing(false);
       return;
+    }
 
     var ba = Api.World.BlockAccessor;
     PipeNetwork? bottomNet = ConnectedNetwork(BlockFacing.DOWN);
@@ -28,6 +41,7 @@ public class BlockEntityEngineFluidPump : BlockEntityEngineSubmachine
 
     // The intake is the generator; without one the pump runs and does nothing.
     BlockEntityFluidIntake? intake = FindIntake(bottomNet);
+    SetDrawing(intake != null);
     if (intake == null)
       return;
 
@@ -52,6 +66,15 @@ public class BlockEntityEngineFluidPump : BlockEntityEngineSubmachine
     intake.ProduceWater(amount, 20f, ba);
   }
 
+  /// <summary>Updates the synced water-drawing flag, syncing to clients only on change.</summary>
+  private void SetDrawing(bool drawing)
+  {
+    if (drawing == _drawingWater)
+      return;
+    _drawingWater = drawing;
+    MarkDirty();
+  }
+
   /// <summary>The first fluid intake on <paramref name="net"/> that can currently draw water, or <c>null</c>.</summary>
   private BlockEntityFluidIntake? FindIntake(PipeNetwork? net)
   {
@@ -74,4 +97,63 @@ public class BlockEntityEngineFluidPump : BlockEntityEngineSubmachine
     net == null
       ? 0f
       : net.Nodes.Count * PpexValues.LitresPerPipe - (net.State?.Volume ?? 0f);
+
+  /// <summary>
+  /// Runs a watering trickle loop while the pump is actually drawing water, on top of the
+  /// shared piston-stroke sounds — the same loop the manual fluid pump uses.
+  /// </summary>
+  protected override void OnClientStateTick(float dt)
+  {
+    if (Api is not ICoreClientAPI)
+      return;
+
+    if (_drawingWater)
+    {
+      _waterSound ??= ExSounds.CreateLoop(
+        Api,
+        Pos,
+        ExSounds.Watering,
+        volume: 0.6f,
+        range: 16f
+      );
+      if (_waterSound?.IsPlaying == false)
+        _waterSound.Start();
+    }
+    else if (_waterSound?.IsPlaying == true)
+      _waterSound.Stop();
+  }
+
+  private void DisposeSounds()
+  {
+    _waterSound?.Stop();
+    _waterSound?.Dispose();
+    _waterSound = null;
+  }
+
+  public override void ToTreeAttributes(ITreeAttribute tree)
+  {
+    base.ToTreeAttributes(tree);
+    tree.SetBool("drawingWater", _drawingWater);
+  }
+
+  public override void FromTreeAttributes(
+    ITreeAttribute tree,
+    IWorldAccessor worldForResolving
+  )
+  {
+    base.FromTreeAttributes(tree, worldForResolving);
+    _drawingWater = tree.GetBool("drawingWater");
+  }
+
+  public override void OnBlockRemoved()
+  {
+    DisposeSounds();
+    base.OnBlockRemoved();
+  }
+
+  public override void OnBlockUnloaded()
+  {
+    DisposeSounds();
+    base.OnBlockUnloaded();
+  }
 }

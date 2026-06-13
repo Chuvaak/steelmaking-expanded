@@ -264,6 +264,51 @@
     }
   },
   {
+    "name": "Manual Fluid Pump",
+    "ingredientPattern": "_GH,PIP,BRB",
+    "ingredients": {
+      "P": {
+        "type": "item",
+        "code": "game:metalplate-{metal}",
+        "quantity": 1
+      },
+      "G": {
+        "type": "item",
+        "code": "game:gear-rusty",
+        "quantity": 2
+      },
+      "I": {
+        "type": "block",
+        "code": "ppex:pipe-straight-*",
+        "quantity": 1
+      },
+      "R": {
+        "type": "item",
+        "code": "game:rod-{metal}",
+        "quantity": 2
+      },
+      "B": {
+        "type": "block",
+        "code": "game:supportbeam-*",
+        "quantity": 4
+      },
+      "H": {
+        "type": "item",
+        "code": "game:hammer-*",
+        "isTool": true
+      }
+    },
+    "allowedVariants": {
+      "metal": ["iron", "steel"]
+    },
+    "width": 3,
+    "height": 3,
+    "output": {
+      "type": "block",
+      "code": "ppex:manualfluidpump-north"
+    }
+  },
+  {
     "name": "Mechanical Power Generator",
     "ingredientPattern": "_H_,GAG,PRP",
     "ingredients": {

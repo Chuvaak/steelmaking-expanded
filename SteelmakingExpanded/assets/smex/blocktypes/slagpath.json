@@ -17,16 +17,46 @@
       "base": "game:block/stone/gravel/phyllite",
       "overlays": ["game:block/overlay/pebble1"],
       "alternates": [
-        { "base": "game:block/stone/gravel/phyllite", "overlays": ["game:block/overlay/pebble2"] },
-        { "base": "game:block/stone/gravel/phyllite", "overlays": ["game:block/overlay/pebble3"] },
-        { "base": "game:block/stone/gravel/phyllite", "overlays": ["game:block/overlay/pebble4"] },
-        { "base": "game:block/stone/gravel/phyllite", "overlays": ["game:block/overlay/pebble5"] },
-        { "base": "game:block/stone/gravel/phyllite", "overlays": ["game:block/overlay/pebble6"] },
-        { "base": "game:block/stone/gravel/phyllite", "overlays": ["game:block/overlay/pebble7"] },
-        { "base": "game:block/stone/gravel/phyllite", "overlays": ["game:block/overlay/pebble8"] },
-        { "base": "game:block/stone/gravel/phyllite", "overlays": ["game:block/overlay/pebble9"] },
-        { "base": "game:block/stone/gravel/phyllite", "overlays": ["game:block/overlay/pebble10"] },
-        { "base": "game:block/stone/gravel/phyllite", "overlays": ["game:block/overlay/pebble11"] }
+        {
+          "base": "game:block/stone/gravel/phyllite",
+          "overlays": ["game:block/overlay/pebble2"]
+        },
+        {
+          "base": "game:block/stone/gravel/phyllite",
+          "overlays": ["game:block/overlay/pebble3"]
+        },
+        {
+          "base": "game:block/stone/gravel/phyllite",
+          "overlays": ["game:block/overlay/pebble4"]
+        },
+        {
+          "base": "game:block/stone/gravel/phyllite",
+          "overlays": ["game:block/overlay/pebble5"]
+        },
+        {
+          "base": "game:block/stone/gravel/phyllite",
+          "overlays": ["game:block/overlay/pebble6"]
+        },
+        {
+          "base": "game:block/stone/gravel/phyllite",
+          "overlays": ["game:block/overlay/pebble7"]
+        },
+        {
+          "base": "game:block/stone/gravel/phyllite",
+          "overlays": ["game:block/overlay/pebble8"]
+        },
+        {
+          "base": "game:block/stone/gravel/phyllite",
+          "overlays": ["game:block/overlay/pebble9"]
+        },
+        {
+          "base": "game:block/stone/gravel/phyllite",
+          "overlays": ["game:block/overlay/pebble10"]
+        },
+        {
+          "base": "game:block/stone/gravel/phyllite",
+          "overlays": ["game:block/overlay/pebble11"]
+        }
       ]
     }
   },

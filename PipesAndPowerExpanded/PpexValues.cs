@@ -228,6 +228,10 @@ public class PpexConfig
   /// power fraction, so a throttled or overclocked engine moves proportionally less/more).</summary>
   public float PumpWaterPerSecond { get; set; } = 5f;
 
+  /// <summary>Water (L/s) the manual (hand-cranked) fluid pump transfers from its intake line to
+  /// its output line at a fixed 1 atm — a manual boiler-startup feed, slower than the engine pump.</summary>
+  public float ManualPumpWaterPerSecond { get; set; } = 2f;
+
   /// <summary>A fluid intake only draws water when the whole cube of this depth directly below it is water.</summary>
   public int FluidIntakeWaterDepth { get; set; } = 3;
 
@@ -402,6 +406,8 @@ public static class PpexValues
   public static float MpRatedSpeed => _config.MpRatedSpeed;
   public static float MpLoadPerEnginePower => _config.MpLoadPerEnginePower;
   public static float PumpWaterPerSecond => _config.PumpWaterPerSecond;
+  public static float ManualPumpWaterPerSecond =>
+    _config.ManualPumpWaterPerSecond;
   public static int FluidIntakeWaterDepth => _config.FluidIntakeWaterDepth;
   public static float FluidIntakeExclusionRange =>
     _config.FluidIntakeExclusionRange;

@@ -28,9 +28,12 @@ namespace SteelmakingExpanded.BlockMigrations;
 /// swaps blocks in-world after they have fully resolved, and the item-stack pass below also
 /// catches molds sitting in inventories and ground storage.</para>
 /// </summary>
-public class ToolMoldDomainMigration : IBlockCodeMigration, IBlockEntityMigration
+public class ToolMoldDomainMigration
+  : IBlockCodeMigration,
+    IBlockEntityMigration
 {
-  public string Name => "Plate/double-ingot/quad-rod molds moved to smex domain";
+  public string Name =>
+    "Plate/double-ingot/quad-rod molds moved to smex domain";
 
   // Colours each material type ships with, mirroring the smex blocktype variantgroups:
   // raw molds clay-form in three colours; firing (kiln/burning) can yield any of ten.
@@ -48,22 +51,32 @@ public class ToolMoldDomainMigration : IBlockCodeMigration, IBlockEntityMigratio
     "red",
     "tan",
   ];
-  private static readonly string[] ToolTypes = ["plate", "doubleingot", "quadrod"];
+  private static readonly string[] ToolTypes =
+  [
+    "plate",
+    "doubleingot",
+    "quadrod",
+  ];
 
   public IEnumerable<(AssetLocation oldCode, AssetLocation newCode)> GetRemaps(
     ICoreServerAPI api
   )
   {
-    foreach (var (material, colors) in new[]
-    {
-      ("raw", RawColors),
-      ("fired", FiredColors),
-    })
+    foreach (
+      var (material, colors) in new[]
+      {
+        ("raw", RawColors),
+        ("fired", FiredColors),
+      }
+    )
     foreach (string color in colors)
     foreach (string tool in ToolTypes)
     {
       string path = $"toolmold-{color}-{material}-{tool}";
-      yield return (new AssetLocation("game", path), new AssetLocation("smex", path));
+      yield return (
+        new AssetLocation("game", path),
+        new AssetLocation("smex", path)
+      );
     }
   }
 

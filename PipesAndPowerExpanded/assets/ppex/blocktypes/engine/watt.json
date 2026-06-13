@@ -30,21 +30,24 @@
             "requireStacks": [
               {
                 "type": "item",
-                "code": "metalplate-{metal}",
+                "code": "metalplate-*",
+                "name": "ppex:rcc-ingredient-metalplate",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 2
               },
               {
                 "type": "item",
-                "code": "rod-{metal}",
+                "code": "rod-*",
+                "name": "ppex:rcc-ingredient-rod",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 4
               },
               {
                 "type": "item",
-                "code": "metalnailsandstrips-{metal}",
+                "code": "metalnailsandstrips-*",
+                "name": "ppex:rcc-ingredient-nailsandstrips",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 4
@@ -61,14 +64,16 @@
             "requireStacks": [
               {
                 "type": "item",
-                "code": "rod-{metal}",
+                "code": "rod-*",
+                "name": "ppex:rcc-ingredient-rod",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 8
               },
               {
                 "type": "item",
-                "code": "metalnailsandstrips-{metal}",
+                "code": "metalnailsandstrips-*",
+                "name": "ppex:rcc-ingredient-nailsandstrips",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 4
@@ -80,21 +85,24 @@
             "requireStacks": [
               {
                 "type": "item",
-                "code": "metalplate-{metal}",
+                "code": "metalplate-*",
+                "name": "ppex:rcc-ingredient-metalplate",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 2
               },
               {
                 "type": "item",
-                "code": "rod-{metal}",
+                "code": "rod-*",
+                "name": "ppex:rcc-ingredient-rod",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 4
               },
               {
                 "type": "item",
-                "code": "metalnailsandstrips-{metal}",
+                "code": "metalnailsandstrips-*",
+                "name": "ppex:rcc-ingredient-nailsandstrips",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 2
@@ -106,14 +114,16 @@
             "requireStacks": [
               {
                 "type": "item",
-                "code": "rod-{metal}",
+                "code": "rod-*",
+                "name": "ppex:rcc-ingredient-rod",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 4
               },
               {
                 "type": "item",
-                "code": "metalnailsandstrips-{metal}",
+                "code": "metalnailsandstrips-*",
+                "name": "ppex:rcc-ingredient-nailsandstrips",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 2
@@ -125,7 +135,8 @@
             "requireStacks": [
               {
                 "type": "item",
-                "code": "rod-{metal}",
+                "code": "rod-*",
+                "name": "ppex:rcc-ingredient-rod",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 4

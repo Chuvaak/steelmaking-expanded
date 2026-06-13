@@ -62,6 +62,7 @@
               {
                 "type": "item",
                 "code": "metalplate-*",
+                "name": "smex:rcc-ingredient-metalplate",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 24
@@ -69,6 +70,7 @@
               {
                 "type": "item",
                 "code": "metalnailsandstrips-*",
+                "name": "smex:rcc-ingredient-nailsandstrips",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 24
@@ -76,6 +78,7 @@
               {
                 "type": "item",
                 "code": "rod-*",
+                "name": "smex:rcc-ingredient-rod",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 12
@@ -88,6 +91,7 @@
               {
                 "type": "item",
                 "code": "metalplate-*",
+                "name": "smex:rcc-ingredient-metalplate",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 4
@@ -100,6 +104,7 @@
               {
                 "type": "item",
                 "code": "metalnailsandstrips-*",
+                "name": "smex:rcc-ingredient-nailsandstrips",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 6
@@ -142,6 +147,7 @@
               {
                 "type": "item",
                 "code": "metalplate-*",
+                "name": "smex:rcc-ingredient-metalplate",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 12
@@ -149,6 +155,7 @@
               {
                 "type": "item",
                 "code": "metalnailsandstrips-*",
+                "name": "smex:rcc-ingredient-nailsandstrips",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 12
@@ -156,6 +163,7 @@
               {
                 "type": "item",
                 "code": "rod-*",
+                "name": "smex:rcc-ingredient-rod",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 6

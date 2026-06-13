@@ -205,7 +205,17 @@ public abstract class BlockEntityEngineSubmachine : BlockEntity
       _animSpeed = speed;
       ApplyAnim(run, speed);
     }
+
+    OnClientStateTick(dt);
   }
+
+  /// <summary>
+  /// Client-side hook polled alongside the animation mirror (~twice a second), for sub-machine
+  /// specific state-driven effects such as a continuous work-loop sound. The base does nothing;
+  /// a sub-machine overrides it to start/stop its own looping sound from a synced state flag
+  /// (see the fluid pump's water-drawing loop). Runs only on the client.
+  /// </summary>
+  protected virtual void OnClientStateTick(float dt) { }
 
   /// <summary>
   /// Builds the animator from the block's shape so the sub-machine renders its animated

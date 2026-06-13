@@ -36,7 +36,8 @@
               },
               {
                 "type": "item",
-                "code": "metalnailsandstrips-{metal}",
+                "code": "metalnailsandstrips-*",
+                "name": "ppex:rcc-ingredient-nailsandstrips",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 8
@@ -63,7 +64,8 @@
               },
               {
                 "type": "item",
-                "code": "metalnailsandstrips-{metal}",
+                "code": "metalnailsandstrips-*",
+                "name": "ppex:rcc-ingredient-nailsandstrips",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 8
@@ -80,7 +82,8 @@
               },
               {
                 "type": "item",
-                "code": "metalnailsandstrips-{metal}",
+                "code": "metalnailsandstrips-*",
+                "name": "ppex:rcc-ingredient-nailsandstrips",
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 8

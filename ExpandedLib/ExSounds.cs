@@ -67,6 +67,11 @@ public static class ExSounds
   public static readonly AssetLocation WaterPour = new(
     "game:sounds/effect/water-pour"
   );
+
+  /// <summary>Watering-can trickle — the rhythmic water sound of a working hand pump.</summary>
+  public static readonly AssetLocation Watering = new(
+    "game:sounds/effect/watering"
+  );
   public static readonly AssetLocation ExtinguishHiss = new(
     "game:sounds/effect/extinguish"
   );

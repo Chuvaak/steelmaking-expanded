@@ -277,7 +277,11 @@
     "name": "Molten Canal (Straight, Colored Brick)",
     "ingredientPattern": "H_K,FBF",
     "ingredients": {
-      "B": { "type": "block", "code": "game:brickcourse-four-running-{brick}", "quantity": 1 },
+      "B": {
+        "type": "block",
+        "code": "game:brickcourse-four-running-{brick}",
+        "quantity": 1
+      },
       "F": { "type": "item", "code": "game:clay-fire", "quantity": 2 },
       "H": { "type": "item", "code": "game:hammer-*", "isTool": true },
       "K": { "type": "item", "code": "game:chisel-*", "isTool": true }
@@ -297,7 +301,11 @@
     "name": "Molten Canal (Straight, Fire Brick)",
     "ingredientPattern": "H_K,FBF",
     "ingredients": {
-      "B": { "type": "block", "code": "game:claybricks-good-fire", "quantity": 1 },
+      "B": {
+        "type": "block",
+        "code": "game:claybricks-good-fire",
+        "quantity": 1
+      },
       "F": { "type": "item", "code": "game:clay-fire", "quantity": 2 },
       "H": { "type": "item", "code": "game:hammer-*", "isTool": true },
       "K": { "type": "item", "code": "game:chisel-*", "isTool": true }
@@ -314,7 +322,11 @@
     "name": "Molten Canal (Bend, Colored Brick)",
     "ingredientPattern": "HFK,FB_",
     "ingredients": {
-      "B": { "type": "block", "code": "game:brickcourse-four-running-{brick}", "quantity": 1 },
+      "B": {
+        "type": "block",
+        "code": "game:brickcourse-four-running-{brick}",
+        "quantity": 1
+      },
       "F": { "type": "item", "code": "game:clay-fire", "quantity": 2 },
       "H": { "type": "item", "code": "game:hammer-*", "isTool": true },
       "K": { "type": "item", "code": "game:chisel-*", "isTool": true }
@@ -334,7 +346,11 @@
     "name": "Molten Canal (Bend, Fire Brick)",
     "ingredientPattern": "HFK,FB_",
     "ingredients": {
-      "B": { "type": "block", "code": "game:claybricks-good-fire", "quantity": 1 },
+      "B": {
+        "type": "block",
+        "code": "game:claybricks-good-fire",
+        "quantity": 1
+      },
       "F": { "type": "item", "code": "game:clay-fire", "quantity": 2 },
       "H": { "type": "item", "code": "game:hammer-*", "isTool": true },
       "K": { "type": "item", "code": "game:chisel-*", "isTool": true }
@@ -351,7 +367,11 @@
     "name": "Molten Canal (T-Junction, Colored Brick)",
     "ingredientPattern": "HFK,FBF",
     "ingredients": {
-      "B": { "type": "block", "code": "game:brickcourse-four-running-{brick}", "quantity": 1 },
+      "B": {
+        "type": "block",
+        "code": "game:brickcourse-four-running-{brick}",
+        "quantity": 1
+      },
       "F": { "type": "item", "code": "game:clay-fire", "quantity": 2 },
       "H": { "type": "item", "code": "game:hammer-*", "isTool": true },
       "K": { "type": "item", "code": "game:chisel-*", "isTool": true }
@@ -371,7 +391,11 @@
     "name": "Molten Canal (T-Junction, Fire Brick)",
     "ingredientPattern": "HFK,FBF",
     "ingredients": {
-      "B": { "type": "block", "code": "game:claybricks-good-fire", "quantity": 1 },
+      "B": {
+        "type": "block",
+        "code": "game:claybricks-good-fire",
+        "quantity": 1
+      },
       "F": { "type": "item", "code": "game:clay-fire", "quantity": 2 },
       "H": { "type": "item", "code": "game:hammer-*", "isTool": true },
       "K": { "type": "item", "code": "game:chisel-*", "isTool": true }
@@ -388,7 +412,11 @@
     "name": "Molten Canal (X-Junction, Colored Brick)",
     "ingredientPattern": "HFK,FBF,_F_",
     "ingredients": {
-      "B": { "type": "block", "code": "game:brickcourse-four-running-{brick}", "quantity": 1 },
+      "B": {
+        "type": "block",
+        "code": "game:brickcourse-four-running-{brick}",
+        "quantity": 1
+      },
       "F": { "type": "item", "code": "game:clay-fire", "quantity": 2 },
       "H": { "type": "item", "code": "game:hammer-*", "isTool": true },
       "K": { "type": "item", "code": "game:chisel-*", "isTool": true }
@@ -408,7 +436,11 @@
     "name": "Molten Canal (X-Junction, Fire Brick)",
     "ingredientPattern": "HFK,FBF,_F_",
     "ingredients": {
-      "B": { "type": "block", "code": "game:claybricks-good-fire", "quantity": 1 },
+      "B": {
+        "type": "block",
+        "code": "game:claybricks-good-fire",
+        "quantity": 1
+      },
       "F": { "type": "item", "code": "game:clay-fire", "quantity": 2 },
       "H": { "type": "item", "code": "game:hammer-*", "isTool": true },
       "K": { "type": "item", "code": "game:chisel-*", "isTool": true }
@@ -425,7 +457,11 @@
     "name": "Molten Canal (Start, Colored Brick)",
     "ingredientPattern": "HBK,FFF",
     "ingredients": {
-      "B": { "type": "block", "code": "game:brickcourse-four-running-{brick}", "quantity": 1 },
+      "B": {
+        "type": "block",
+        "code": "game:brickcourse-four-running-{brick}",
+        "quantity": 1
+      },
       "F": { "type": "item", "code": "game:clay-fire", "quantity": 2 },
       "H": { "type": "item", "code": "game:hammer-*", "isTool": true },
       "K": { "type": "item", "code": "game:chisel-*", "isTool": true }
@@ -445,7 +481,11 @@
     "name": "Molten Canal (Start, Fire Brick)",
     "ingredientPattern": "HBK,FFF",
     "ingredients": {
-      "B": { "type": "block", "code": "game:claybricks-good-fire", "quantity": 1 },
+      "B": {
+        "type": "block",
+        "code": "game:claybricks-good-fire",
+        "quantity": 1
+      },
       "F": { "type": "item", "code": "game:clay-fire", "quantity": 2 },
       "H": { "type": "item", "code": "game:hammer-*", "isTool": true },
       "K": { "type": "item", "code": "game:chisel-*", "isTool": true }
@@ -462,7 +502,11 @@
     "name": "Molten Canal (Mold Pedestal, Colored Brick)",
     "ingredientPattern": "HFK,BFB",
     "ingredients": {
-      "B": { "type": "block", "code": "game:brickcourse-four-running-{brick}", "quantity": 1 },
+      "B": {
+        "type": "block",
+        "code": "game:brickcourse-four-running-{brick}",
+        "quantity": 1
+      },
       "F": { "type": "item", "code": "game:clay-fire", "quantity": 2 },
       "H": { "type": "item", "code": "game:hammer-*", "isTool": true },
       "K": { "type": "item", "code": "game:chisel-*", "isTool": true }
@@ -482,7 +526,11 @@
     "name": "Molten Canal (Mold Pedestal, Fire Brick)",
     "ingredientPattern": "HFK,BFB",
     "ingredients": {
-      "B": { "type": "block", "code": "game:claybricks-good-fire", "quantity": 1 },
+      "B": {
+        "type": "block",
+        "code": "game:claybricks-good-fire",
+        "quantity": 1
+      },
       "F": { "type": "item", "code": "game:clay-fire", "quantity": 2 },
       "H": { "type": "item", "code": "game:hammer-*", "isTool": true },
       "K": { "type": "item", "code": "game:chisel-*", "isTool": true }

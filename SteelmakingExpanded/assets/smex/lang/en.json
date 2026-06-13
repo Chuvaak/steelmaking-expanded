@@ -111,6 +111,8 @@
   "item-blastmix": "Blast Mix",
   "block-slag": "Solidified Slag",
   "block-slagpath-*": "Slag Path",
+  "block-slagpathslab-*": "Slag Path Slab",
+  "block-slagpathstairs-*": "Slag Path Stairs",
   "item-slag": "Slag",
   "item-powderedslag": "Powdered Slag",
   "block-solidifiediron": "Solidified Iron",
@@ -153,6 +155,10 @@
   "bf-info-ready": "Blast Furnace is ready! Ignite the blast mix inside and close the door.",
   "bf-error-incomplete": "Structure is not complete. {0} blocks are missing or incorrect.",
   "bf-error-complete": "Blast Furnace structure is complete!",
+
+  "rcc-ingredient-metalplate": "Iron or Steel Plate",
+  "rcc-ingredient-rod": "Iron or Steel Rod",
+  "rcc-ingredient-nailsandstrips": "Iron or Steel Nails & Strips",
 
   "structure-incomplete": "Structure incomplete!",
   "structure-incomplete-count": "Structure is not complete. {0} blocks are missing or incorrect.",
