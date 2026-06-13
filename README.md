@@ -1,7 +1,7 @@
 # Fallenstar's Expanded mods
 
 A monorepo of three [Vintage Story](https://www.vintagestory.at/) mods that together
-add an industrial-era production chain — pipe networks, steam power, bulk iron and
+add an industrial-era production chain - pipe networks, steam power, bulk iron and
 steel making:
 
 | Mod                                                       | modid   | What it is                                                                                                   |
@@ -51,15 +51,15 @@ A network is a connected graph of same-type nodes; the library owns the **graph-
 work (membership, merge on join, fracture on break, per-tick dispatch) while each
 concrete network owns its typed state and rules.
 
-- `INetworkNode` — the block-entity-facing contract: connector faces, network type,
+- `INetworkNode` - the block-entity-facing contract: connector faces, network type,
   open/leaking faces, state pushes.
-- `BlockNetworkNode` — the `Block` base for self-orienting nodes (placement
+- `BlockNetworkNode` - the `Block` base for self-orienting nodes (placement
   orientation, wrench rotation, variant-aware display names).
-- `BlockEntityNetworkNode` — the `BlockEntity` base that registers/unregisters with
+- `BlockEntityNetworkNode` - the `BlockEntity` base that registers/unregisters with
   the manager and persists state.
-- `BlockNetwork` — the abstract live-network instance (`PipeNetwork`,
+- `BlockNetwork` - the abstract live-network instance (`PipeNetwork`,
   `MoltenNetwork`).
-- `BlockNetworkModSystem` — the graph manager; concrete types register a factory via
+- `BlockNetworkModSystem` - the graph manager; concrete types register a factory via
   `RegisterNetworkType("pipe", …)` during `ModSystem.Start`.
 
 ## Building
@@ -70,8 +70,8 @@ there).
 
 ```sh
 dotnet build SteelmakingExpanded/SteelmakingExpanded.csproj   # builds all three mods
-./build.ps1   # or ./build.sh — full Cake build, produces packaged release zips
+./build.ps1   # or ./build.sh - full Cake build, produces packaged release zips
 ```
 
-If you use VS Code, a launch config is included — just set the `VINTAGE_STORY` env
+If you use VS Code, a launch config is included - just set the `VINTAGE_STORY` env
 var to your game install path.
