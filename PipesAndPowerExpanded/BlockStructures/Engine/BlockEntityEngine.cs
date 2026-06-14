@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ExpandedLib;
-using ExpandedLib.BlockNetworks;
+using ExpandedLib.Blocks.Networks;
+using ExpandedLib.Helpers;
 using PipesAndPowerExpanded.BlockNetworkPipe;
 using PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 using Vintagestory.API.Client;
@@ -444,7 +444,9 @@ public abstract class BlockEntityEngine : BlockEntity
     // Inlet pressure against the operating band, plus the steam drawn while running.
     dsc.AppendLine(Lang.Get("ppex:engine-info-clock-" + ClockState));
     if (IsRunning)
-      dsc.AppendLine(Lang.Get("ppex:engine-info-steam", RunSteamRate));
+      dsc.AppendLine(
+        Lang.Get("ppex:engine-info-steam", ExMeasure.FlowRate(RunSteamRate, "F0"))
+      );
     if (_overPressureSeconds > 0f)
       dsc.AppendLine(
         Lang.Get("ppex:engine-info-overpressure", OverPressureRemaining)

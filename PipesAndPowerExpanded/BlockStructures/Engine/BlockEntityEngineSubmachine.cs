@@ -1,6 +1,6 @@
 using System;
-using ExpandedLib;
-using ExpandedLib.BlockNetworks;
+using ExpandedLib.Blocks.Networks;
+using ExpandedLib.Helpers;
 using PipesAndPowerExpanded.BlockNetworkPipe;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;

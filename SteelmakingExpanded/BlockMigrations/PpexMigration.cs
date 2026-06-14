@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using ExpandedLib.BlockMigrations;
+using ExpandedLib.Blocks.Migrations;
 using Vintagestory.API.Common;
 using Vintagestory.API.Server;
 

@@ -1,9 +1,9 @@
 using System;
 using System.Text;
-using ExpandedLib;
-using ExpandedLib.BlockNetworks;
-using ExpandedLib.BlockStructures;
+using ExpandedLib.Blocks.Networks;
+using ExpandedLib.Blocks.Structures;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using PipesAndPowerExpanded.BlockNetworkPipe;
 using SteelmakingExpanded.BlockNetworkMolten;
 using SteelmakingExpanded.BlockNetworkMolten.BlockEntities;
@@ -907,7 +907,7 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
           _contentUnits,
           CapacityUnits,
           metal,
-          temp
+          ExMeasure.Temperature(temp)
         )
       );
     }

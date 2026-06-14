@@ -1,8 +1,8 @@
 using System;
 using System.Linq;
-using ExpandedLib;
-using ExpandedLib.BlockNetworks;
-using ExpandedLib.BlockStructures;
+using ExpandedLib.Blocks.Networks;
+using ExpandedLib.Blocks.Structures;
+using ExpandedLib.Helpers;
 using PipesAndPowerExpanded.BlockStructures.Engine.Blocks;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;

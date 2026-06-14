@@ -1,6 +1,6 @@
 using System.Linq;
-using ExpandedLib;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using SteelmakingExpanded.BlockNetworkMolten.Blocks;
 using SteelmakingExpanded.BlockStructures.BlastFurnace.BlockEntities;
 using Vintagestory.API.Client;

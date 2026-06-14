@@ -1,7 +1,7 @@
 using System;
-using ExpandedLib;
-using ExpandedLib.BlockStructures;
+using ExpandedLib.Blocks.Structures;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using SteelmakingExpanded.BlockStructures.Converter.BlockEntities;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;

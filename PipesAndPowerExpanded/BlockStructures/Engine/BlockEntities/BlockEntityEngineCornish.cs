@@ -1,5 +1,6 @@
 using System;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
@@ -129,8 +130,7 @@ public class BlockEntityEngineCornish : BlockEntityEngine
       Lang.Get(
         "ppex:engine-info-throttle",
         Lang.Get("ppex:engine-throttle-" + ThrottleKey),
-        EngagePressure,
-        BreakPressure
+        ExMeasure.PressureRange(EngagePressure, BreakPressure)
       )
     );
   }

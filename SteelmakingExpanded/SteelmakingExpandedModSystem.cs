@@ -1,6 +1,6 @@
-using ExpandedLib;
-using ExpandedLib.BlockNetworks;
-using ExpandedLib.EntityRegistry;
+using ExpandedLib.Blocks.Networks;
+using ExpandedLib.Helpers;
+using ExpandedLib.Registries.Entities;
 using HarmonyLib;
 using SteelmakingExpanded.BlockNetworkMolten;
 using SteelmakingExpanded.BlockNetworkMolten.Blocks;

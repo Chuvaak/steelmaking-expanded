@@ -1,7 +1,7 @@
 using System;
 using System.Text;
-using ExpandedLib;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using SteelmakingExpanded.Compat;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;

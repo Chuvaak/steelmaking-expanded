@@ -1,4 +1,4 @@
-using ExpandedLib;
+using ExpandedLib.Helpers;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 

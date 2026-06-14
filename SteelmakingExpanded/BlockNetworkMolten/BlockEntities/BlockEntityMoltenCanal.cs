@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using ExpandedLib.BlockNetworks;
+using ExpandedLib.Blocks.Networks;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using SteelmakingExpanded.BlockNetworkMolten.Blocks;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
@@ -615,7 +616,7 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
           CellAmount,
           MaxUnitCapacity,
           solidMetalName,
-          _cellTemperature
+          ExMeasure.Temperature(_cellTemperature)
         )
       );
       // Hot solid plug: still glowing, too hot to chip out. Tell the player to
@@ -639,7 +640,7 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
           CellAmount,
           MaxUnitCapacity,
           metalName,
-          _cellTemperature
+          ExMeasure.Temperature(_cellTemperature)
         )
       );
     }

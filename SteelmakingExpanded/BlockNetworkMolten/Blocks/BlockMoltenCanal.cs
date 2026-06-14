@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using ExpandedLib;
-using ExpandedLib.BlockNetworks;
+using ExpandedLib.Blocks.Networks;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using SteelmakingExpanded.BlockNetworkMolten.BlockEntities;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;

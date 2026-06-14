@@ -1,8 +1,8 @@
 using System;
 using System.Reflection;
-using ExpandedLib;
-using ExpandedLib.BlockNetworks;
-using ExpandedLib.BlockStructures;
+using ExpandedLib.Blocks.Networks;
+using ExpandedLib.Blocks.Structures;
+using ExpandedLib.Helpers;
 using PipesAndPowerExpanded.BlockNetworkPipe;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
@@ -981,20 +981,36 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
     }
 
     dsc.AppendLine(
-      Lang.Get("ppex:boiler-info-water", _waterVolume, MaxBoilWater)
+      Lang.Get(
+        "ppex:boiler-info-water",
+        ExMeasure.VolumeRange(_waterVolume, MaxBoilWater)
+      )
     );
     dsc.AppendLine(
-      Lang.Get("ppex:boiler-info-steam", _steamVolume, InternalPressure)
+      Lang.Get(
+        "ppex:boiler-info-steam",
+        ExMeasure.Volume(_steamVolume),
+        ExMeasure.Pressure(InternalPressure)
+      )
     );
 
     if (_state == BoilerState.Boiling)
       dsc.AppendLine(
-        Lang.Get("ppex:boiler-info-boiling", SteamPerSecond, SteamTemperature())
+        Lang.Get(
+          "ppex:boiler-info-boiling",
+          ExMeasure.FlowRate(SteamPerSecond, "F0"),
+          ExMeasure.Temperature(SteamTemperature())
+        )
       );
     else if (_state == BoilerState.Heating)
       dsc.AppendLine(Lang.Get("ppex:boiler-info-heating", HeatProgress * 100f));
     else if (_waterVolume < MinBoilWater)
-      dsc.AppendLine(Lang.Get("ppex:boiler-info-needswater", MinBoilWater));
+      dsc.AppendLine(
+        Lang.Get(
+          "ppex:boiler-info-needswater",
+          ExMeasure.Volume(MinBoilWater)
+        )
+      );
     else
       dsc.AppendLine(Lang.Get("ppex:boiler-info-idle"));
 

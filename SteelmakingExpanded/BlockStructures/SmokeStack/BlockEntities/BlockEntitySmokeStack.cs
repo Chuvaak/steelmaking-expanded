@@ -1,9 +1,9 @@
 using System.Text;
 using System.Text.Json;
-using ExpandedLib;
-using ExpandedLib.BlockNetworks;
-using ExpandedLib.BlockStructures;
+using ExpandedLib.Blocks.Networks;
+using ExpandedLib.Blocks.Structures;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using PipesAndPowerExpanded.BlockNetworkPipe;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -240,7 +240,10 @@ public class BlockEntitySmokeStack
       return;
     }
     dsc.AppendLine(
-      Lang.Get("smex:smokestack-info-consuming", _lastConsumedAmount)
+      Lang.Get(
+        "smex:smokestack-info-consuming",
+        ExMeasure.Volume(_lastConsumedAmount, "F1")
+      )
     );
   }
 

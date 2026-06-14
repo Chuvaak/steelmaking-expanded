@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using ExpandedLib.BlockNetworks;
+using ExpandedLib.Blocks.Networks;
 using ExpandedLib.EntityRegistry;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;

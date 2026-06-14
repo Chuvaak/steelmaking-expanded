@@ -1,8 +1,8 @@
 using System;
 using System.Text;
-using ExpandedLib;
-using ExpandedLib.BlockNetworks;
+using ExpandedLib.Blocks.Networks;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -328,19 +328,28 @@ public class BlockEntityPipe : BlockEntityNetworkNode, IPipeNode
       dsc.AppendLine(
         Lang.Get(
           "ppex:pipe-info-flow",
-          _clientFlowRate,
+          ExMeasure.FlowRate(_clientFlowRate),
           Lang.Get("ppex:pipe-medium-water"),
-          Temperature
+          ExMeasure.Temperature(Temperature, "F1")
         )
       );
-      dsc.AppendLine(Lang.Get("ppex:pipe-info-pressure", Pressure));
+      dsc.AppendLine(
+        Lang.Get("ppex:pipe-info-pressure", ExMeasure.Pressure(Pressure))
+      );
     }
     else if (_clientMaxVolume > 0 && Medium.Length > 0)
     {
       dsc.AppendLine(
-        Lang.Get("ppex:pipe-info-flow", _clientFlowRate, Medium, Temperature)
+        Lang.Get(
+          "ppex:pipe-info-flow",
+          ExMeasure.FlowRate(_clientFlowRate),
+          Medium,
+          ExMeasure.Temperature(Temperature, "F1")
+        )
       );
-      dsc.AppendLine(Lang.Get("ppex:pipe-info-pressure", Pressure));
+      dsc.AppendLine(
+        Lang.Get("ppex:pipe-info-pressure", ExMeasure.Pressure(Pressure))
+      );
 
       // Only the weakest pipes reach their burst rating (production is capped there), so
       // this lights up exactly on the cells at risk.

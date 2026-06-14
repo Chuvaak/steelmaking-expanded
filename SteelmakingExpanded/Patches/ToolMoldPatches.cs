@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using ExpandedLib;
+using ExpandedLib.Helpers;
 using HarmonyLib;
 using SteelmakingExpanded.BlockNetworkMolten;
 using SteelmakingExpanded.BlockNetworkMolten.Blocks;

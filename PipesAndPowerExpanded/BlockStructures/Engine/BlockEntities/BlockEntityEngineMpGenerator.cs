@@ -1,6 +1,6 @@
 using System;
-using ExpandedLib;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 

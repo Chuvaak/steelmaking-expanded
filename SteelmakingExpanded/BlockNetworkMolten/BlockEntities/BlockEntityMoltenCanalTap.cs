@@ -1,8 +1,8 @@
 using System;
 using System.Linq;
 using System.Text;
-using ExpandedLib;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;

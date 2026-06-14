@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using ExpandedLib.BlockNetworks;
+using ExpandedLib.Blocks.Networks;
 using ExpandedLib.EntityRegistry;
 
 namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;

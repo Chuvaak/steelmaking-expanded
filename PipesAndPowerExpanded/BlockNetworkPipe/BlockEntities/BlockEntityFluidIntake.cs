@@ -1,5 +1,5 @@
 using System.Text;
-using ExpandedLib.BlockNetworks;
+using ExpandedLib.Blocks.Networks;
 using ExpandedLib.EntityRegistry;
 using PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 using Vintagestory.API.Common;

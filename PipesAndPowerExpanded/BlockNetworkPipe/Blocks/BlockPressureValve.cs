@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using ExpandedLib;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using ExpandedLib.BlockMigrations;
+using ExpandedLib.Blocks.Migrations;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.Server;

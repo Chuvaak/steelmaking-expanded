@@ -1,4 +1,5 @@
-using ExpandedLib.BlockNetworks;
+using ExpandedLib.Blocks.Networks;
+using ExpandedLib.Helpers;
 using HarmonyLib;
 using PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 using PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
@@ -46,7 +47,7 @@ public static class ChimneyVentInfoPatch
     __result +=
       Lang.Get(
         hasGas ? "ppex:chimney-info-venting" : "ppex:chimney-info-idle",
-        PpexValues.ChimneyGasDrawRate
+        ExMeasure.FlowRate(PpexValues.ChimneyGasDrawRate, "F0")
       ) + "\n";
   }
 }

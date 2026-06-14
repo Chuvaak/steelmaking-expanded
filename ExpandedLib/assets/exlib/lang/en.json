@@ -10,5 +10,15 @@
   "refractory-tier2": "Refractory Tier 2",
   "refractory-tier3": "Refractory Tier 3",
 
+  "command-exmod-desc": "Fallenstar's Expanded mods settings",
+  "command-pref-current": "{0}: {1}",
+  "command-pref-set": "{0} set to {1}.",
+  "command-pref-invalid": "Unknown value '{0}' for {1}. Options: {2}.",
+
+  "command-measure-desc": "Show or set the display unit system (metric/imperial)",
+  "pref-measure-label": "Display units",
+  "pref-measure-metric": "Metric (L, atm, °C)",
+  "pref-measure-imperial": "Imperial (gal, psi, °F)",
+
   "game:placefailure-exlib-noorientation": "Cannot connect to the neighbouring blocks - no valid orientation here."
 }

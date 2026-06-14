@@ -1,3 +1,4 @@
+using ExpandedLib.Helpers;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
@@ -134,5 +135,5 @@ public static class MoltenMetal
   public static string FormatTemperature(float temperature) =>
     temperature < 21f
       ? Lang.Get("smex:metalstate-cold")
-      : $"{temperature:F0}°C";
+      : ExMeasure.Temperature(temperature);
 }

@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using ExpandedLib;
-using ExpandedLib.BlockStructures;
+using ExpandedLib.Blocks.Structures;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using PipesAndPowerExpanded.BlockNetworkPipe;
 using PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 using SteelmakingExpanded.Patches;
@@ -770,7 +770,9 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
             "smex:bf-state-" + State.ToString().ToLowerInvariant()
           );
           sb.AppendLine(Lang.Get("smex:bf-info-state", stateName));
-          sb.AppendLine(Lang.Get("smex:bf-info-temp", _internalTemp));
+          sb.AppendLine(
+            Lang.Get("smex:bf-info-temp", ExMeasure.Temperature(_internalTemp))
+          );
 
           if (State == BlastFurnaceState.Melting)
           {

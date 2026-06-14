@@ -1,5 +1,5 @@
-using ExpandedLib;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using PipesAndPowerExpanded;
 using PipesAndPowerExpanded.BlockNetworkPipe;
 using PipesAndPowerExpanded.BlockStructures.Engine;

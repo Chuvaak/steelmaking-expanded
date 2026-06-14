@@ -254,6 +254,7 @@ public static class PpexValues
   public const string ConfigFileName = "ppex.json";
 
   private static PpexConfig _config = new();
+  private static ICoreAPI? _api;
 
   /// <summary>
   /// Loads <see cref="ConfigFileName"/> from the ModConfig folder (falling back to defaults if
@@ -262,6 +263,8 @@ public static class PpexValues
   /// </summary>
   public static void Load(ICoreAPI api)
   {
+    _api = api;
+
     try
     {
       _config =
@@ -277,13 +280,22 @@ public static class PpexValues
       _config = new PpexConfig();
     }
 
+    Save();
+  }
+
+  private static void Save()
+  {
     try
     {
-      api.StoreModConfig(_config, ConfigFileName);
+      _api?.StoreModConfig(_config, ConfigFileName);
     }
     catch (Exception e)
     {
-      api.Logger.Warning("[ppex] Could not write {0}. {1}", ConfigFileName, e);
+      _api?.Logger.Warning(
+        "[ppex] Could not write {0}. {1}",
+        ConfigFileName,
+        e
+      );
     }
   }
 

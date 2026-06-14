@@ -1,7 +1,7 @@
 using System;
 using System.Text;
-using ExpandedLib;
 using ExpandedLib.EntityRegistry;
+using ExpandedLib.Helpers;
 using PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -242,13 +242,15 @@ public class BlockEntityPressureValve : BlockEntityPipe
     dsc.AppendLine(
       Lang.Get(
         "ppex:gaspressurevalve-info-rating",
-        _gatePressure,
-        MaxGatePressure
+        ExMeasure.PressureRange(_gatePressure, MaxGatePressure)
       )
     );
     if (_lastVentVolume > 0f)
       dsc.AppendLine(
-        Lang.Get("ppex:gaspressurevalve-info-overflow", _lastVentVolume)
+        Lang.Get(
+          "ppex:gaspressurevalve-info-overflow",
+          ExMeasure.Volume(_lastVentVolume)
+        )
       );
   }
 
