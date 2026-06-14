@@ -291,6 +291,19 @@ public class BlockStructureFiller : Block, INetworkConnector
     float dropQuantityMultiplier = 1f
   ) => [];
 
+  // The look-at info HUD shows the principal's text (e.g. the pump's status) instead of the
+  // invisible filler's, so any footprint cell reads like the block it stands in for.
+  public override string GetPlacedBlockInfo(
+    IWorldAccessor world,
+    BlockPos pos,
+    IPlayer forPlayer
+  )
+  {
+    if (!TryGetPrincipal(world, pos, out var pp, out var pb))
+      return base.GetPlacedBlockInfo(world, pos, forPlayer);
+    return pb.GetPlacedBlockInfo(world, pp, forPlayer);
+  }
+
   public override WorldInteraction[] GetPlacedBlockInteractionHelp(
     IWorldAccessor world,
     BlockSelection selection,
