@@ -21,7 +21,7 @@ public class BEBehaviorMPConverterTransmission : BEBehaviorMPBase
   public BEBehaviorMPConverterTransmission(BlockEntity blockentity)
     : base(blockentity) { }
 
-  public override float GetResistance() => 0.05f;
+  public override float GetResistance() => 0.25f;
 
   public override void SetOrientations()
   {
