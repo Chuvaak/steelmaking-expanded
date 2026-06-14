@@ -9,7 +9,7 @@ namespace SteelmakingExpanded.Patches;
 /// <summary>
 /// Harmony patch on the vanilla mold rack that spills a molten mold the moment
 /// it is placed on the rack. The rack stores molds in an internal inventory (no
-/// opened GUI), so the player-inventory scan can't see it — this catches the
+/// opened GUI), so the player-inventory scan can't see it - this catches the
 /// racked mold right after the vanilla put logic runs.
 /// </summary>
 [HarmonyPatch(

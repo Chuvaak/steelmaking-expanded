@@ -10,7 +10,7 @@ using Vintagestory.GameContent.Mechanics;
 namespace PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 
 /// <summary>
-/// Mechanical-power <b>producer</b> for the MP-generator sub-machine — the mod's first torque
+/// Mechanical-power <b>producer</b> for the MP-generator sub-machine - the mod's first torque
 /// source (modelled on the vanilla rotor rather than the consumer transmission). It runs as a
 /// constant-power source off the engine's <see cref="BlockEntityEngine.MpPowerBudget"/>, so the
 /// network settles at <c>speed = budget / load</c>: the rated speed at the rated load, slower
@@ -26,19 +26,16 @@ public class BEBehaviorEngineMPGenerator(BlockEntity blockentity)
   {
     base.Initialize(api, properties);
 
-    // The generator couples on BOTH ends of its axis and is the only power source on the line,
-    // so a passive axle line on the back face has nothing to re-discover it on reload — the base
-    // only seeds the single OutFacingForNetworkDiscovery face, leaving the other side dead. Wire
-    // the opposite connector too, exactly as vanilla's angled gears do for their second face.
+    // The generator couples on BOTH ends of its axis, but the base only seeds the single
+    // OutFacingForNetworkDiscovery face. Wire the opposite connector too (like vanilla's angled gears).
     if (api.Side == EnumAppSide.Server && OutFacingForNetworkDiscovery != null)
       tryConnect(OutFacingForNetworkDiscovery.Opposite);
   }
 
   /// <summary>
-  /// Re-applies the axle orientation after the block's side variant changed (the engine snapped
-  /// the generator to its matching facing via <c>ExchangeBlock</c>, which keeps this behavior
-  /// alive — <see cref="Initialize"/> never re-runs). Rebuilds the rotated static base mesh and
-  /// re-seeds the network connectors onto the new axis, mirroring the seeding done at init.
+  /// Re-applies the axle orientation after a side-variant change (the engine snapped the generator
+  /// via <c>ExchangeBlock</c>, keeping this behavior alive so <see cref="Initialize"/> never re-runs).
+  /// Rebuilds the rotated base mesh and re-seeds the connectors onto the new axis.
   /// </summary>
   public void OnOrientationChanged()
   {
@@ -62,19 +59,14 @@ public class BEBehaviorEngineMPGenerator(BlockEntity blockentity)
     if (budget <= 0f)
       return 0f;
 
-    // Constant-power source: deliver the engine's fixed power budget at the current speed
-    // (torque = budget / speed), so the network settles where this matches the consumers'
-    // resistance — i.e. speed = budget / load. At the rated load this balances exactly at the
-    // rated speed; heavier loads run slower. Clamp the divisor so spinning up from rest asks for
-    // bounded torque. Torque stays positive — the vanilla network only animates while speed >= 0,
-    // so rotation DIRECTION lives in the discovery seed / AxisSign (see SetOrientations).
+    // Constant-power source: torque = budget / speed, so the network settles at speed = budget /
+    // load (rated speed at rated load, slower under more). Clamp the divisor so spin-up asks bounded
+    // torque. Torque stays positive - direction lives in the discovery seed / AxisSign.
     float ratedSpeed = PpexValues.MpRatedSpeed;
     float torque = budget / Math.Max(speed, 0.25f * ratedSpeed);
 
-    // Soft top-speed cap: a light load would otherwise let the constant-power curve run the line
-    // far past the rated speed. Taper the torque to zero between the rated speed and 1.5× it, so a
-    // lightly-loaded line settles just above rated and an unloaded one near 1.5× — WITHOUT the
-    // abrupt cut a hard cap would make, which sawtooths the speed right at the rated load.
+    // Soft top-speed cap: taper torque to zero between rated speed and 1.5× it, so a light load
+    // settles just above rated (an unloaded line near 1.5×) without the sawtooth a hard cap makes.
     float capEnd = 1.5f * ratedSpeed;
     if (speed >= capEnd)
       return 0f;
@@ -85,11 +77,9 @@ public class BEBehaviorEngineMPGenerator(BlockEntity blockentity)
 
   public override void SetOrientations()
   {
-    // Seed network discovery from the BACK of the axis (south / west). The discovery direction
-    // sets every node's propagationDir, which drives vanilla's IsRotationReversed — so seeding
-    // from the far end reverses the whole shaft's rendered spin (generator AND every connected
-    // axle together, staying consistent) relative to seeding from the near end. The near end
-    // turned the shaft opposite the engine's beam linkage; the far end matches it.
+    // Seed discovery from the BACK of the axis (south/west). The discovery direction drives
+    // vanilla's IsRotationReversed, so the far end reverses the whole shaft's rendered spin to
+    // match the engine's beam linkage (the near end turned it the opposite way).
     OutFacingForNetworkDiscovery = Block.Variant["side"] switch
     {
       "north" or "south" => BlockFacing.SOUTH,
@@ -97,9 +87,8 @@ public class BEBehaviorEngineMPGenerator(BlockEntity blockentity)
       _ => BlockFacing.SOUTH,
     };
 
-    // Single sign per axis matching the vanilla axle convention ({-1} on each axis, as used by
-    // the wooden axle / bessemer transmission / blower), so the generator's rendered axle shares
-    // the connected line's rotation convention and co-rotates with it instead of fighting it.
+    // Single sign per axis matching the vanilla axle convention, so the rendered axle co-rotates
+    // with the connected line instead of fighting it.
     AxisSign =
       OutFacingForNetworkDiscovery.Axis == EnumAxis.X ? [-1, 0, 0] : [0, 0, -1];
   }

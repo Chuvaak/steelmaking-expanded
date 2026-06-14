@@ -63,12 +63,12 @@ public static class ExSounds
     "game:sounds/environment/smallsplash"
   );
 
-  /// <summary>Vanilla barrel/container pour — used when manually filling the boiler.</summary>
+  /// <summary>Vanilla barrel/container pour - used when manually filling the boiler.</summary>
   public static readonly AssetLocation WaterPour = new(
     "game:sounds/effect/water-pour"
   );
 
-  /// <summary>Watering-can trickle — the rhythmic water sound of a working hand pump.</summary>
+  /// <summary>Watering-can trickle - the rhythmic water sound of a working hand pump.</summary>
   public static readonly AssetLocation Watering = new(
     "game:sounds/effect/watering"
   );
@@ -82,57 +82,57 @@ public static class ExSounds
     "game:sounds/effect/cooking"
   );
 
-  /// <summary>Lava bubble/rumble — the ambience of a pressurised gas pipe and a boiling boiler.</summary>
+  /// <summary>Lava bubble/rumble - the ambience of a pressurised gas pipe and a boiling boiler.</summary>
   public static readonly AssetLocation Lava = new(
     "game:sounds/environment/lava"
   );
 
-  /// <summary>Gentle creek babble — repurposed as the ambience of a water-carrying pipe.</summary>
+  /// <summary>Gentle creek babble - repurposed as the ambience of a water-carrying pipe.</summary>
   public static readonly AssetLocation Creek = new(
     "game:sounds/environment/creek"
   );
 
-  /// <summary>Iron-on-iron grind — the engine/sub-machine piston rising (up stroke).</summary>
+  /// <summary>Iron-on-iron grind - the engine/sub-machine piston rising (up stroke).</summary>
   public static readonly AssetLocation MetalGrinding = new(
     "game:sounds/effect/metalgrinding"
   );
 
-  /// <summary>Airy swoosh — gas venting from a freshly opened pipe end.</summary>
+  /// <summary>Airy swoosh - gas venting from a freshly opened pipe end.</summary>
   public static readonly AssetLocation Swoosh = new(
     "game:sounds/effect/swoosh"
   );
 
-  /// <summary>Torch un-equip whoosh — the engine/sub-machine piston rising (up stroke).</summary>
+  /// <summary>Torch un-equip whoosh - the engine/sub-machine piston rising (up stroke).</summary>
   public static readonly AssetLocation TorchUnequip = new(
     "game:sounds/held/torch-unequip"
   );
 
-  /// <summary>Anvil merge clang — the engine/sub-machine piston bottoming out (down stroke).</summary>
+  /// <summary>Anvil merge clang - the engine/sub-machine piston bottoming out (down stroke).</summary>
   public static readonly AssetLocation AnvilMergeHit = new(
     "game:sounds/effect/anvilmergehit"
   );
 
-  /// <summary>Planetary-gear churn — the constant low hum of a running engine's gear housing.</summary>
+  /// <summary>Planetary-gear churn - the constant low hum of a running engine's gear housing.</summary>
   public static readonly AssetLocation PlanetaryGears = new(
     "game:sounds/effect/planetary_gears"
   );
 
-  /// <summary>Large explosion — boiler burst (CreateExplosion plays its own, this is a spare).</summary>
+  /// <summary>Large explosion - boiler burst (CreateExplosion plays its own, this is a spare).</summary>
   public static readonly AssetLocation LargeExplosion = new(
     "game:sounds/effect/largeexplosion"
   );
 
-  /// <summary>Medium explosion — the muffled blast of an engine bursting.</summary>
+  /// <summary>Medium explosion - the muffled blast of an engine bursting.</summary>
   public static readonly AssetLocation MediumExplosion = new(
     "game:sounds/effect/mediumexplosion"
   );
 
-  /// <summary>Small explosion — the muffled pop of a pipe bursting.</summary>
+  /// <summary>Small explosion - the muffled pop of a pipe bursting.</summary>
   public static readonly AssetLocation SmallExplosion = new(
     "game:sounds/effect/smallexplosion"
   );
 
-  /// <summary>Plays a one-shot sound centred on <paramref name="pos"/> (server only — replicates to clients).</summary>
+  /// <summary>Plays a one-shot sound centred on <paramref name="pos"/> (server only - replicates to clients).</summary>
   public static void Play(
     ICoreAPI? api,
     BlockPos pos,
@@ -156,9 +156,8 @@ public static class ExSounds
   }
 
   /// <summary>
-  /// Plays a sound at most once per <paramref name="intervalMs"/> (using world elapsed
-  /// time), updating <paramref name="lastMs"/> when it fires. Use for the looping ambience
-  /// of ongoing processes so per-second ticks don't spam audio.
+  /// Plays at most once per <paramref name="intervalMs"/>, updating <paramref name="lastMs"/> when
+  /// it fires. Use for looping ambience so per-second ticks don't spam audio. Server only.
   /// </summary>
   public static void PlayThrottled(
     ICoreAPI? api,
@@ -189,9 +188,8 @@ public static class ExSounds
   }
 
   /// <summary>
-  /// Plays a one-shot sound centred on <paramref name="pos"/> with NO side gate — for
-  /// client-side, animation-synced sounds that must play locally on each client (e.g. the
-  /// piston-stroke sounds tied to the cycle animation's keyframes).
+  /// Plays a one-shot at <paramref name="pos"/> with NO side gate - for client-side, animation-
+  /// synced sounds that must play locally on each client (e.g. piston-stroke keyframe sounds).
   /// </summary>
   public static void PlayLocal(
     IWorldAccessor world,
@@ -213,9 +211,8 @@ public static class ExSounds
     );
 
   /// <summary>
-  /// Plays a sound at most once per <paramref name="intervalMs"/> with NO side gate — a
-  /// client-safe throttled loop for ongoing ambience (boiler hum, pipe bubbling/trickle).
-  /// Updates <paramref name="lastMs"/> when it fires.
+  /// Like <see cref="PlayThrottled"/> but with NO side gate - a client-safe throttled loop for
+  /// ongoing ambience (boiler hum, pipe bubbling/trickle).
   /// </summary>
   public static void PlayLoop(
     IWorldAccessor world,
@@ -244,9 +241,8 @@ public static class ExSounds
   }
 
   /// <summary>
-  /// Plays a one-shot sound centred on <paramref name="pos"/> through a world accessor (for
-  /// callers that hold an <see cref="IWorldAccessor"/> rather than an API), optionally
-  /// excluding <paramref name="byPlayer"/> who triggered it.
+  /// Plays a one-shot at <paramref name="pos"/> through a world accessor, optionally excluding
+  /// <paramref name="byPlayer"/> who triggered it.
   /// </summary>
   public static void PlayAt(
     IWorldAccessor world,
@@ -269,7 +265,7 @@ public static class ExSounds
     );
 
   /// <summary>
-  /// Plays a sound only <paramref name="chance"/> (0–1) of the time, so a recurring event
+  /// Plays a sound only <paramref name="chance"/> (0-1) of the time, so a recurring event
   /// (a spill, a leak hiss) is audible without a constant roar.
   /// </summary>
   public static void PlayChance(
@@ -297,10 +293,9 @@ public static class ExSounds
   }
 
   /// <summary>
-  /// Creates a gapless, positioned looping ambient sound (client only — returns null on the
-  /// server). The caller owns the returned handle: <c>Start()</c> / <c>Stop()</c> it on state
-  /// changes and <c>Dispose()</c> it on unload. Use for a machine's constant running hum,
-  /// where re-firing one-shots would gap or stack instead of looping seamlessly.
+  /// Creates a gapless looping ambient sound (client only - null on server). The caller owns the
+  /// handle: <c>Start()</c>/<c>Stop()</c> on state changes, <c>Dispose()</c> on unload. Use for a
+  /// machine's constant hum, where re-fired one-shots would gap or stack.
   /// </summary>
   public static ILoadedSound? CreateLoop(
     ICoreAPI? api,

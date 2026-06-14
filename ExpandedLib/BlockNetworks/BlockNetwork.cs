@@ -6,14 +6,10 @@ using Vintagestory.API.MathTools;
 namespace ExpandedLib.BlockNetworks;
 
 /// <summary>
-/// Abstract base class for all live block-network instances.
-/// Each concrete subclass (e.g. <c>GasNetwork</c>, <c>MoltenNetwork</c>) owns its
-/// typed state and implements all type-specific network operations — producers,
-/// consumers, merge/split/tick.
-/// <para>
-/// The <see cref="BlockNetworkModSystem"/> only performs graph-level work
-/// (BFS add/remove/rebuild); everything else lives here.
-/// </para>
+/// Abstract base for all live block-network instances. Each concrete subclass (e.g.
+/// <c>PipeNetwork</c>, <c>MoltenNetwork</c>) owns its typed state and implements the type-specific
+/// operations (producers, consumers, merge/split/tick). The <see cref="BlockNetworkModSystem"/>
+/// only does graph-level work (BFS add/remove/rebuild); everything else lives here.
 /// </summary>
 public abstract class BlockNetwork(BlockNetworkModSystem system)
 {
@@ -26,10 +22,7 @@ public abstract class BlockNetwork(BlockNetworkModSystem system)
   /// <summary>Every world position that belongs to this network.</summary>
   public HashSet<BlockPos> Nodes { get; } = [];
 
-  /// <summary>
-  /// Authoritative root position for root-anchored networks.  <c>null</c>~
-  /// networks and rootless fragments.
-  /// </summary>
+  /// <summary>Root position for root-anchored networks; <c>null</c> for unanchored networks and fragments.</summary>
   public BlockPos? RootPos { get; set; }
 
   /// <summary>The current network state object (typed by the concrete subclass).</summary>
@@ -41,10 +34,9 @@ public abstract class BlockNetwork(BlockNetworkModSystem system)
   #region State persistence
 
   /// <summary>
-  /// Injects <paramref name="state"/> directly into this network.
-  /// Called by <see cref="BlockEntityNetworkNode"/> during world load to restore
-  /// persisted state before the first tick.  Override to cast to the concrete
-  /// state type.
+  /// Injects <paramref name="state"/> into this network. Called by
+  /// <see cref="BlockEntityNetworkNode"/> during world load to restore persisted state before the
+  /// first tick. Override to cast to the concrete state type.
   /// </summary>
   public virtual void RestoreState(object? state)
   {
@@ -94,9 +86,8 @@ public abstract class BlockNetwork(BlockNetworkModSystem system)
   public abstract void OnMerge(BlockNetwork other, IBlockAccessor world);
 
   /// <summary>
-  /// Called on a freshly-created fragment after network fracture.
-  /// <c>this</c> is the new fragment; <paramref name="original"/> is the network
-  /// that fractured.  Implementations distribute a proportional share of state.
+  /// Called on a fresh fragment after fracture (<c>this</c> = new fragment,
+  /// <paramref name="original"/> = the fractured network). Distributes a proportional share of state.
   /// </summary>
   public abstract void OnSplitFragment(
     BlockNetwork original,
@@ -111,19 +102,16 @@ public abstract class BlockNetwork(BlockNetworkModSystem system)
   );
 
   /// <summary>
-  /// Transfers persistent state from <paramref name="source"/> into <c>this</c>
-  /// instance.  Called by <see cref="BlockNetworkModSystem.RebuildFromRoot"/> to
-  /// preserve fill/temperature across structural rebuilds.
-  /// Default implementation is a no-op; override to copy typed state fields.
+  /// Transfers persistent state from <paramref name="source"/> into this instance. Called by
+  /// <see cref="BlockNetworkModSystem.RebuildFromRoot"/> to preserve fill/temperature across
+  /// rebuilds. No-op by default; override to copy typed state fields.
   /// </summary>
   public virtual void InheritStateFrom(BlockNetwork source) { }
 
   /// <summary>
-  /// Called by the <see cref="BlockNetworkModSystem"/> after this network's
-  /// <see cref="Nodes"/> set changed (node added/removed, networks merged, fragment
-  /// built, rebuild). Override to drop caches derived from the node set (e.g. the
-  /// pipe network's weakest-pipe burst rating) instead of recomputing them per call.
-  /// Default: no-op.
+  /// Called after this network's <see cref="Nodes"/> set changed (add/remove/merge/split/rebuild).
+  /// Override to drop caches derived from the node set (e.g. the weakest-pipe burst rating). No-op
+  /// by default.
   /// </summary>
   public virtual void OnTopologyChanged() { }
 

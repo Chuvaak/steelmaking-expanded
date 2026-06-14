@@ -12,15 +12,11 @@ namespace PipesAndPowerExpanded.BlockStructures.ManualPump.Blocks;
 
 /// <summary>
 /// The manual (hand-cranked) fluid pump. A two-cell-tall, horizontally orientable pipe connector
-/// (NOT a network node): in the north orientation it draws water from the line on its
-/// <em>south</em> face and delivers it out its <em>north</em> face. It is look-aware on placement
-/// but is deliberately NOT wrench-orientable. The cell directly above is reserved with an
-/// invisible structure filler so the player gets real collision over the whole pump; that filler
-/// is where the player holds right-click to crank it.
-/// <para>
-/// All the work lives in <see cref="BlockEntityManualFluidPump"/>; this block only exposes the two
-/// connector faces, manages the filler footprint, and forwards the crank interaction to the BE.
-/// </para>
+/// (NOT a network node): in north orientation it draws from the south face and delivers out the
+/// north face. Look-aware on placement but deliberately NOT wrench-orientable. The cell above is
+/// reserved with an invisible filler (real collision + the crank target). All work lives in
+/// <see cref="BlockEntityManualFluidPump"/>; this block only exposes the connectors, manages the
+/// filler footprint, and forwards the crank interaction.
 /// </summary>
 [EntityRegister]
 public class BlockManualFluidPump
@@ -33,11 +29,11 @@ public class BlockManualFluidPump
   /// <summary>Horizontal placement angle (north 0, west 90, south 180, east 270).</summary>
   private int Angle => ExOrientation.AngleFromSide(Variant["side"]);
 
-  /// <summary>The input (water source) connector face — south in the north orientation.</summary>
+  /// <summary>The input (water source) connector face - south in the north orientation.</summary>
   private BlockFacing InputFace =>
     ExOrientation.RotateFacing(BlockFacing.SOUTH, Angle);
 
-  /// <summary>The output (delivery) connector face — north in the north orientation.</summary>
+  /// <summary>The output (delivery) connector face - north in the north orientation.</summary>
   private BlockFacing OutputFace =>
     ExOrientation.RotateFacing(BlockFacing.NORTH, Angle);
 

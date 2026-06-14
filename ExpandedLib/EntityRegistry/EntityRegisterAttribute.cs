@@ -5,7 +5,7 @@ namespace ExpandedLib.EntityRegistry;
 /// <summary>
 /// Marks a block / block-entity / item / behaviour class for automatic registration by
 /// <see cref="EntityRegistry.RegisterAll"/>. The registry kind is inferred from the
-/// class's base type, so a class only needs this one attribute — no manual
+/// class's base type, so a class only needs this one attribute - no manual
 /// <c>api.Register*Class</c> call in the mod system.
 /// <para>
 /// By default the registry key is <c>{modid}.{ClassName}</c> and (for block entities whose

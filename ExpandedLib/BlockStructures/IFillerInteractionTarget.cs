@@ -6,7 +6,7 @@ namespace ExpandedLib.BlockStructures;
 
 /// <summary>
 /// Optional contract for a principal (controller) block whose interactions depend on
-/// WHICH cell of its mega-block footprint the player clicked — not merely that some
+/// WHICH cell of its mega-block footprint the player clicked - not merely that some
 /// footprint cell was clicked.
 /// <para>
 /// <see cref="BlockStructureFiller"/> forwards interaction to these methods (instead of

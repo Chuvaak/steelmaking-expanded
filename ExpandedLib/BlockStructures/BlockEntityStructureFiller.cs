@@ -7,15 +7,10 @@ using Vintagestory.API.MathTools;
 namespace ExpandedLib.BlockStructures;
 
 /// <summary>
-/// Block entity for an invisible structure-filler block. Stores the position of
-/// the "principal" (controller) block whose mega-block footprint this cell is part
-/// of, and reroutes the looked-at block info back to that principal — mirroring
-/// vanilla's <c>BEMPMultiblock</c>.
-/// <para>
-/// The filler block itself (<see cref="BlockStructureFiller"/>) forwards
-/// interaction and break to the principal; this entity only carries the link and
-/// the HUD passthrough.
-/// </para>
+/// Block entity for an invisible structure-filler block. Stores the position of the "principal"
+/// (controller) block this footprint cell belongs to and reroutes the looked-at block info to it.
+/// The filler block forwards interaction and break to the principal; this entity only carries the
+/// link and HUD passthrough.
 /// </summary>
 [EntityRegister]
 public class BlockEntityStructureFiller : BlockEntity
@@ -24,19 +19,15 @@ public class BlockEntityStructureFiller : BlockEntity
   public BlockPos? Principal { get; set; }
 
   /// <summary>
-  /// Whether other blocks may attach to this filler cell. Defaults to <c>false</c>
-  /// so the invisible footprint behaves like empty space for placement of torches,
-  /// vines, slabs, etc.; a <c>fillerOffsets</c> entry can opt a cell back in via its
+  /// Whether other blocks may attach to this cell. Defaults to <c>false</c> so the footprint
+  /// behaves like empty space; a <c>fillerOffsets</c> entry can opt a cell back in via its
   /// <c>allowAttach</c> flag. Honoured by <see cref="BlockStructureFiller.CanAttachBlockAt"/>.
   /// </summary>
   public bool AllowAttach { get; set; }
 
   /// <summary>
-  /// Single-char face code ("u","d","n","s","e","w") of the network port this filler cell
-  /// exposes, or null for a plain (non-port) filler. Lets a principal turn one footprint cell
-  /// into a fixed pipe/molten connector — e.g. the boiler's steam outlet sits on the filler
-  /// directly below the steam pipe. Read by <see cref="BlockStructureFiller"/>'s
-  /// <c>INetworkConnector</c> implementation.
+  /// Single-char face code of the network port this cell exposes, or null for a plain filler. Lets
+  /// a principal turn one footprint cell into a fixed connector (e.g. the boiler's steam outlet).
   /// </summary>
   public string? PortFace { get; set; }
 
@@ -46,8 +37,7 @@ public class BlockEntityStructureFiller : BlockEntity
   public override void ToTreeAttributes(ITreeAttribute tree)
   {
     base.ToTreeAttributes(tree);
-    // -1,-1,-1 is the "no principal" sentinel (a real principal is never at a
-    // negative world Y inside loaded chunks for our structures).
+    // -1,-1,-1 is the "no principal" sentinel.
     tree.SetInt("cx", Principal?.X ?? -1);
     tree.SetInt("cy", Principal?.Y ?? -1);
     tree.SetInt("cz", Principal?.Z ?? -1);

@@ -8,23 +8,21 @@ namespace SteelmakingExpanded.BlockNetworkMolten;
 /// <summary>Coarse thermal state of a metal stack relative to its melting point.</summary>
 public enum MoltenState
 {
-  /// <summary>Above 80% of the melting point — flows freely.</summary>
+  /// <summary>Above 80% of the melting point - flows freely.</summary>
   Liquid,
 
-  /// <summary>Between the hardened and liquid thresholds — no longer flows, still hot.</summary>
+  /// <summary>Between the hardened and liquid thresholds - no longer flows, still hot.</summary>
   Cooling,
 
-  /// <summary>Below 30% of the melting point — fully hardened (chisellable).</summary>
+  /// <summary>Below 30% of the melting point - fully hardened (chisellable).</summary>
   Hardened,
 }
 
 /// <summary>
-/// The single source of truth for how the mod treats an <see cref="ItemStack"/> as a
-/// carrier of molten metal: creating the temperature-tracked stack (with the mod's
-/// cooldown speed), reading/writing its temperature, classifying its thermal state
-/// against the melting point, the incandescent block-light scale, and the
-/// player-facing metal/state formatting. Every canal cell, tap, pedestal, barrel and
-/// the bessemer charge used to carry private copies of these rules.
+/// Single source of truth for treating an <see cref="ItemStack"/> as a carrier of molten metal:
+/// creating the temperature-tracked stack, reading/writing temperature, classifying thermal state,
+/// the incandescent block-light scale, and player-facing metal/state formatting. Shared by every
+/// canal cell, tap, pedestal, barrel and the bessemer charge.
 /// </summary>
 public static class MoltenMetal
 {
@@ -109,7 +107,7 @@ public static class MoltenMetal
     StateOf(world, stack) == MoltenState.Liquid;
 
   /// <summary>
-  /// Incandescent block-light level (0–24) for metal at <paramref name="temperature"/> —
+  /// Incandescent block-light level (0-24) for metal at <paramref name="temperature"/> -
   /// the shared scale used by canals, barrels and the cowper heat sink.
   /// </summary>
   public static byte GlowLevel(float temperature) =>

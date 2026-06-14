@@ -41,9 +41,8 @@ public class BlockMoltenCanal : BlockNetworkNode
     };
 
   /// <summary>
-  /// Disables wrench rotation while the cell holds liquid metal or has solidified —
-  /// you can't twist a fitting that's full of (or plugged by) metal. Drain or chip
-  /// it clear first. Also suppresses the "Rotate" interaction hint in that state.
+  /// Disables wrench rotation (and the hint) while the cell holds liquid metal or has solidified -
+  /// drain or chip it clear first.
   /// </summary>
   protected override bool CanWrenchRotate(IWorldAccessor world, BlockPos pos)
   {
@@ -57,10 +56,8 @@ public class BlockMoltenCanal : BlockNetworkNode
   }
 
   /// <summary>
-  /// Emits incandescent block light scaled to the metal's temperature, so a hot
-  /// canal lights its surroundings (same scheme as the cowper heat sink). The cell
-  /// owns the threshold/scaling via <see cref="BlockEntityMoltenCanal.GlowLightLevel"/>
-  /// and re-lights the block when that level shifts.
+  /// Emits incandescent block light scaled to the metal's temperature (via
+  /// <see cref="BlockEntityMoltenCanal.GlowLightLevel"/>), like the cowper heat sink.
   /// </summary>
   public override byte[] GetLightHsv(
     IBlockAccessor blockAccessor,
@@ -146,9 +143,8 @@ public class BlockMoltenCanal : BlockNetworkNode
   {
     var drops = base.GetDrops(world, pos, byPlayer, dropQuantityMultiplier);
 
-    // Network is already torn down by RemoveNode when GetDrops is called, so read
-    // the cached state from the block entity instead — it still holds the last
-    // broadcast values and is alive for the duration of this call.
+    // The network is already torn down here, so read the cached state from the BE (still alive,
+    // holding the last broadcast values).
     if (world.BlockAccessor.GetBlockEntity(pos) is BlockEntityMoltenCanal be)
     {
       var solidifiedDrop = be.GetSolidifiedDrop(world);
@@ -217,16 +213,14 @@ public class BlockMoltenCanal : BlockNetworkNode
     ItemSlot? activeSlot = byPlayer.InventoryManager.ActiveHotbarSlot;
     ItemStack? held = activeSlot?.Itemstack;
 
-    // A solidified canal (any shape) is chipped clear with a chisel in hand and a
-    // hammer in the off-hand — an alternative to breaking and replacing the block.
+    // A solidified canal is chipped clear with a chisel in hand + hammer in the off-hand.
     if (be.Solidified)
     {
       ItemStack? offhand = byPlayer.Entity?.LeftHandItemSlot?.Itemstack;
       if (!IsTool(held, EnumTool.Chisel) || !IsTool(offhand, EnumTool.Hammer))
         return base.OnBlockInteractStart(world, byPlayer, blockSel);
 
-      // The metal blocks flow as soon as it solidifies, but it can't be chipped
-      // out until it has fully hardened (below 0.3 × melting point).
+      // Solidified metal blocks flow at once but can't be chipped out until fully hardened.
       if (!be.IsHardened)
       {
         if (world.Side == EnumAppSide.Server)
@@ -263,8 +257,7 @@ public class BlockMoltenCanal : BlockNetworkNode
       if (!IsFireClay(held) || held!.StackSize < SmexValues.CanalSealClayCost)
         return base.OnBlockInteractStart(world, byPlayer, blockSel);
 
-      // Don't let a player cut a line that still has liquid metal in it, or one
-      // that has solidified (chip it clear before sealing).
+      // Don't seal a line that still has liquid metal or has solidified (chip it clear first).
       if (be.HasMoltenMetal || be.Solidified)
       {
         if (world.Side == EnumAppSide.Server)
@@ -335,8 +328,7 @@ public class BlockMoltenCanal : BlockNetworkNode
       world.BlockAccessor.GetBlockEntity(selection.Position)
       as BlockEntityMoltenCanal;
 
-    // A solidified canal (any shape) is chipped clear with a chisel + hammer, but
-    // only once its metal has fully hardened (below 0.3 × melting point).
+    // The chip-clear hint only shows once the metal has fully hardened.
     if (be?.IsHardened == true)
       return
       [

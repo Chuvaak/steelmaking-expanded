@@ -13,8 +13,8 @@ namespace SteelmakingExpanded.BlockNetworkMolten.BlockEntities;
 
 /// <summary>
 /// Block entity for the canal tap: pours the network's liquid metal into whatever
-/// is parked beneath it — a molten barrel or a large tool mold (anvil, helve
-/// hammer) — draining the network each tick while pouring is enabled.
+/// is parked beneath it - a molten barrel or a large tool mold (anvil, helve
+/// hammer) - draining the network each tick while pouring is enabled.
 /// </summary>
 [EntityRegister]
 public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
@@ -30,20 +30,17 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
       if (_isPouring == value)
         return;
       _isPouring = value;
-      // Open/closed flips IsConnectionBroken, so re-walk the graph to sever the tap
-      // from (or rejoin it to) the run. No-op off-server / before Initialize, where
-      // base.Initialize's AddNode registers with the correct broken-state instead.
+      // Open/closed flips IsConnectionBroken, so re-walk the graph to sever/rejoin the tap.
+      // No-op off-server / before Initialize (where base.Initialize's AddNode handles it).
       ResyncNetworkNode();
     }
   }
 
-  // The tap is a drain fitting — its cell must keep delivering to the parked
-  // barrel/mold, so it never clogs like a plain canal run.
+  // The tap is a drain fitting that keeps delivering to the parked barrel/mold, so it never clogs.
   protected override bool SolidifiesWhenCold => false;
 
-  // A closed tap severs itself from the run (it's a single-connector leaf) so no
-  // metal flows into its own cell — IsPouring otherwise only gates the tap's own
-  // draining into parked content, leaving the cell to keep filling from the network.
+  // A closed tap severs itself from the run (single-connector leaf) so no metal flows into its
+  // cell - otherwise IsPouring only gates draining into parked content, leaving the cell to fill.
   public override bool IsConnectionBroken() =>
     base.IsConnectionBroken() || !IsPouring;
 
@@ -66,7 +63,7 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     SmexValues.BarrelDefaultMaxUnits;
   #endregion
 
-  #region Mold content (large molds only — anvil, helve hammer)
+  #region Mold content (large molds only - anvil, helve hammer)
   /// <summary>Whether a large tool mold is parked under the tap.</summary>
   public bool IsMold { get; set; } = false;
 
@@ -111,10 +108,8 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     if (api.Side == EnumAppSide.Server)
       RegisterGameTickListener(OnServerTick, 1000);
     else
-      // The parked barrel/mold metal keeps cooling after the pour stops
-      // broadcasting (full / hardened), so refresh the surface glow on the client
-      // from the stack's live temperature — otherwise it freezes at the last server
-      // value and snaps cold on the next interaction.
+      // Parked metal keeps cooling after the pour stops broadcasting, so refresh the surface glow
+      // from the stack's live temperature, or it freezes hot and snaps cold on interaction.
       RegisterGameTickListener(_ => UpdateRenderer(), 1000);
 
     _drainSpeed = Block
@@ -229,14 +224,10 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
       out float baseFillStartY,
       out float fillHeightLevels
     );
-    // Rotate the molten-surface footprint to match how the content mesh is drawn.
-    // For a parked MOLD, vanilla authors fillQuadsByLevel in the mold's FINAL
-    // (already shape-rotated) world orientation, so they must NOT be re-rotated by
-    // the mold's own Shape.rotateY (e.g. the anvil's 270 — doing so rendered the
-    // metal surface perpendicular to the mold). The mold mesh only takes the tap's
-    // facing rotation on top of its baked shape (see _moldMesh.Rotate in
-    // OnTesselation, which uses this.Block.Shape.rotateY), so the footprint takes
-    // exactly that and nothing else. The barrel uses its own (round, ≈0) shape.
+    // Rotate the surface footprint to match how the content mesh is drawn. A mold's
+    // fillQuadsByLevel are authored in its FINAL (already shape-rotated) orientation, so they take
+    // only the TAP's facing rotation (this.Block.Shape.rotateY), not the mold's own. The barrel
+    // uses its own (round, ≈0) shape.
     float rotY =
       (key.StartsWith("mold:") ? Block?.Shape?.rotateY : block.Shape?.rotateY)
       ?? 0f;
@@ -371,13 +362,12 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
 
   private void OnServerTick(float dt)
   {
-    // The tap drains its own cell (where the run delivers metal) into the parked
-    // barrel or mold.
+    // The tap drains its own cell (where the run delivers metal) into the parked barrel/mold.
     if (!IsPouring || !HasMoltenMetal)
       return;
 
-    // Barrels accept metal even when their contents have hardened (it re-melts);
-    // molds stay gated — a hardened mold is a finished cast.
+    // Barrels accept metal even when hardened (it re-melts); molds stay gated (a hardened mold is
+    // a finished cast).
     if (IsBarrel)
     {
       var content = BarrelMetalContent;
@@ -450,7 +440,6 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     // Capture metal identity/temperature before draining empties the cell.
     string type = CellMetalType;
     float temp = CellTemperature;
-
     float drained = DrainMetal(toDrain);
     if (drained <= 0f)
       return 0;

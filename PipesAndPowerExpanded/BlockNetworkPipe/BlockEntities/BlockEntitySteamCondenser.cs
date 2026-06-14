@@ -11,16 +11,10 @@ using Vintagestory.API.MathTools;
 namespace PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 
 /// <summary>
-/// The steam condenser's logic. Each tick it passes water through its west/east faces —
-/// the fuller water side is the inlet, the other the outlet (the inlet's pressure is
-/// preserved downstream) — running as a water conduit whether or not steam is present.
-/// When steam is drawn from the north line it condenses back to its (much smaller) hot-water
-/// volume and merges into that through-flow.
-/// <para>
-/// An unplumbed face leaks: with no outlet the backed-up water line (plus any condensate)
-/// sprays out the open outlet face; with no water line at all, drawn steam simply vents out
-/// as gas.
-/// </para>
+/// The steam condenser's logic. Each tick it passes water through its W/E faces - the fuller side
+/// is the inlet, the other the outlet (inlet pressure preserved downstream) - and condenses steam
+/// drawn from the north line into that through-flow. An unplumbed face leaks: no outlet sprays the
+/// backed-up water (plus condensate) out, no water line at all vents drawn steam as gas.
 /// </summary>
 [EntityRegister]
 public class BlockEntitySteamCondenser : BlockEntity
@@ -33,10 +27,8 @@ public class BlockEntitySteamCondenser : BlockEntity
 
   private BlockSteamCondenser? CondenserBlock => Block as BlockSteamCondenser;
 
-  /// <summary>
-  /// The pipe network connected across one of the condenser's connector faces, or <c>null</c>
-  /// when the adjacent pipe has no connector facing back (so it is not actually plumbed in).
-  /// </summary>
+  /// <summary>The pipe network across one of the condenser's connector faces, or <c>null</c> when
+  /// the adjacent pipe has no connector facing back.</summary>
   private PipeNetwork? ConnectedNetwork(BlockFacing connectorFace) =>
     _netSystem?.GetConnectedNetworkAcross(
       Api.World.BlockAccessor,
@@ -77,12 +69,9 @@ public class BlockEntitySteamCondenser : BlockEntity
   }
 
   /// <summary>
-  /// Runs the water line through the two water faces (W↔E) — the fuller side is the inlet,
-  /// the other the outlet — and condenses steam from the north line into that through-flow.
-  /// With no outlet the line backs up and leaks out the open outlet face (carrying any
-  /// condensate); with no water line plumbed at all, drawn steam just vents out as gas.
-  /// The inlet's liquid pressure is preserved downstream so a pumped line keeps its head.
-  /// Returns <c>true</c> if any steam was condensed this tick (for the HUD).
+  /// Runs the water line through the W↔E faces (fuller side = inlet) and condenses steam from the
+  /// north line into that through-flow, preserving the inlet's pressure downstream. Returns
+  /// <c>true</c> if any steam was condensed this tick (for the HUD).
   /// </summary>
   private bool Process(
     PipeNetwork? steamNet,
@@ -126,7 +115,7 @@ public class BlockEntitySteamCondenser : BlockEntity
     else
       (inNet, outNet, outFace) = (wb, wa, faceA);
 
-    // No water line plumbed on either side — there is nowhere to condense steam into, so any
+    // No water line plumbed on either side - there is nowhere to condense steam into, so any
     // steam drawn just vents out of the condenser as gas (capped at the pipe-leak rate).
     if (inNet == null && outNet == null)
     {
@@ -234,7 +223,7 @@ public class BlockEntitySteamCondenser : BlockEntity
   private static float LiquidVolumeOf(PipeNetwork? net) =>
     net?.State is { IsLiquid: true } s ? s.Volume : 0f;
 
-  /// <summary>Whether <paramref name="net"/> can receive water — a water run or one that
+  /// <summary>Whether <paramref name="net"/> can receive water - a water run or one that
   /// hasn't claimed a medium yet (a gas run would reject it).</summary>
   private static bool CanTakeWater(PipeNetwork? net) =>
     net != null

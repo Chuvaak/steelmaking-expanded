@@ -8,12 +8,10 @@ using Vintagestory.API.MathTools;
 namespace SteelmakingExpanded.BlockNetworkMolten;
 
 /// <summary>
-/// Concrete <see cref="BlockNetwork"/> for the molten-canal system. The network no
-/// longer pools metal — each canal block is its own cell
-/// (<see cref="BlockEntityMoltenCanal"/>) holding its own metal. The network's only
-/// job is connectivity plus the per-tick driver that flows metal cell-to-cell
-/// (level-equalisation) and runs each cell's cooling/solidification. Because cells
-/// own their metal, merge/split need no redistribution.
+/// Concrete <see cref="BlockNetwork"/> for the molten-canal system. Each canal block
+/// (<see cref="BlockEntityMoltenCanal"/>) owns its own metal; the network only provides
+/// connectivity plus the per-tick driver that flows metal cell-to-cell (level-equalisation) and
+/// runs each cell's cooling. Because cells own their metal, merge/split need no redistribution.
 /// </summary>
 public class MoltenNetwork(BlockNetworkModSystem system) : BlockNetwork(system)
 {
@@ -30,8 +28,7 @@ public class MoltenNetwork(BlockNetworkModSystem system) : BlockNetwork(system)
     return metalItemLoc;
   }
 
-  // Resolved once from the first loaded node's BE; a network instance never moves
-  // between worlds, so walking every node per tick to re-find it was wasted work.
+  // Resolved once from the first loaded node's BE (a network never moves between worlds).
   private IWorldAccessor? _world;
 
   private IWorldAccessor? GetWorld(IBlockAccessor blockAccessor)
@@ -58,10 +55,8 @@ public class MoltenNetwork(BlockNetworkModSystem system) : BlockNetwork(system)
     return c != 0 ? c : a.Z.CompareTo(b.Z);
   }
 
-  // Distance-from-start is purely topological, so it only changes when the set
-  // of cells (or which cells are starts) changes. Cache the map and recompute it
-  // only when a cheap topology signature differs from the cached one, instead of
-  // running a BFS every tick.
+  // Distance-from-start is purely topological, so cache the map and recompute (BFS) only when a
+  // cheap topology signature changes, instead of every tick.
   private Dictionary<BlockPos, int>? _cachedDistFromStart;
   private (int Count, long PosHash, long StartHash) _cachedTopoSig;
 
@@ -166,7 +161,7 @@ public class MoltenNetwork(BlockNetworkModSystem system) : BlockNetwork(system)
     return c != 0 ? c : ComparePos(x.Pos, y.Pos);
   }
 
-  #region Tick — flow + cooling
+  #region Tick - flow + cooling
   public override void OnTick(
     IBlockAccessor blockAccessor,
     float dt,
@@ -184,10 +179,8 @@ public class MoltenNetwork(BlockNetworkModSystem system) : BlockNetwork(system)
     if (cells.Count == 0)
       return;
 
-    // Order cells by graph distance from the start block, farthest first, so
-    // metal drains down the run toward the start a wavefront at a time instead
-    // of in an arbitrary positional order. The map is cached and only rebuilt
-    // when the network topology changes.
+    // Order cells by graph distance from the start, farthest first, so metal drains toward the
+    // start a wavefront at a time rather than in arbitrary positional order.
     var distFromStart = GetDistanceFromStart(blockAccessor, cells);
     cells.Sort((x, y) => CompareFlowOrder(x, y, distFromStart));
     foreach (var c in cells)
@@ -254,9 +247,8 @@ public class MoltenNetwork(BlockNetworkModSystem system) : BlockNetwork(system)
     )
       return;
 
-    // Flow moves whole units only, and never less than the minimum per tick —
-    // except into a drain fitting (pedestal/tap), which must still receive the
-    // final sub-minimum dregs so a run can empty completely into its mold/barrel.
+    // Whole units only, never less than the minimum per tick - except into a drain fitting
+    // (pedestal/tap), which takes the final sub-minimum dregs so a run can empty completely.
     var transfer = diff > maxFlow ? maxFlow : diff;
     if (
       transfer < SmexValues.MoltenMinFlowAmount

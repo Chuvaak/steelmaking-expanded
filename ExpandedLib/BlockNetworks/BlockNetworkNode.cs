@@ -100,11 +100,8 @@ public abstract class BlockNetworkNode
       .Where(o => o.Contains(targetFaceChar))
       .ToArray();
 
-    // Placing on a horizontal surface (clicking a block's top/bottom) gives no
-    // horizontal hint from the clicked face, so without this the block always
-    // snaps to its first valid orientation. Fall back to the player's look
-    // direction — the connector points the way they're looking, matching how
-    // wall placement points it into the clicked wall.
+    // Clicking a top/bottom face gives no horizontal hint, so fall back to the player's look
+    // direction - the connector points the way they look, like wall placement.
     if (preferredChoices.Length == 0)
     {
       char lookChar = SuggestedHVOrientation(byPlayer, blockSel)[
@@ -135,7 +132,7 @@ public abstract class BlockNetworkNode
       ref failureCode
     );
     // A failed placement never reaches OnBlockPlaced (which consumes the entry), so
-    // drop it here — otherwise the static store grows for every refused placement.
+    // drop it here - otherwise the static store grows for every refused placement.
     if (!placed)
       _tempOrientationsStore.TryRemove(blockSel.Position, out _);
     return placed;
@@ -170,14 +167,10 @@ public abstract class BlockNetworkNode
       RecalculateAndSyncOrientations(world, blockPos);
     }
 
-    // Neighbour orientation updates are handled by OnNeighbourBlockChange, which the
-    // VS engine calls on every adjacent block after this method returns — no need to
-    // duplicate that work here.
-    //
-    // Node registration is handled by BlockEntityNetworkNode.Initialize, which runs
-    // inside DoPlaceBlock (before OnBlockPlaced).  Calling AddNode again here would
-    // cause a redundant BroadcastUpdate → O(N) MarkDirty calls on every network node,
-    // freezing the server for large networks.
+    // Neighbour orientation updates run via OnNeighbourBlockChange (the engine calls it on
+    // adjacent blocks after this returns). Node registration runs in
+    // BlockEntityNetworkNode.Initialize (inside DoPlaceBlock); calling AddNode here too would
+    // trigger a redundant O(N) BroadcastUpdate, freezing the server for large networks.
   }
 
   /// <summary>
@@ -234,14 +227,10 @@ public abstract class BlockNetworkNode
       }
     }
 
-    // A linear shape connects only collinear faces — every one of its orientations
-    // lies on a single axis (e.g. ns / we / ud) — so it can never join two
-    // perpendicular neighbours at once. When such a segment has connectors on
-    // perpendicular faces it cannot honour all of them; instead it stays placeable by
-    // connecting to any one of them — the player picks the face at placement
-    // (clicked/look direction) and the wrench switches between the choices. Shapes
-    // that can bend (a single orientation spanning two axes) must still honour every
-    // required face, so the relaxation must not apply to them.
+    // A linear shape (all orientations on one axis) can't join two perpendicular neighbours at
+    // once, so with perpendicular required faces it stays placeable by connecting to any one
+    // (player picks at placement, wrench switches). Bendable shapes must honour every required
+    // face, so the relaxation must not apply to them.
     bool connectsAny = validOrientations.All(IsSingleAxisOrientation);
 
     bool Matches(string orient) =>
@@ -407,16 +396,11 @@ public abstract class BlockNetworkNode
   }
 
   /// <summary>
-  /// Returns the orientation cycle a wrench rotates through at <paramref name="pos"/>.
-  /// <para>Full-cube blocks (passthrough, outlet, heated intake, …) fill the whole cell and
-  /// are therefore supported in any orientation. For them the cycle is recomputed on the fly
-  /// passing null for the current orientation (as placement does), so it is constrained only
-  /// by real network topology — not by the solid walls/ground the block rests against, nor by
-  /// the clicked-face narrowing applied at placement. Otherwise a passthrough placed on the
-  /// ground (snapping to "ud") would store a single-orientation set in its BE and lock.</para>
-  /// <para>Thin-profile pipes cannot float on the side when the only support is the ground
-  /// below, so they keep the placement-time restriction: the narrowed cycle stored on the BE
-  /// (falling back to a topology recompute for multiblock BEs that never store it).</para>
+  /// Returns the orientation cycle a wrench rotates through at <paramref name="pos"/>. Full-cube
+  /// blocks are supported in any orientation, so their cycle is recomputed on the fly (null current
+  /// orientation, as placement does) - constrained only by topology, not the walls they rest on.
+  /// Thin-profile pipes keep the placement-time restriction (the narrowed cycle stored on the BE,
+  /// falling back to a topology recompute for multiblock BEs that never store it).
   /// </summary>
   protected string[] GetWrenchOrientations(IWorldAccessor world, BlockPos pos)
   {
@@ -434,11 +418,9 @@ public abstract class BlockNetworkNode
   }
 
   /// <summary>
-  /// True when the block fills its whole cell (default full-cube collision box, i.e. no
-  /// custom <c>collisionboxes</c> in JSON). Such blocks are supported in any orientation,
-  /// so the wrench rotates them through the full topology-only cycle; thin-profile blocks
-  /// instead keep the orientation restriction chosen at placement. Virtual so a subclass
-  /// can opt in/out explicitly regardless of its collision geometry.
+  /// True when the block fills its whole cell (default full-cube collision box). Such blocks are
+  /// supported in any orientation, so the wrench rotates them through the full topology-only cycle.
+  /// Virtual so a subclass can opt in/out regardless of its collision geometry.
   /// </summary>
   protected virtual bool IsFullCube =>
     CollisionBoxes is { Length: 1 } boxes && IsFullCubeBox(boxes[0]);

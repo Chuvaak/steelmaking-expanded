@@ -14,14 +14,11 @@ using Vintagestory.GameContent;
 namespace PipesAndPowerExpanded.BlockStructures.Engine;
 
 /// <summary>
-/// Shared base for the steam engine mega-blocks. Each occupies a single grid cell but
-/// renders across its footprint, which is reserved with invisible structure fillers
-/// (see <see cref="StructureFillers"/>). Construction is driven by the
-/// RightClickConstructable block-entity behavior declared in the block JSON.
-/// <para>
-/// In its default (north) orientation it exposes pipe connectors on the south face
-/// (steam intake) and the east face (condensed water out); both rotate with the block.
-/// </para>
+/// Shared base for the steam engine mega-blocks. Each occupies one grid cell but renders
+/// across a footprint reserved with invisible structure fillers; construction is driven by
+/// the RightClickConstructable behavior in the block JSON. In north orientation it exposes
+/// pipe connectors on south (steam intake) and east (condensed water out), both rotating
+/// with the block.
 /// </summary>
 public abstract class BlockEngine
   : Block,
@@ -38,10 +35,9 @@ public abstract class BlockEngine
   // Raw side angle (north 0, west 90, south 180, east 270).
   protected int Angle => ExOrientation.AngleFromSide(Variant["side"]) % 360;
 
-  // The structure body extends along the local +z ("south") axis, but the JSON
-  // rotateYByType raises the mesh 180° from that so HorizontalOrientable points the body
-  // AWAY from the player. Everything that has to line up with the visible body — fillers,
-  // pipe connectors, sub-machine and gear housing — lives in this same +180 "body" frame.
+  // The body extends along local +z, but rotateYByType raises the mesh 180° from that so the
+  // body points AWAY from the player. Everything lining up with the visible body (fillers,
+  // connectors, sub-machine, gear housing) lives in this +180 "body" frame.
   protected int BodyAngle => (Angle + 180) % 360;
 
   public string NetworkType => "pipe";
@@ -71,9 +67,8 @@ public abstract class BlockEngine
   private static readonly Vec3i DefaultGearHousingOffset = new(0, 3, 1);
 
   /// <summary>
-  /// World cell of the attached sub-machine, read from the <c>submachineOffset</c> JSON
-  /// attribute and placed in the engine's visual-front frame. The same offset is inverted by
-  /// the sub-machine's back-reference in <c>BlockEntityEngineSubmachine.FindEngine</c>.
+  /// World cell of the attached sub-machine, read from the <c>submachineOffset</c> JSON attribute
+  /// in the engine's visual-front frame (inverted by the sub-machine's back-reference).
   /// </summary>
   public BlockPos SubmachinePos(BlockPos enginePos) =>
     ExOrientation.WorldPosFromAttr(
@@ -85,10 +80,8 @@ public abstract class BlockEngine
     );
 
   /// <summary>
-  /// Compass-clockwise mapping from an engine's facing to the facing its sub-machine must take
-  /// to line up with the engine body: north→east, east→south, south→west, west→north. (An engine
-  /// facing north drives a sub-machine facing east.) This is the single rule both placement
-  /// directions use to keep the sub-machine cell in its one valid orientation.
+  /// Compass-clockwise mapping from an engine's facing to its sub-machine's facing: north→east,
+  /// east→south, south→west, west→north. The single rule both placement directions use.
   /// </summary>
   public static string SubmachineSide(string engineSide) =>
     engineSide switch
@@ -101,11 +94,9 @@ public abstract class BlockEngine
     };
 
   /// <summary>
-  /// Locates the engine that owns the sub-machine cell at <paramref name="submachinePos"/>, if
-  /// any. The engine sits two cells away along a horizontal axis (the (0,0,2) sub-machine offset
-  /// rotated into one of the four orientations), so we test those four candidates and confirm
-  /// each engine's own <see cref="SubmachinePos"/> points back at this cell — handling any
-  /// orientation (and a non-default offset) without assuming which way the engine faces.
+  /// Locates the engine owning the sub-machine cell at <paramref name="submachinePos"/>. The engine
+  /// sits two cells away horizontally, so test the four candidates and confirm each engine's
+  /// <see cref="SubmachinePos"/> points back here - works for any orientation and offset.
   /// </summary>
   public static bool TryFindEngineFor(
     IBlockAccessor blockAccessor,
@@ -137,10 +128,8 @@ public abstract class BlockEngine
   }
 
   /// <summary>
-  /// World cell of the gear housing atop the engine, read from the <c>gearHousingOffset</c>
-  /// JSON attribute — where the running machine emits its constant low planetary-gear hum.
-  /// Uses the same visual-front frame as the sub-machine so the sound sits on the rendered
-  /// front of the engine rather than behind it.
+  /// World cell of the gear housing atop the engine (<c>gearHousingOffset</c> JSON attribute) where
+  /// the running machine emits its gear hum. Same visual-front frame as the sub-machine.
   /// </summary>
   public BlockPos GearHousingPos(BlockPos enginePos) =>
     ExOrientation.WorldPosFromAttr(
@@ -156,11 +145,9 @@ public abstract class BlockEngine
   private static readonly Vec3d DefaultCylinderVent = new(0.5, 1.5, 0.5);
 
   /// <summary>
-  /// World point at the top of the engine's piston cylinder, where it puffs spent steam while
-  /// running (and vents hard while over-pressure). Read from the optional
-  /// <c>cylinderVentOffset</c> JSON attribute (block-unit doubles in the master-cell frame); the
-  /// horizontal part is rotated by the visual body angle so it tracks the rendered cylinder. The
-  /// cylinder sits on the engine's centre line, so for the stock models this is the cell centre.
+  /// World point at the top of the piston cylinder, where it puffs spent steam while running (and
+  /// hard while over-pressure). Read from the optional <c>cylinderVentOffset</c> JSON attribute
+  /// (master-cell frame); the horizontal part rotates by the body angle to track the cylinder.
   /// </summary>
   public Vec3d CylinderVentPos(BlockPos enginePos)
   {
@@ -210,17 +197,15 @@ public abstract class BlockEngine
       StructureFillers.FootprintCells(this, blockPos, BodyAngle)
     );
 
-    // A sub-machine built before its engine still ends up correctly oriented under it: snap an
-    // already-present sub-machine at our sub-machine cell to the matching facing.
+    // Snap an already-present sub-machine (built before the engine) to the matching facing.
     if (world.Side == EnumAppSide.Server)
       ReorientSubmachine(world, blockPos);
   }
 
   /// <summary>
-  /// Snaps a sub-machine already sitting at this engine's sub-machine cell to the orientation
-  /// that lines up with the engine (see <see cref="SubmachineSide"/>). The swap keeps the
-  /// sub-machine's block entity alive (<c>ExchangeBlock</c>), which re-binds its animator and
-  /// re-resolves its engine back-reference via <c>OnExchanged</c>.
+  /// Snaps a sub-machine at this engine's cell to the matching orientation (see
+  /// <see cref="SubmachineSide"/>). <c>ExchangeBlock</c> keeps the block entity alive, re-binding
+  /// its animator and engine back-reference via <c>OnExchanged</c>.
   /// </summary>
   private void ReorientSubmachine(IWorldAccessor world, BlockPos enginePos)
   {
@@ -282,10 +267,8 @@ public abstract class BlockEngine
     );
 
   /// <summary>
-  /// Appends the wrench-repair action to <paramref name="baseHelp"/> when the engine at
-  /// <paramref name="enginePos"/> is broken (the materials it needs are printed to chat
-  /// on interaction). Shared by the engine cell and the footprint fillers so the repair
-  /// hint shows wherever the player looks at the burst engine.
+  /// Appends the wrench-repair action to <paramref name="baseHelp"/> when the engine is broken.
+  /// Shared by the engine cell and footprint fillers so the hint shows wherever the player looks.
   /// </summary>
   private WorldInteraction[] RepairInteractionHelp(
     IWorldAccessor world,
@@ -295,7 +278,7 @@ public abstract class BlockEngine
   {
     baseHelp ??= [];
 
-    // Only a broken engine is repairable — show the wrench action then.
+    // Only a broken engine is repairable - show the wrench action then.
     if (
       world.BlockAccessor.GetBlockEntity(enginePos) is not BlockEntityEngine be
       || !be.IsBroken
@@ -313,13 +296,10 @@ public abstract class BlockEngine
 
   #region IFillerInteractionTarget
 
-  // The engine renders across a footprint reserved with invisible structure fillers, which
-  // forward player interaction to the engine here. By default a filler cell behaves exactly
-  // like clicking the engine itself (repair, the held-block build passthrough). Cornish
-  // overrides these to add its per-cell steam-throttle control rods, which only respond on
-  // the engine cell and the filler directly above it. Forwarding goes through the vanilla
-  // base help (not the virtual GetPlacedBlockInteractionHelp) so a subclass's per-cell extras
-  // aren't shown on every footprint cell.
+  // Footprint fillers forward player interaction here; by default a filler cell behaves like
+  // clicking the engine itself. Cornish overrides these for its per-cell control rods.
+  // Forwarding uses the vanilla base help (not the virtual GetPlacedBlockInteractionHelp) so a
+  // subclass's per-cell extras aren't shown on every footprint cell.
 
   public virtual bool OnFillerInteractStart(
     IWorldAccessor world,
@@ -364,12 +344,9 @@ public abstract class BlockEngine
     BlockSelection blockSel
   )
   {
-    // A held placeable block (not a liquid container) means the player wants to build
-    // against the engine — e.g. attach a pipe to the steam inlet / water outlet, which sit
-    // on the engine's own exposed faces. Don't swallow the click for the RCC/BlockEntityInteract
-    // behaviors; let vanilla place the block on the clicked face. Construction materials and the
-    // repair wrench are items (no Block), so they still fall through to the handling below.
-    // Mirrors BlockStructureFiller's placeable-block passthrough.
+    // A held placeable block (not a liquid container) = the player is building against the
+    // engine (e.g. a pipe on the steam inlet/water outlet); let vanilla place it on the clicked
+    // face. Construction materials and the wrench are items, so they fall through below.
     ItemStack? held = byPlayer.InventoryManager?.ActiveHotbarSlot?.Itemstack;
     if (held?.Block != null && held.Collectible is not BlockLiquidContainerBase)
       return false;
@@ -409,7 +386,7 @@ public abstract class BlockEngine
       return;
     }
 
-    // Creative players repair instantly with the wrench — no materials needed or consumed.
+    // Creative players repair instantly with the wrench - no materials needed or consumed.
     bool creative =
       byPlayer.WorldData?.CurrentGameMode == EnumGameMode.Creative;
     if (!creative)

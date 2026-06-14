@@ -4,10 +4,10 @@ using Vintagestory.API.Config;
 namespace ExpandedLib;
 
 /// <summary>
-/// Composes block display names that include the block's material-ish variant —
+/// Composes block display names that include the block's material-ish variant -
 /// pipe metal ("Iron Piping"), canal rock ("Granite Molten Canal"), passthrough
 /// brick ("Fire Brick Pipe Passthrough") and refractory tier ("Smoke Stack Intake
-/// (Refractory Tier 3)") — so same-shaped blocks of different materials are
+/// (Refractory Tier 3)") - so same-shaped blocks of different materials are
 /// distinguishable in the inventory, handbook and look-at HUD.
 /// </summary>
 public static class ExBlockNames

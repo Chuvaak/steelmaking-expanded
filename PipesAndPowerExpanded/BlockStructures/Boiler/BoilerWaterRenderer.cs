@@ -7,17 +7,11 @@ using Vintagestory.API.Util;
 namespace PipesAndPowerExpanded.BlockStructures.Boiler;
 
 /// <summary>
-/// Draws the translucent water surface inside a steam boiler. One quad per footprint
-/// box is drawn at an absolute block-height set by <see cref="SurfaceLevel"/> and tinted
-/// toward a faint glow as <see cref="Temperature"/> approaches the boiling point. The
-/// surface is rendered see-through (blended, like vanilla barrel water) so a hot boiler
-/// shows shimmering water through the open lid.
-/// <para>
-/// The level is driven by the boiler in discrete steps rather than a continuous fill
-/// ratio — hidden when empty, low (below the flue tubes) while filling, and high (above
-/// the flues) once the vessel holds enough water to operate — so the flat quad always
-/// lands at a sensible height inside the vessel instead of slicing through the geometry.
-/// </para>
+/// Draws the translucent water surface inside a steam boiler: one quad per footprint box at the
+/// block-height in <see cref="SurfaceLevel"/>, tinted toward a faint glow as
+/// <see cref="Temperature"/> nears boiling, blended see-through like vanilla barrel water. The
+/// boiler drives the level in discrete steps (hidden/low/high), so the flat quad always lands at
+/// a sensible height inside the vessel rather than slicing through the geometry.
 /// </summary>
 public class BoilerWaterRenderer : IRenderer
 {
@@ -38,11 +32,8 @@ public class BoilerWaterRenderer : IRenderer
   /// <summary>Water temperature (°C); drives the faint hot-water glow.</summary>
   public float Temperature;
 
-  // Must render AFTER the boiler's animated geometry (AnimationUtil renders in the
-  // Opaque stage at RenderOrder 1.0). If the translucent surface drew first it would
-  // write depth and cull the flue tubes / vessel floor sitting below the water line,
-  // so the camera saw straight through to the terrain. Drawing last lets the water
-  // blend over that already-rendered interior instead.
+  // Must render AFTER the animated geometry (RenderOrder 1.0): drawing the translucent surface
+  // first would write depth and cull the interior below the water line. Drawing last blends over it.
   public double RenderOrder => 1.5;
   public int RenderRange => 24;
 
@@ -119,9 +110,8 @@ public class BoilerWaterRenderer : IRenderer
     shader.RgbaFogIn = render.FogColor;
     shader.FogMinIn = render.FogMin;
     shader.FogDensityIn = render.FogDensity;
-    // Translucent blue tint over the water texture — see-through like vanilla barrel
-    // water. The boiler keeps SurfaceLevel at a height that sits inside the vessel, so
-    // what shows through the water is the vessel interior, not the world below.
+    // Translucent blue tint - see-through like vanilla barrel water; what shows through is the
+    // vessel interior, not the world below.
     shader.RgbaTint = new Vec4f(0.55f, 0.7f, 0.95f, 0.7f);
     shader.DontWarpVertices = 0;
     shader.AddRenderFlags = 0;

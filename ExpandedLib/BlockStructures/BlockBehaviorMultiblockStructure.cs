@@ -6,22 +6,14 @@ using Vintagestory.API.MathTools;
 namespace ExpandedLib.BlockStructures;
 
 /// <summary>
-/// Generic block behaviour shared by every multiblock anchor block whose block entity
-/// is a <see cref="BlockEntityMultiblockStructure"/>. It centralises the build-outline
-/// projection so individual blocks don't each re-implement it:
-/// <list type="bullet">
-/// <item>Ctrl + Shift + right-click toggles the holographic projection of the still
-/// missing/incorrect blocks (routed to <see cref="BlockEntityMultiblockStructure.Interact"/>).</item>
-/// <item>It contributes the matching interaction-help line.</item>
-/// </list>
-/// Both only act while the structure is incomplete — once complete the projection
-/// auto-hides (see <see cref="BlockEntityMultiblockStructure.FromTreeAttributes"/>), and
-/// the gesture passes through so it never fights a block's own operational controls.
-/// There is deliberately no separate "hide" gesture.
+/// Generic behaviour shared by every multiblock anchor whose BE is a
+/// <see cref="BlockEntityMultiblockStructure"/>. Centralises the build-outline projection:
+/// Ctrl+Shift+right-click toggles the hologram of missing/incorrect blocks (routed to
+/// <see cref="BlockEntityMultiblockStructure.Interact"/>) and contributes the help line. Both act
+/// only while incomplete; once complete the projection auto-hides and the gesture passes through.
 /// <para>
-/// Add to a block JSON via <c>{ "name": "MultiblockStructure" }</c>. Place it
-/// <b>before</b> any behaviour that also consumes right-click (e.g. the vanilla door)
-/// so its <see cref="EnumHandling.PreventSubsequent"/> wins.
+/// Add via <c>{ "name": "MultiblockStructure" }</c>, placed <b>before</b> any behaviour that also
+/// consumes right-click so its <see cref="EnumHandling.PreventSubsequent"/> wins.
 /// </para>
 /// </summary>
 [EntityRegister("MultiblockStructure", PrefixModId = false)]

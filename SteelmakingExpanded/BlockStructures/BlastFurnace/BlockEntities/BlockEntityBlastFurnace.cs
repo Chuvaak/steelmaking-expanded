@@ -71,8 +71,7 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
   private string _cachedInfoText = "";
   private long _lastInfoUpdate = 0;
 
-  // Cached block attributes (constant per block type) — read once at init instead
-  // of re-parsing the JsonObject every production tick / HUD refresh.
+  // Block attributes cached at init instead of re-parsing the JsonObject every tick / HUD refresh.
   private float _naturalMaxTemp;
   private float _boostedMaxTemp;
   private float _blastBoostThreshold;
@@ -164,10 +163,8 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
 
   private ItemStack? CreateMoltenStack(string metalCode, int units, float temp)
   {
-    // Use the same item codes the molten network/molds expect downstream:
-    // iron flows as game:ingot-iron (LastCodePart "iron" drives the tool-mold
-    // {metal} drop), slag as smex:slag. The previously used "metal-liquid-*"
-    // items do not exist, so GetItem returned null and nothing was ever tapped.
+    // Use the item codes the molten network/molds expect downstream: iron as game:ingot-iron,
+    // slag as smex:slag.
     AssetLocation loc =
       metalCode == "slag"
         ? new AssetLocation("smex", "slag")
@@ -508,9 +505,8 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
   #region Private helpers
 
   /// <summary>
-  /// Walks the 3×7×3 hearth region once and returns every coal-pile block entity
-  /// found. All per-tick pile reads/writes share this list so the region is walked
-  /// at most once per production tick.
+  /// Walks the 3×7×3 hearth region once and returns every coal-pile BE, so all per-tick pile
+  /// reads/writes share one walk.
   /// </summary>
   private List<(BlockPos pos, BlockEntityCoalPile pile)> CollectHearthPiles()
   {

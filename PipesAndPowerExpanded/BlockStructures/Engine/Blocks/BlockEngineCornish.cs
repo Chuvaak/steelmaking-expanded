@@ -10,14 +10,11 @@ using Vintagestory.API.Server;
 namespace PipesAndPowerExpanded.BlockStructures.Engine.Blocks;
 
 /// <summary>
-/// The Cornish engine mega-block (steel, high-pressure tier). Adds the steam control
-/// rods: with a wrench in hand, right-click raises the steam-admission throttle one step
-/// (low → normal → high) and ctrl + right-click lowers it (high → normal → low). Ctrl (not
-/// sneak) is used for the lower direction because vanilla diverts a sneak + right-click
-/// while holding an item to the held item — the wrench's own reverse-rotate would eat it
-/// before the engine ever saw the click. The rods are reachable on the engine's own cell
-/// and the filler cell directly above it. Repairs require steel only. All other behavior
-/// lives in <see cref="BlockEngine"/>.
+/// The Cornish engine mega-block (steel, high-pressure tier). Adds the steam control rods: with a
+/// wrench, right-click raises the throttle (low→normal→high) and ctrl+right-click lowers it. Ctrl
+/// (not sneak) is used because vanilla diverts sneak+right-click to the held item, where the
+/// wrench's reverse-rotate would eat it first. The rods answer on the engine's cell and the filler
+/// above it; repairs require steel only. All other behavior lives in <see cref="BlockEngine"/>.
 /// </summary>
 [EntityRegister]
 public class BlockEngineCornish : BlockEngine
@@ -48,8 +45,7 @@ public class BlockEngineCornish : BlockEngine
     BlockPos clickedCell
   )
   {
-    // A click forwarded from a footprint filler: the control rods only answer on the cell
-    // directly above the engine (see TryThrottle); any other cell falls through to the base.
+    // Forwarded from a footprint filler: the rods only answer on the cell above the engine.
     if (TryThrottle(world, byPlayer, principalSel.Position, clickedCell))
       return true;
 
@@ -62,11 +58,9 @@ public class BlockEngineCornish : BlockEngine
   }
 
   /// <summary>
-  /// Adjusts the steam control rods when a throttle cell — the engine's own cell or the
-  /// filler directly above it — is clicked with a wrench: right-click raises the throttle
-  /// one step, ctrl + right-click lowers it. Returns <c>true</c> when the click is
-  /// consumed (so it isn't passed on to construction/repair handling). A broken engine
-  /// answers nothing here, so the wrench click falls through to the base repair instead.
+  /// Adjusts the control rods when a throttle cell is wrench-clicked: right-click raises, ctrl+
+  /// right-click lowers. Returns <c>true</c> when consumed. A broken engine answers nothing here,
+  /// so the click falls through to the base repair.
   /// </summary>
   private bool TryThrottle(
     IWorldAccessor world,
@@ -106,7 +100,7 @@ public class BlockEngineCornish : BlockEngine
       }
       else
       {
-        // Already at the end of the range — tell the player which way it can't go.
+        // Already at the end of the range - tell the player which way it can't go.
         player?.SendIngameError(
           "ppex-engine",
           Lang.Get(

@@ -22,7 +22,7 @@ public class BlockEntityEngineAirBlower : BlockEntityEngineSubmachine
   private const int PistonBottomFrame = 45;
 
   /// <summary>World point at the open top of the cylinder. The piston travels on the block's
-  /// centre line, so this is rotation-independent — the air is drawn straight down into it.</summary>
+  /// centre line, so this is rotation-independent - the air is drawn straight down into it.</summary>
   private Vec3d CylinderMouth => new(Pos.X + 0.5, Pos.Y + 0.9, Pos.Z + 0.5);
 
   /// <summary>

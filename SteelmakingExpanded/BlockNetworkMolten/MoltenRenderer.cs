@@ -16,10 +16,9 @@ public class MoltenRenderer : IRenderer
   private readonly ICoreClientAPI _api;
   private readonly BlockPos _pos;
 
-  // One uploaded quad per footprint box. fillQuadsByLevel may list one cross-section
-  // PER fill level (e.g. the anvil mold's 10 levels); only the box for the current
-  // fill level is drawn, so the surface matches the cavity at its current height
-  // instead of the union of every level (which covered the whole block).
+  // One uploaded quad per footprint box. fillQuadsByLevel may list one cross-section per fill
+  // level (e.g. the anvil mold); only the current level's box is drawn, so the surface matches
+  // the cavity at its height rather than the union of all levels.
   private readonly MeshRef[] _meshRefs;
   private readonly float _rotationY;
 
@@ -29,11 +28,7 @@ public class MoltenRenderer : IRenderer
 
   public Matrixf ModelMat = new();
 
-  /// <summary>
-  /// Fill ratio in [0, 1].  Set to 0 to hide the surface entirely.
-  /// Replaces the old <c>FillHeight</c> field (which was confusingly named and
-  /// stored the ratio, not an absolute height).
-  /// </summary>
+  /// <summary>Fill ratio in [0, 1]; 0 hides the surface entirely.</summary>
   public float FillRatio;
 
   /// <summary>Metal temperature (°C), drives the surface glow.</summary>
@@ -49,20 +44,10 @@ public class MoltenRenderer : IRenderer
   public int RenderRange => 24;
 
   /// <summary>
-  /// Creates a renderer whose liquid-surface footprint is defined by
-  /// <paramref name="footprintBoxes"/>.  Coordinates in those boxes must be in
-  /// 0-16 pixel space (same scale as block-model pixel coordinates), NOT 0-1
-  /// relative space.
+  /// Creates a renderer whose surface footprint is <paramref name="footprintBoxes"/> (in 0-16
+  /// pixel space, NOT 0-1). <paramref name="fillStartY"/> is the surface Y at fill ratio 0;
+  /// <paramref name="fillHeightLevels"/> is how many 1/16-unit steps it rises from 0 → 1.
   /// </summary>
-  /// <param name="fillStartY">
-  /// The Y world-offset (in 0-1 block-height units) at which the liquid surface
-  /// sits at fill ratio 0.  Defaults to 0.125 (= 2/16), which was the old
-  /// hard-coded base.
-  /// </param>
-  /// <param name="fillHeightLevels">
-  /// How many 1/16-unit steps the surface can rise as fill ratio goes from 0 → 1.
-  /// Defaults to 12, which reproduces the old hard-coded range of 0.75 block-height.
-  /// </param>
   public MoltenRenderer(
     BlockPos pos,
     ICoreClientAPI api,
@@ -103,16 +88,9 @@ public class MoltenRenderer : IRenderer
         box.Z1 / 16f,
       ];
 
-      // GetQuad() returns a ±1 unit square centred at the origin (total extent = 2 in
-      // each axis).  To land the quad exactly on [X1/16 … X2/16] × [Z1/16 … Z2/16]:
-      //
-      //   Scale: divide by 32 (= 16 × 2) so the ±1 extent maps to ±(W/32), giving a
-      //          total width of W/16 in block-local units.
-      //   Translate: use the mid-point of the box ((X1+X2)/32) so the centred quad
-      //              lands at the right position after scaling.
-      //
-      // (Matrixf chains are post-multiplied: the rightmost call is applied first to the
-      // vertex — Scale is applied before RotateX, which is applied before Translate.)
+      // GetQuad() is a ±1 unit square at the origin. Scale by 1/32 (= 16×2) so the ±1 extent
+      // maps to width W/16, and translate to the box mid-point. (Matrixf post-multiplies, so the
+      // rightmost call applies first: Scale → RotateX → Translate.)
       float[] matrix = new Matrixf()
         .Translate((box.X1 + box.X2) / 32f, 0f, (box.Z1 + box.Z2) / 32f)
         .RotateX((float)Math.PI / 2f)

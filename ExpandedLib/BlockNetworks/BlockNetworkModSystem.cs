@@ -8,9 +8,9 @@ using Vintagestory.API.Server;
 namespace ExpandedLib.BlockNetworks;
 
 /// <summary>
-/// Graph manager for all block networks.  Handles node add/remove, BFS fracture
-/// detection, and per-tick dispatch.  All type-specific state and logic live in
-/// the concrete <see cref="BlockNetwork"/> subclasses.
+/// Graph manager for all block networks: node add/remove, BFS fracture detection, and per-tick
+/// dispatch. All type-specific state and logic live in the concrete <see cref="BlockNetwork"/>
+/// subclasses.
 /// </summary>
 public class BlockNetworkModSystem : ModSystem
 {
@@ -52,17 +52,11 @@ public class BlockNetworkModSystem : ModSystem
       : null;
 
   /// <summary>
-  /// Returns the network in the cell adjacent to <paramref name="connectorPos"/> across
-  /// <paramref name="connectorFace"/>, but only when the block occupying that cell actually
-  /// exposes a network connector back toward <paramref name="connectorPos"/> (on
-  /// <paramref name="connectorFace"/>'s opposite face).
-  /// <para>
-  /// This is the reciprocal-connection test a fixed machine port must apply before it draws
-  /// gas / liquid from — or feeds — a pipe run. A pipe that merely occupies the adjacent cell
-  /// without a connector facing the port is <em>not</em> plumbed into it (its orientation
-  /// points elsewhere), so the port must not operate on its network. Returns <c>null</c> when
-  /// there is no reciprocating connector, or no network in that cell.
-  /// </para>
+  /// Returns the network across <paramref name="connectorFace"/> from <paramref name="connectorPos"/>,
+  /// but only when the block there exposes a connector back toward it. This is the reciprocal-
+  /// connection test a fixed machine port applies before drawing from or feeding a run - a pipe
+  /// merely occupying the adjacent cell without a connector facing the port is not plumbed in.
+  /// Returns <c>null</c> when there is no reciprocating connector or no network there.
   /// </summary>
   public BlockNetwork? GetConnectedNetworkAcross(
     IBlockAccessor world,
@@ -116,7 +110,7 @@ public class BlockNetworkModSystem : ModSystem
 
     if (adjacentNetworks.Count == 0)
     {
-      // Isolated new node — standalone network, no broadcast needed.
+      // Isolated new node - standalone network, no broadcast needed.
       var net = CreateNetwork(networkType);
       net.Nodes.Add(pos);
       _networks[net.Id] = net;
@@ -200,7 +194,7 @@ public class BlockNetworkModSystem : ModSystem
 
     if (visited.Count < network.Nodes.Count)
     {
-      // Network fractured — rebuild each connected component as its own network.
+      // Network fractured - rebuild each connected component as its own network.
       var unassigned = new HashSet<BlockPos>(network.Nodes);
       _networks.Remove(netId);
 
@@ -243,7 +237,7 @@ public class BlockNetworkModSystem : ModSystem
     }
     else
     {
-      // No fracture — network is still fully connected.
+      // No fracture - network is still fully connected.
       network.OnTopologyChanged();
       if (broadcast)
         network.BroadcastUpdate(world);
@@ -425,9 +419,8 @@ public class BlockNetworkModSystem : ModSystem
     )
       return false;
 
-    // Full network nodes carry extra gating (endpoints, severed connections).
-    // Fixed structure ports (INetworkConnector that is not a node) have none —
-    // they are a valid target but are never added to the graph themselves.
+    // Full network nodes carry extra gating (endpoints, severed connections); fixed structure
+    // ports (INetworkConnector that isn't a node) have none.
     if (neighbourBlock is BlockNetworkNode neighbourNode)
     {
       if (neighbourNode.IsNetworkEndPoint)
@@ -461,7 +454,7 @@ public class BlockNetworkModSystem : ModSystem
     neighbour is INetworkConnector connector && connector.NetworkType == id;
 
   /// <summary>
-  /// Position-aware compatibility — like <see cref="IsCompatibleNetworkBlock"/> but consults
+  /// Position-aware compatibility - like <see cref="IsCompatibleNetworkBlock"/> but consults
   /// the connector's per-cell network type, so a structure filler that exposes a port on one
   /// footprint cell reads as compatible only on that cell.
   /// </summary>

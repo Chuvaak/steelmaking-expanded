@@ -11,7 +11,7 @@ using Vintagestory.GameContent;
 namespace SteelmakingExpanded.BlockStructures.BlastFurnace.Blocks;
 
 /// <summary>
-/// The blast furnace door — the anchor block of the furnace multiblock. Handles
+/// The blast furnace door - the anchor block of the furnace multiblock. Handles
 /// oriented placement of the structure and routes Ctrl + right-click to the
 /// <see cref="BlockEntityBlastFurnace"/> for the show/hide structure outline.
 /// </summary>
@@ -83,7 +83,7 @@ public class BlockBlastFurnaceDoor : BlockBeeHiveKilnDoor
   /// so we simply return the normal drops.
   /// </summary>
   // CS8603: this faithfully mirrors Block.GetDrops, which returns null to mean
-  // "no drops" — the caller (SpawnDropsAndRemoveBlock) null-guards the result.
+  // "no drops" - the caller (SpawnDropsAndRemoveBlock) null-guards the result.
 #pragma warning disable CS8603
   public override ItemStack[] GetDrops(
     IWorldAccessor world,

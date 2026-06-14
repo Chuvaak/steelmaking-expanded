@@ -13,7 +13,7 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 [EntityRegister]
 public class BlockPipePassthrough : BlockPipe
 {
-  /// <summary>Passthroughs never burst — they're embedded in walls/machine housings where a
+  /// <summary>Passthroughs never burst - they're embedded in walls/machine housings where a
   /// fracture would be unreachable, so they're exempt from over-pressure failure.</summary>
   public override float BurstPressure => float.MaxValue;
 

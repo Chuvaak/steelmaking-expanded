@@ -7,7 +7,7 @@ using Vintagestory.API.Server;
 namespace SteelmakingExpanded.BlockMigrations;
 
 /// <summary>
-/// Migrates the three add-on tool molds — plate, double ingot and quad rod — from the
+/// Migrates the three add-on tool molds - plate, double ingot and quad rod - from the
 /// vanilla <c>game:</c> domain to <c>smex:</c>. They used to be patched into vanilla's
 /// <c>game:toolmold</c> blocktype; they are now standalone <c>smex:toolmold-*</c> blocks
 /// (see <c>assets/smex/blocktypes/molds/</c>), so previously placed or stored molds load
@@ -16,7 +16,7 @@ namespace SteelmakingExpanded.BlockMigrations;
 /// <para>The code structure is identical across the move (<c>toolmold-{color}-{material}-{tool}</c>),
 /// only the domain changes. The fired molds carry a block entity (the molten charge, fill
 /// level, mesh angle), so this also implements <see cref="IBlockEntityMigration"/> to copy
-/// that state verbatim onto the replacement — both the new and old block entities are the
+/// that state verbatim onto the replacement - both the new and old block entities are the
 /// vanilla <c>ToolMold</c> class, so the tree maps one-to-one. Empty and raw molds simply
 /// swap with no state to carry.</para>
 ///

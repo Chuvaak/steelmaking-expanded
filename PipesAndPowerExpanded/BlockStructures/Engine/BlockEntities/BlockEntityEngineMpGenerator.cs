@@ -7,19 +7,13 @@ using Vintagestory.API.Common;
 namespace PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 
 /// <summary>
-/// Cornish-engine sub-machine: a mechanical-power generator. The actual torque is
-/// injected into the vanilla MP network by the <c>smex.BEBehaviorMPGenerator</c>
-/// behavior, which reads this block entity's <see cref="BlockEntityEngineSubmachine.Engine"/>
-/// power; the visible motion is the MP behavior's spinning axle (synced to network speed).
-/// <para>
-/// The generator owns no idle/cycle animation of its own — its motion is the spinning axle.
-/// Because the master engine's beam/piston cycle is physically coupled to that axle, this
-/// generator <b>drives the engine's cycle animation</b> rather than the other way around: every
-/// render frame it pushes its axle's current rotation angle to the engine, which locks its
-/// <c>cyclemp</c> animation frame-for-frame to it (one axle revolution = one cycle). This keeps
-/// the two in lockstep at any speed, and keeps the engine cycling while the flywheel coasts down
-/// after the steam is cut.
-/// </para>
+/// Engine sub-machine: a mechanical-power generator. Torque is injected into the vanilla MP
+/// network by the <see cref="BEBehaviorEngineMPGenerator"/> behavior (which reads this BE's
+/// <see cref="BlockEntityEngineSubmachine.Engine"/> power); the visible motion is its spinning
+/// axle. The generator owns no animation of its own, so it <b>drives the engine's</b>
+/// <c>cyclemp</c> animation instead: every render frame it pushes its axle angle to the engine
+/// (one revolution = one cycle), keeping the two locked at any speed and cycling while the
+/// flywheel coasts after the steam is cut.
 /// </summary>
 [EntityRegister]
 public class BlockEntityEngineMpGenerator
@@ -32,16 +26,13 @@ public class BlockEntityEngineMpGenerator
   // Low metal-on-metal grind from the spinning gear train while the axle turns (client only).
   private ILoadedSound? _grindSound;
 
-  // Update the engine's frame before the opaque pass so it renders in step with the axle this
-  // frame; no GL work of our own, so any range is fine.
+  // Update the engine's frame before the opaque pass so it renders in step with the axle.
   public double RenderOrder => 0.0;
   public int RenderRange => 64;
 
-  // The generator wants full power while an engine is attached and the MP load is within what the
-  // engine can drive. Once the load drags the network below half the rated speed the engine is
-  // overstressed and cuts out entirely (demand 0 → no power → the line coasts down) until enough
-  // machines are removed. Judged by the network's resistance, not the live speed, so a stalled
-  // engine still recovers when the load is shed rather than latching off at speed 0.
+  // Full power while an engine is attached and the MP load is within what it can drive; once the
+  // load overstresses the engine it cuts out (demand 0) until machines are removed. Judged by the
+  // network's resistance, not live speed, so a stalled engine recovers when load is shed.
   public override float PowerDemand
   {
     get
@@ -53,7 +44,7 @@ public class BlockEntityEngineMpGenerator
     }
   }
 
-  // No pipe work — power leaves as MP torque via the behavior.
+  // No pipe work - power leaves as MP torque via the behavior.
   protected override void DoWork(float power, float dt) { }
 
   public override void Initialize(ICoreAPI api)
@@ -108,9 +99,8 @@ public class BlockEntityEngineMpGenerator
   }
 
   /// <summary>
-  /// Re-applies the axle orientation when the engine snapped this generator to its matching
-  /// facing (case 1: engine placed onto an already-present generator); the base re-resolves the
-  /// engine while this re-seeds the mechanical axis.
+  /// Re-applies the axle orientation when the engine snapped this generator to its matching facing;
+  /// the base re-resolves the engine while this re-seeds the mechanical axis.
   /// </summary>
   public override void OnExchanged(Block block)
   {

@@ -7,7 +7,7 @@ namespace SteelmakingExpanded.BlockNetworkMolten;
 /// <summary>
 /// Shared mesh work for the molten-canal family. Currently the open-end cap: the canal,
 /// tap and pedestal all cap unconnected (or closed) connector faces with the same
-/// <c>end.json</c> piece, rotated to the face — previously three copies of the same
+/// <c>end.json</c> piece, rotated to the face - previously three copies of the same
 /// tesselate-and-rotate block.
 /// </summary>
 public static class MoltenMeshes

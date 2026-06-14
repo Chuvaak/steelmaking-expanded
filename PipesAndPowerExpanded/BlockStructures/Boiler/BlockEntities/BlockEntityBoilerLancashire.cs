@@ -3,7 +3,7 @@ using ExpandedLib.EntityRegistry;
 namespace PipesAndPowerExpanded.BlockStructures.Boiler.BlockEntities;
 
 /// <summary>
-/// The Lancashire boiler — the steel, high-pressure tier (up to 15 atm). All behavior
+/// The Lancashire boiler - the steel, high-pressure tier (up to 15 atm). All behavior
 /// lives in <see cref="BlockEntityBoiler"/>; this only supplies the variant stats.
 /// </summary>
 [EntityRegister]

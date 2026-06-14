@@ -8,7 +8,7 @@ namespace SteelmakingExpanded.BlockNetworkMolten.Blocks;
 
 /// <summary>
 /// The canal network's anchor block. Acts as an <see cref="BlockEntityMoltenCanalStart"/>
-/// sink that liquid metal is poured into — from a furnace/converter tap above, or
+/// sink that liquid metal is poured into - from a furnace/converter tap above, or
 /// directly from a smelted crucible held by the player.
 /// </summary>
 [EntityRegister]

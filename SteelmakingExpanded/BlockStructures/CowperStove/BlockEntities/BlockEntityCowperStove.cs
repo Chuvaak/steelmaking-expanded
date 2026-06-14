@@ -16,7 +16,7 @@ using Vintagestory.GameContent;
 namespace SteelmakingExpanded.BlockStructures.CowperStove.BlockEntities;
 
 /// <summary>
-/// Block entity for the cowper-stove multiblock — a regenerative heat exchanger.
+/// Block entity for the cowper-stove multiblock - a regenerative heat exchanger.
 /// It absorbs heat from the furnace exhaust into its brick core (faster with a
 /// burning coal pile below), then reheats air passing through into hot blast that
 /// boosts the blast furnace.
@@ -29,7 +29,7 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
   private string _lastStatus = Lang.Get("smex:cowperstove-status-idle");
   private long _lastHeatSoundMs;
 
-  // Cached config tunables (see SmexValues) — read once at init instead of
+  // Cached config tunables (see SmexValues) - read once at init instead of
   // re-reading the static config every production tick.
   private float _factorAnthracite;
   private float _factorOtherCoal;
@@ -93,7 +93,7 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
       return;
 
     // The stove is a fixed machine port: only draw from a run whose pipe actually
-    // presents a connector back at the stove's exhaust face — a pipe merely routed
+    // presents a connector back at the stove's exhaust face - a pipe merely routed
     // through the adjacent cell with its connectors pointing elsewhere is not
     // plumbed in (same reciprocity rule as the converter intake and the engines).
     var consumedExhaustVol = 0f;
@@ -245,7 +245,7 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
   private void SpawnHeatingParticles()
   {
     // Spawn the heat column over the central interior column (structure-local
-    // (0, *, 1) — the heatsink stack), rotated the same way GetGlobalPos resolves
+    // (0, *, 1) - the heatsink stack), rotated the same way GetGlobalPos resolves
     // it. Mirrors InitForUse(_currentAngle) applied to (x:0, z:1).
     Vec3i d = ExOrientation.RotateOffset(0, 0, 1, _currentAngle);
     int dx = d.X,

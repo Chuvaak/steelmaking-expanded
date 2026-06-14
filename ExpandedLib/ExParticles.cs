@@ -4,18 +4,11 @@ using Vintagestory.API.MathTools;
 namespace ExpandedLib;
 
 /// <summary>
-/// Shared catalogue of particle effects for the mod family (ppex + smex) — gas plumes, leak
-/// wisps, water splashes, exhaust smoke, glow sparks — along with their colours. Block
-/// entities and networks call these instead of building
-/// <see cref="SimpleParticleProperties"/> inline, so the look and tuning live in one place.
-/// <para>
-/// The named presets are thin wrappers over the configurable <see cref="Spawn"/> primitive;
-/// new effects should reuse it (or <see cref="RisingPlume"/>) rather than constructing
-/// particles by hand. Every method spawns through
-/// <see cref="IWorldAccessor.SpawnParticles(IParticlePropertiesProvider, IPlayer)"/>, so the
-/// caller picks the side: spawn on the server to broadcast to nearby clients, or on the
-/// client to show locally. The methods do no side-checking themselves.
-/// </para>
+/// Shared catalogue of particle effects for the mod family (ppex + smex), so the look and tuning
+/// live in one place instead of inline <see cref="SimpleParticleProperties"/>. The named presets
+/// are thin wrappers over the configurable <see cref="Spawn"/> primitive (reuse it or
+/// <see cref="RisingPlume"/> for new effects). Methods do no side-checking: spawn on the server to
+/// broadcast to nearby clients, or on the client to show locally.
 /// </summary>
 public static class ExParticles
 {
@@ -40,7 +33,7 @@ public static class ExParticles
   /// <summary>Dark falling dust (hopper bell dumping its charge).</summary>
   public static readonly int Dust = ColorUtil.ToRgba(255, 60, 60, 60);
 
-  /// <summary>Faint, semi-transparent pale wisp — ambient air drawn into the air blower's cylinder.</summary>
+  /// <summary>Faint, semi-transparent pale wisp - ambient air drawn into the air blower's cylinder.</summary>
   public static readonly int AirTint = ColorUtil.ToRgba(70, 225, 225, 230);
 
   /// <summary>
@@ -83,8 +76,8 @@ public static class ExParticles
     {
       ShouldDieInLiquid = shouldDieInLiquid,
     };
-    // The evolve properties are non-nullable on SimpleParticleProperties; only set them
-    // when the caller supplied one so presets without evolves keep the engine default.
+    // Evolve properties are non-nullable; only set them when supplied so presets without
+    // evolves keep the engine default.
     if (opacityEvolve.HasValue)
       particles.OpacityEvolve = opacityEvolve.Value;
     if (sizeEvolve.HasValue)
@@ -119,9 +112,8 @@ public static class ExParticles
     : Vapor;
 
   /// <summary>
-  /// Generic box-bounded rising plume — the workhorse for furnace/refining smoke and glow.
-  /// Callers pass their own colour, world-space box, velocity range, density, life and
-  /// optional evolves; this is just a readable alias over <see cref="Spawn"/>.
+  /// Generic box-bounded rising plume (furnace/refining smoke and glow) - a readable alias over
+  /// <see cref="Spawn"/> with the model fixed to Quad.
   /// </summary>
   public static void RisingPlume(
     IWorldAccessor world,
@@ -158,7 +150,7 @@ public static class ExParticles
     );
 
   /// <summary>
-  /// Rising smoke plume out of the top of a chimney that is drawing gas from a network —
+  /// Rising smoke plume out of the top of a chimney that is drawing gas from a network -
   /// dark for exhaust, white for air / steam vapour.
   /// </summary>
   public static void ChimneySmoke(
@@ -220,9 +212,8 @@ public static class ExParticles
   }
 
   /// <summary>
-  /// A small, tight white steam burst rising from a precise world point — the puff vented out
-  /// of an engine cylinder top on a power stroke (or a constant hard vent while it strains over
-  /// pressure). <paramref name="count"/> sets the density.
+  /// A tight white steam burst from a world point - the engine cylinder's power-stroke puff (or a
+  /// hard vent while over pressure). <paramref name="count"/> sets the density.
   /// </summary>
   public static void SteamPuff(IWorldAccessor world, Vec3d pos, int count) =>
     Spawn(
@@ -245,11 +236,9 @@ public static class ExParticles
     );
 
   /// <summary>
-  /// A short downdraft of faint, semi-transparent air wisps sucked down into the open top of the
-  /// air blower's cylinder as the piston tops out and starts its intake stroke — the visible
-  /// "inhale" of ambient air. Spawns just above <paramref name="mouth"/> (the cylinder's top
-  /// centre) and pulls the wisps downward, shrinking as they vanish into the bore.
-  /// <paramref name="count"/> sets the density.
+  /// A short downdraft of faint air wisps sucked into the air blower's cylinder on the intake
+  /// stroke - the visible "inhale". Spawns just above <paramref name="mouth"/> and pulls the wisps
+  /// down, shrinking into the bore. <paramref name="count"/> sets the density.
   /// </summary>
   public static void AirInhale(IWorldAccessor world, Vec3d mouth, int count) =>
     Spawn(
@@ -271,9 +260,8 @@ public static class ExParticles
     );
 
   /// <summary>
-  /// A dense, expanding-then-fading cloud of dark smoke bursting from a world point — the sooty
-  /// blast of a machine exploding (engine burst), thrown outward on every axis with a slight rise.
-  /// <paramref name="count"/> sets the density. Spawn on the server to broadcast to nearby clients.
+  /// A dense fading cloud of dark smoke from a world point - the sooty blast of a machine burst.
+  /// <paramref name="count"/> sets the density.
   /// </summary>
   public static void SmokeCloud(IWorldAccessor world, Vec3d pos, int count) =>
     Spawn(
@@ -295,9 +283,8 @@ public static class ExParticles
     );
 
   /// <summary>
-  /// Pale grey gas wisp hissing out of one open pipe connector face (a leak).
-  /// <paramref name="intensity"/> (0..1) scales the particle density with how fast the run
-  /// is bleeding — a faint wisp near 0, a thick jet near 1.
+  /// Pale grey gas wisp hissing out of one open connector face (a leak).
+  /// <paramref name="intensity"/> (0..1) scales density with the bleed rate.
   /// </summary>
   public static void GasLeak(
     IWorldAccessor world,
@@ -327,7 +314,7 @@ public static class ExParticles
   }
 
   /// <summary>
-  /// Gas venting out of a face under pressure (a pressure valve's open output side) —
+  /// Gas venting out of a face under pressure (a pressure valve's open output side) -
   /// white for steam, dark for exhaust, nothing at all for plain air.
   /// </summary>
   public static void GasVent(
@@ -361,9 +348,8 @@ public static class ExParticles
   }
 
   /// <summary>
-  /// Heavy blue water droplets sprayed out of one open face and pulled down by gravity —
-  /// a leaking liquid line or a pressure valve spilling water. Pair with
-  /// <see cref="ExSounds.SplashSound"/> once per spill event for the audio.
+  /// Heavy blue water droplets sprayed out of one open face - a leaking liquid line or a pressure
+  /// valve spilling water. Pair with <see cref="ExSounds.SplashSound"/> once per spill.
   /// </summary>
   public static void WaterJet(
     IWorldAccessor world,
@@ -393,7 +379,7 @@ public static class ExParticles
   }
 
   /// <summary>
-  /// Blue water splash pooling out of the top of <paramref name="cell"/> — condensate
+  /// Blue water splash pooling out of the top of <paramref name="cell"/> - condensate
   /// (engine outlet) with nowhere to drain.
   /// </summary>
   public static void WaterSpill(IWorldAccessor world, BlockPos cell)
@@ -418,11 +404,11 @@ public static class ExParticles
   }
 
   /// <summary>
-  /// Dark dust raining down out of the bottom of <paramref name="pos"/> — the hopper bell
-  /// dropping its charge into the furnace shaft.
+  /// Dark dust raining out of the bottom of <paramref name="pos"/> - the hopper bell dropping its
+  /// charge into the furnace shaft.
   /// </summary>
-  // Mirrors the original hopper-bell call exactly: it passed (float)EnumParticleModel.Cube
-  // (== 0) into the maxSize slot, so maxSize is 0 and the model stays the Quad default.
+  // Mirrors the original call: maxSize 0 (it passed (float)EnumParticleModel.Cube == 0), so the
+  // model stays the Quad default.
   public static void FallingDust(IWorldAccessor world, BlockPos pos) =>
     Spawn(
       world,

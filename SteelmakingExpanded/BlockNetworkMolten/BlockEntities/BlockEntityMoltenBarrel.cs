@@ -46,7 +46,7 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
   private byte _lastGlow;
 
   /// <summary>
-  /// Block-light value (0–24) emitted from the hot metal (the shared
+  /// Block-light value (0-24) emitted from the hot metal (the shared
   /// <see cref="MoltenMetal.GlowLevel"/> scale). Read by
   /// <see cref="Blocks.BlockMoltenBarrel.GetLightHsv"/>; 0 when empty or cool.
   /// </summary>
@@ -63,11 +63,8 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
   }
 
   /// <summary>
-  /// Re-lights the block when the emitted glow level shifts. The block id never
-  /// changes, so the engine won't relight on its own — nudge it via
-  /// <c>MarkBlockDirty</c>, exactly like the canals and the heat sink. Unlike the
-  /// canal (driven by the network thermal tick) the barrel has no other tick, so a
-  /// dedicated light tick drives the fade as the metal cools.
+  /// Re-lights the block via <c>MarkBlockDirty</c> when the glow level shifts (the block id never
+  /// changes, so the engine won't on its own). Driven by a dedicated tick since the barrel has no other.
   /// </summary>
   private void UpdateGlow()
   {
@@ -81,7 +78,7 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
   #endregion
 
   /// <inheritdoc/>
-  // Hardened contents are allowed — fresh molten metal of the same type re-melts
+  // Hardened contents are allowed - fresh molten metal of the same type re-melts
   // and tops up the barrel rather than being rejected.
   public bool CanReceiveAny => !IsFull;
 
@@ -167,15 +164,13 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
     {
       InitRenderer((ICoreClientAPI)api);
       UpdateRenderer();
-      // Metal cools after the last broadcast (the barrel only syncs on fill /
-      // chisel), so refresh the surface glow on the client from the stack's live
-      // temperature — otherwise it freezes and snaps cold on the next interaction.
+      // Metal cools after the last broadcast (the barrel only syncs on fill/chisel), so refresh
+      // the surface glow from the stack's live temperature or it snaps cold on interaction.
       RegisterGameTickListener(_ => UpdateRenderer(), 1000);
     }
     else
     {
-      // No other server tick exists on the barrel, so drive the cooling glow fade
-      // (and its relights) from here.
+      // No other server tick exists, so drive the cooling glow fade from here.
       RegisterGameTickListener(_ => UpdateGlow(), 1000);
     }
   }

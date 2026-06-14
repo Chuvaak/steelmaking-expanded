@@ -7,7 +7,7 @@ namespace ExpandedLib;
 /// <summary>
 /// Registers a mod's custom creative-inventory tab with the (internal) vanilla tab list.
 /// The tab list lives on the non-public <c>GuiDialogCreativeTabs.tabs</c> field, so both
-/// dependent mods previously carried their own copy of this reflection — it now lives
+/// dependent mods previously carried their own copy of this reflection - it now lives
 /// here once. Call from <c>ModSystem.StartClientSide</c>.
 /// </summary>
 public static class ExCreativeTabs

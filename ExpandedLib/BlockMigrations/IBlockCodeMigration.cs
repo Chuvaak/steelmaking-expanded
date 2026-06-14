@@ -8,8 +8,8 @@ namespace ExpandedLib.BlockMigrations;
 /// Declares how block codes from an older version of the mod should be rewritten to
 /// their current equivalents. Implement this (with a public parameterless constructor)
 /// whenever you rename or re-variant a block: <see cref="BlockMigrationModSystem"/>
-/// auto-discovers every implementation and rewrites previously placed instances — which
-/// load as "missing" placeholder blocks that keep their original code — in-world as
+/// auto-discovers every implementation and rewrites previously placed instances - which
+/// load as "missing" placeholder blocks that keep their original code - in-world as
 /// chunks load.
 /// </summary>
 public interface IBlockCodeMigration

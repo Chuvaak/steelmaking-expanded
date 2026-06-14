@@ -5,21 +5,17 @@ using Vintagestory.API.MathTools;
 namespace PipesAndPowerExpanded.BlockStructures.Engine;
 
 /// <summary>
-/// Shared keyframe-driven piston sound logic for the engines and their sub-machines. Both run
-/// the same equal-length cycle animation with the piston at its top at <see cref="UpFrame"/>
-/// and bottom at <see cref="DownFrame"/>; this fires an airy swoosh once per up-stroke and a
-/// heavy metal impact once per down-stroke, detected by watching the cycle animation's current
-/// frame cross those thresholds (client-side, so each stroke is heard in step with the locally
-/// rendered animation).
+/// Shared keyframe-driven piston sounds for the engines and sub-machines. Both run the same cycle
+/// animation (piston top at <see cref="UpFrame"/>, bottom at <see cref="DownFrame"/>); this fires
+/// a swoosh per up-stroke and a metal impact per down-stroke as the cycle frame crosses those
+/// thresholds (client-side, so each stroke matches the locally rendered animation).
 /// </summary>
 public static class PistonCycleSounds
 {
-  /// <summary>Cycle frame where the piston reaches the top of its stroke (torch un-equip whoosh).
-  /// The shape lifts the piston to its highest offset (+7) here.</summary>
+  /// <summary>Cycle frame where the piston tops out (torch un-equip whoosh).</summary>
   public const int UpFrame = 45;
 
-  /// <summary>Cycle frame where the piston reaches the bottom of its stroke (anvil merge clang).
-  /// The shape drops the piston to its lowest offset (-6) here.</summary>
+  /// <summary>Cycle frame where the piston bottoms out (anvil merge clang).</summary>
   public const int DownFrame = 15;
 
   /// <summary>
@@ -57,14 +53,13 @@ public static class PistonCycleSounds
       );
   }
 
-  /// <summary>True if the cycle animation crossed the piston's top-of-stroke frame
-  /// (<see cref="UpFrame"/>) this tick — the moment the cylinder vents its spent steam.</summary>
+  /// <summary>True if the cycle crossed the top-of-stroke frame (<see cref="UpFrame"/>) this tick -
+  /// when the cylinder vents its spent steam.</summary>
   public static bool CrossedUpStroke(float last, float cur, int totalFrames) =>
     Crossed(last, cur, totalFrames, UpFrame);
 
-  /// <summary>True when the cycle animation swept across <paramref name="frame"/> this tick
-  /// (loop-aware) — for sub-machines that watch their own keyframes rather than the shared
-  /// engine up/down strokes (e.g. the air blower's top-of-intake and bottom-of-compression).</summary>
+  /// <summary>True when the cycle swept across <paramref name="frame"/> this tick (loop-aware) -
+  /// for sub-machines watching their own keyframes (e.g. the air blower's intake/compression).</summary>
   public static bool CrossedFrame(
     float last,
     float cur,

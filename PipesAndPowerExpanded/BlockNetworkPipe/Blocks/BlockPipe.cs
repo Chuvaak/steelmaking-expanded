@@ -5,8 +5,8 @@ using ExpandedLib.EntityRegistry;
 namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 
 /// <summary>
-/// The base gas-pipe block: a self-orienting node of the unified "pipe" network.
-/// Provides the orientation tables shared by every straight/bend/junction pipe variant.
+/// The base pipe block: a self-orienting node of the unified "pipe" network. Provides the
+/// orientation tables shared by every straight/bend/junction variant.
 /// </summary>
 [EntityRegister]
 public class BlockPipe : BlockNetworkNode
@@ -20,7 +20,7 @@ public class BlockPipe : BlockNetworkNode
   public string Material => Variant["material"] ?? "iron";
 
   /// <summary>
-  /// Pressure (atm) above which this pipe bursts — the weakest pipe limits a run.
+  /// Pressure (atm) above which this pipe bursts - the weakest pipe limits a run.
   /// Iron 5, steel 10.
   /// </summary>
   public virtual float BurstPressure =>

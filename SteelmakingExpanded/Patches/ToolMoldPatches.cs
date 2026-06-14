@@ -15,28 +15,17 @@ using Vintagestory.GameContent;
 namespace SteelmakingExpanded.Patches;
 
 /// <summary>
-/// Harmony patches on the vanilla tool mold that adjust its right-click flow so
-/// filled molds produced by the mold pedestal can be retrieved cleanly:
-///
-/// <list type="bullet">
-///   <item>A hardened, full mold yields the cast item first; the (now empty)
-///   mold stays in the world.</item>
-///   <item>Any other state — empty, still-liquid, or unfinished — picks up the
-///   mold itself and removes the block, carrying any remaining contents along
-///   in <c>blockEntityAttributes</c> so they survive replacement. A mold whose
-///   metal is still liquid may only be taken into an empty hand (anywhere else
-///   it would instantly spill).</item>
-/// </list>
-///
-/// Implemented as patches (not a re-registered block class) so other mods that
-/// touch the tool mold can coexist.
+/// Harmony patches on the vanilla tool mold that adjust its right-click flow so pedestal-filled
+/// molds retrieve cleanly: a hardened full mold yields the cast item (the empty mold stays); any
+/// other state picks up the mold itself with its contents in <c>blockEntityAttributes</c> (a
+/// still-liquid mold only into an empty hand, else it spills). Done as patches, not a re-registered
+/// block class, so other mods touching the tool mold can coexist.
 /// </summary>
 [HarmonyPatch]
 public static class ToolMoldPatches
 {
-  // Cache of baked held-item meshes (mold body + molten metal surface), keyed
-  // by block + metal + quantised fill level + quantised glow so the number of
-  // uploaded meshes stays bounded. Cleared when the mod system is disposed.
+  // Cache of baked held-item meshes (mold body + metal surface), keyed by block + metal +
+  // quantised fill/glow so the uploaded-mesh count stays bounded. Cleared on dispose.
   private static readonly Dictionary<
     string,
     MultiTextureMeshRef
@@ -51,9 +40,8 @@ public static class ToolMoldPatches
   }
 
   /// <summary>
-  /// Renders the molten-metal surface inside a held filled mold. Declared on
-  /// <see cref="CollectibleObject"/> (the mold does not override it), so the
-  /// patch guards on the instance type before doing any work.
+  /// Renders the molten-metal surface inside a held filled mold. Patched on
+  /// <see cref="CollectibleObject"/>, so it guards on the instance type first.
   /// </summary>
   [HarmonyPostfix]
   [HarmonyPatch(
@@ -134,15 +122,12 @@ public static class ToolMoldPatches
 
     float shapeRotY = (mold.Shape?.rotateY ?? 0f) * GameMath.DEG2RAD;
 
-    // GetQuad() yields a unit quad; vanilla's ToolMoldRenderer transform places
-    // it as the liquid surface at the right height. We additionally apply the
-    // shape's rotateY so it lines up with the (already rotated) default mesh.
+    // A unit quad placed as the liquid surface (like vanilla's ToolMoldRenderer), plus the shape's
+    // rotateY so it lines up with the already-rotated default mesh.
     MeshData quad = QuadMeshUtil.GetQuad();
 
-    // Tint the surface toward the metal's incandescence colour so hot metal
-    // reads as glowing red/orange instead of plain bright white. Below ~500°C
-    // there is no incandescence, so fall back to white (show the metal texture
-    // as-is). The glow flag below adds the self-illumination.
+    // Tint toward the metal's incandescence so hot metal reads as glowing red/orange; below ~500°C
+    // fall back to white. The glow flag below adds the self-illumination.
     byte cr = 255,
       cg = 255,
       cb = 255;
@@ -195,10 +180,8 @@ public static class ToolMoldPatches
   }
 
   /// <summary>
-  /// Vanilla only shows the "pick up" hint when the mold is empty
-  /// (MetalContent == null). Our interaction also lets the player pick up a
-  /// filled-but-unfinished mold (still molten / not a hardened full casting),
-  /// so advertise that case too.
+  /// Vanilla only shows the "pick up" hint for an empty mold; our interaction also lets the player
+  /// pick up a filled-but-unfinished one, so advertise that case too.
   /// </summary>
   [HarmonyPostfix]
   [HarmonyPatch(
@@ -215,8 +198,7 @@ public static class ToolMoldPatches
     {
       ActionLangCode = "blockhelp-toolmold-pickup",
       MouseButton = EnumMouseButton.Right,
-      // Pickup needs an empty hand. Gate the hint on that rather than
-      // RequireFreeHand, which would draw an empty slot next to the hint.
+      // Gate on an empty hand directly (not RequireFreeHand, which draws an empty slot in the hint).
       ShouldApply = (wi, bs, es) =>
         forPlayer.Entity.RightHandItemSlot.Empty
         && world.BlockAccessor.GetBlockEntity(bs.Position)
@@ -229,12 +211,9 @@ public static class ToolMoldPatches
   }
 
   /// <summary>
-  /// Whether the metal currently in <paramref name="be"/> can be cast into this
-  /// mold's tool. Mirrors <c>BlockEntityToolMold.GetMoldedStacks</c>: the casting
-  /// drop code carries a <c>{metal}</c> placeholder, so we substitute the metal's
-  /// last code part and check the result resolves to a real collectible. Used to
-  /// gate the "finished casting" path so non-castable charges (e.g. slag) skip it
-  /// without triggering vanilla's resolver — which would log a resolve warning.
+  /// Whether the metal in <paramref name="be"/> can be cast into this mold's tool. Substitutes the
+  /// metal into the drop code's <c>{metal}</c> placeholder and checks it resolves, to gate the
+  /// finished-casting path so non-castable charges (e.g. slag) skip vanilla's resolver (and its warning).
   /// </summary>
   private static bool CanCastInto(
     BlockToolMold mold,
@@ -280,10 +259,8 @@ public static class ToolMoldPatches
   }
 
   /// <summary>
-  /// Replaces the vanilla right-click flow for plain clicks (no sneak, no held
-  /// interaction): hand over a finished casting, otherwise pick the mold up with
-  /// its contents. Returns true (run vanilla) for every case this flow does not
-  /// claim.
+  /// Replaces the vanilla right-click flow for plain clicks: hand over a finished casting, else
+  /// pick the mold up with its contents. Returns true (run vanilla) for cases this doesn't claim.
   /// </summary>
   [HarmonyPrefix]
   [HarmonyPatch(
@@ -321,11 +298,8 @@ public static class ToolMoldPatches
     bool hasMetal = be.MetalContent != null && be.FillLevel > 0;
     var dropPos = blockSel.Position.ToVec3d().Add(0.5, 0.2, 0.5);
 
-    // 1) Finished casting: hand over the molded item(s); keep the empty mold in place.
-    //    Only when the held metal can actually be cast into this mold's tool —
-    //    otherwise (e.g. a mold full of slag) fall through to picking the mold up,
-    //    rather than letting vanilla's resolver build a bogus "...-slag" stack and
-    //    log a "could not resolve" warning.
+    // 1) Finished casting: hand over the molded item(s), keep the empty mold. Only when the metal
+    //    is actually castable here - else (e.g. slag) fall through to picking the mold up.
     if (
       hasMetal
       && be.IsHardened
@@ -366,9 +340,8 @@ public static class ToolMoldPatches
       }
     }
 
-    // 2) Otherwise pick up the mold itself, preserving any remaining contents.
-    //    Still-liquid metal may only travel in an empty hand — anywhere else in
-    //    the inventory it instantly spills, so refuse the pickup outright.
+    // 2) Otherwise pick up the mold with its contents. Still-liquid metal may only travel in an
+    //    empty hand (elsewhere it instantly spills), so refuse otherwise.
     bool liquid =
       hasMetal
       && MoltenMoldSpill.IsLiquidContent(world, be.MetalContent, be.FillLevel);

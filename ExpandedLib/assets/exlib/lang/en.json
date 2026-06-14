@@ -10,5 +10,5 @@
   "refractory-tier2": "Refractory Tier 2",
   "refractory-tier3": "Refractory Tier 3",
 
-  "game:placefailure-exlib-noorientation": "Cannot connect to the neighbouring blocks — no valid orientation here."
+  "game:placefailure-exlib-noorientation": "Cannot connect to the neighbouring blocks - no valid orientation here."
 }

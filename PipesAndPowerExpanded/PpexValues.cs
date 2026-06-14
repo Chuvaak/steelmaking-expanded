@@ -18,7 +18,7 @@ public class PpexConfig
   /// <summary>Litres a single pipe holds at 1 atm (both the gas and water pools).</summary>
   public float LitresPerPipe { get; set; } = 30f;
 
-  /// <summary>Per-material pipe burst pressure (atm) — the weakest pipe limits a run.</summary>
+  /// <summary>Per-material pipe burst pressure (atm) - the weakest pipe limits a run.</summary>
   public float IronPipeBurstPressure { get; set; } = 5.0f;
   public float SteelPipeBurstPressure { get; set; } = 10.0f;
 
@@ -29,12 +29,12 @@ public class PpexConfig
   /// connector of a passthrough / passthrough-bend / outlet block.</summary>
   public float ChimneyGasDrawRate { get; set; } = 16.0f;
 
-  /// <summary>Gas (L/s) bled per open-ended pipe connector (leak) — only the volume above
+  /// <summary>Gas (L/s) bled per open-ended pipe connector (leak) - only the volume above
   /// the network's 1 atm capacity is vented, so a leaking run can never build pressure.</summary>
   public float GasLeakRate { get; set; } = 8.0f;
 
   /// <summary>Seconds a pipe run may sit at its weakest pipe's burst pressure (nowhere to
-  /// vent) before a pipe lets go — mirrors the boiler over-pressure grace.</summary>
+  /// vent) before a pipe lets go - mirrors the boiler over-pressure grace.</summary>
   public float PipeOverpressureSeconds { get; set; } = 30f;
 
   /// <summary>Liquid (L/s) drained from the network per open-ended pipe connector (leak).</summary>
@@ -59,13 +59,13 @@ public class PpexConfig
   /// <summary>Max output-network pressure (atm) a boiler can vent exhaust into; above it the fire goes out.</summary>
   public float ExhaustMaxOutputPressure { get; set; } = 0.8f;
 
-  /// <summary>Steam pressure (atm) the boiler chokes at — it stops pushing steam above this on the outlet network.</summary>
+  /// <summary>Steam pressure (atm) the boiler chokes at - it stops pushing steam above this on the outlet network.</summary>
   public float BoilerMaxOutputPressure { get; set; } = 12.0f;
 
   /// <summary>Seconds a boiler may sit over <see cref="BoilerMaxOutputPressure"/> (still firing, nowhere to vent) before it explodes.</summary>
   public float BoilerOverpressureSeconds { get; set; } = 30f;
 
-  /// <summary>Seconds of "heating up" (water present + coal lit) before the boiler starts boiling — blast-furnace style.</summary>
+  /// <summary>Seconds of "heating up" (water present + coal lit) before the boiler starts boiling - blast-furnace style.</summary>
   public float BoilerHeatUpSeconds { get; set; } = 180f;
 
   /// <summary>Grace seconds the boiler keeps running after the fire dies (or water leaves range) before it shuts down.</summary>
@@ -80,17 +80,17 @@ public class PpexConfig
   /// <summary>Minimum water (L) needed before the boiler will begin heating/boiling.</summary>
   public float BoilerMinBoilWater { get; set; } = 200f;
 
-  /// <summary>Maximum water (L) the boiler will hold/boil — the rest of the capacity is reserved for steam.</summary>
+  /// <summary>Maximum water (L) the boiler will hold/boil - the rest of the capacity is reserved for steam.</summary>
   public float BoilerMaxBoilWater { get; set; } = 800f;
 
-  /// <summary>Fraction of the vessel capacity the automatic pump intake fills to — keeps a piped
+  /// <summary>Fraction of the vessel capacity the automatic pump intake fills to - keeps a piped
   /// supply from overfilling the boiler (manual pouring can still go up to the boil-water ceiling).</summary>
   public float BoilerWaterIntakeFillFraction { get; set; } = 0.5f;
 
   /// <summary>Steam (L/s) produced while boiling at full tilt (consumes this / <see cref="SteamExpansionFactor"/> litres of water).</summary>
   public float BoilerSteamPerSecond { get; set; } = 48f;
 
-  /// <summary>Exhaust (L/s) a burning boiler vents into its exhaust network — fixed for every boiler variant.</summary>
+  /// <summary>Exhaust (L/s) a burning boiler vents into its exhaust network - fixed for every boiler variant.</summary>
   public float BoilerExhaustPerSecond { get; set; } = 16f;
 
   /// <summary>Seconds a boiler may sit choked (fire lit but its exhaust outlet backed up to the vent-pressure cap) before its fuel pile is snuffed out.</summary>
@@ -99,35 +99,33 @@ public class PpexConfig
   /// <summary>Block radius damaged when a boiler explodes.</summary>
   public int BoilerExplosionRadius { get; set; } = 4;
 
-  /// <summary>A boiler burst shatters every block in its radius whose mining resistance is below
-  /// this — the mod's pipes, ports, coal piles and soft terrain. Sturdier blocks ride it out;
-  /// keep this under 45 so other boilers/engines (and their resistance-45 structure fillers) and
-  /// reinforced stone survive intact.</summary>
+  /// <summary>A boiler burst shatters every block in its radius below this resistance (pipes, ports,
+  /// coal piles, soft terrain). Keep under 45 so other boilers/engines and their resistance-45
+  /// fillers survive.</summary>
   public float BoilerBlastResistanceThreshold { get; set; } = 20f;
 
   /// <summary>Fraction (0..1) of the boiler's construction materials scattered as salvage when it
-  /// bursts — less forgiving than mining it intact (the JSON <c>brokenDropsRatio</c>).</summary>
+  /// bursts - less forgiving than mining it intact (the JSON <c>brokenDropsRatio</c>).</summary>
   public float BoilerExplosionDropRatio { get; set; } = 0.4f;
 
   /// <summary>Internal steam (L/s) an open lid vents to atmosphere.</summary>
   public float BoilerLidVentRate { get; set; } = 200f;
 
   /// <summary>Internal steam (L/s) bled to atmosphere when the steam outlet has no pipe
-  /// attached — the boiler's neck is open, so steam jets out instead of pressurising.</summary>
+  /// attached - the boiler's neck is open, so steam jets out instead of pressurising.</summary>
   public float BoilerSteamLeakRate { get; set; } = 16f;
 
   /// <summary>Rendered water-surface height (block units) while the boiler holds some water
-  /// but is below its operating threshold — kept below the flue tubes.</summary>
+  /// but is below its operating threshold - kept below the flue tubes.</summary>
   public float BoilerWaterSurfaceLowLevel { get; set; } = 0.2f;
 
   /// <summary>Rendered water-surface height (block units) once the boiler holds enough
-  /// water to operate — raised above the flue tubes. Kept just under a full block to
+  /// water to operate - raised above the flue tubes. Kept just under a full block to
   /// avoid z-fighting with the cell boundary.</summary>
   public float BoilerWaterSurfaceHighLevel { get; set; } = 0.99f;
 
-  /// <summary>Extra steam (L) flashed per litre of admitted water per atm of feed-water
-  /// pressure above 1 atm. Pumped, pressurized water raises a boiling boiler's steam
-  /// pressure — the player must valve it down or risk a burst.</summary>
+  /// <summary>Extra steam (L) flashed per litre of admitted water per atm of feed-water pressure
+  /// above 1 atm - pumped water raises a boiling boiler's steam pressure toward a burst.</summary>
   public float WaterPressureSteamBoost { get; set; } = 1f;
   #endregion
 
@@ -144,9 +142,8 @@ public class PpexConfig
   /// <summary>Steam (L/s) the Cornish boiler produces while boiling at full tilt.</summary>
   public float CornishBoilerSteamPerSecond { get; set; } = 32f;
 
-  /// <summary>Steam pressure (atm) the Cornish boiler chokes at — above the Watt engine's
-  /// 4 atm break, so a pressure valve between boiler and engine is mandatory; the player
-  /// manages the head so boilers don't burst and engines don't break.</summary>
+  /// <summary>Steam pressure (atm) the Cornish boiler chokes at - above the Watt engine's 4 atm
+  /// break, so a pressure valve between boiler and engine is mandatory.</summary>
   public float CornishBoilerMaxOutputPressure { get; set; } = 5.0f;
 
   public int CornishBoilerExplosionRadius { get; set; } = 3;
@@ -170,7 +167,7 @@ public class PpexConfig
 
   /// <summary>Inlet pressure (atm) at/above which the Cornish engine runs, at the low / normal /
   /// high control-rod settings. The throttle raises the whole operating band: low works on a
-  /// gentle 5–8 atm, normal on 6–8 atm, high demands a hot 7–8 atm.</summary>
+  /// gentle 5-8 atm, normal on 6-8 atm, high demands a hot 7-8 atm.</summary>
   public float CornishEngineEngagePressureLow { get; set; } = 5.0f;
   public float CornishEngineEngagePressureNormal { get; set; } = 6.0f;
   public float CornishEngineEngagePressureHigh { get; set; } = 7.0f;
@@ -200,7 +197,7 @@ public class PpexConfig
   public float CornishEngineWaterHigh { get; set; } = 1.2f;
 
   /// <summary>When the Cornish engine is overclocked (high throttle) its running sounds are
-  /// scaled by these — louder strokes/hum and a lower, more violent gear growl. Normal and low
+  /// scaled by these - louder strokes/hum and a lower, more violent gear growl. Normal and low
   /// settings are left at 1 (unchanged).</summary>
   public float CornishEngineOverclockVolume { get; set; } = 1.8f;
   public float CornishEngineOverclockPitch { get; set; } = 0.8f;
@@ -212,25 +209,21 @@ public class PpexConfig
   /// <summary>Seconds an engine may run above its band before it breaks and needs repairing.</summary>
   public float EngineOverPressureSeconds { get; set; } = 60f;
 
-  /// <summary>"Normal" mechanical-network speed an MP generator holds while its load is within the
-  /// engine's rated capacity. Light loads can't push past it (the generator stops driving above
-  /// this); heavier loads drag the network below it.</summary>
+  /// <summary>"Normal" MP-network speed a generator holds while its load is within the engine's
+  /// rated capacity; light loads can't push past it, heavier loads drag it below.</summary>
   public float MpRatedSpeed { get; set; } = 1.0f;
 
-  /// <summary>MP consumer load (resistance) an engine's generator can hold at <see cref="MpRatedSpeed"/>
-  /// per unit of the engine's power output. A Watt engine at full power (0.3) × this (1.667) = 0.5,
-  /// which is four active helve hammers (0.125 resistance each) held at the rated speed. Adding load
-  /// past the rated amount slows the network (constant power: speed = budget / load), and past double
-  /// it drags the engine below half speed, where it overstresses and stops.</summary>
+  /// <summary>MP load an engine's generator holds at <see cref="MpRatedSpeed"/> per unit of engine
+  /// power. A Watt at full power (0.3) × this = ~0.5 = four helve hammers. Load past the rated amount
+  /// slows the network (speed = budget / load); past double it the engine stalls and stops.</summary>
   public float MpLoadPerEnginePower { get; set; } = 0.875f;
 
-  /// <summary>Water (L/s) the engine fluid pump moves per unit of the engine's mechanical power
-  /// output — output scales directly with that power, so a stronger or throttled-up engine moves
-  /// proportionally more (Watt at 0.3 → 5 L/s, Cornish 0.2/0.4/0.8 → 3.3/6.7/13.3 L/s).</summary>
+  /// <summary>Water (L/s) the engine fluid pump moves per unit of mechanical power (Watt 0.3 → 5 L/s,
+  /// Cornish 0.2/0.4/0.8 → 3.3/6.7/13.3 L/s).</summary>
   public float PumpWaterPerSecond { get; set; } = 16.67f;
 
   /// <summary>Water (L/s) the manual (hand-cranked) fluid pump transfers from its intake line to
-  /// its output line at a fixed 1 atm — a manual boiler-startup feed, slower than the engine pump.</summary>
+  /// its output line at a fixed 1 atm - a manual boiler-startup feed, slower than the engine pump.</summary>
   public float ManualPumpWaterPerSecond { get; set; } = 2f;
 
   /// <summary>A fluid intake only draws water when the whole cube of this depth directly below it is water.</summary>
@@ -253,7 +246,7 @@ public class PpexConfig
 /// Central, JSON-configurable access point for the mod's gameplay tunables. Call
 /// <see cref="Load"/> once during mod startup; until then (and if the config fails to load) the
 /// hard-coded defaults in <see cref="PpexConfig"/> apply. Use the members here everywhere in
-/// code — e.g. <c>PpexValues.BoilingPoint</c>.
+/// code - e.g. <c>PpexValues.BoilingPoint</c>.
 /// </summary>
 public static class PpexValues
 {

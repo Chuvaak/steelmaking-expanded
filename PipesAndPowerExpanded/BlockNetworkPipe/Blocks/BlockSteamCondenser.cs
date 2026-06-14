@@ -8,13 +8,10 @@ using Vintagestory.API.MathTools;
 namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 
 /// <summary>
-/// The steam condenser: a tjunction-shaped fixed port (not a network node) that sits in
-/// the main water line and recycles leftover steam back into it. In its default (north)
-/// orientation it exposes three horizontal pipe connectors — <b>west and east are the
-/// water line</b> (water flows through, carrying the condensate downstream) and <b>north
-/// is the steam line</b>. Steam drawn from the north condenses into the water passing
-/// W↔E, warming and merging with it. The three adjacent pipe runs stay separate networks
-/// because the condenser is a connector, not a node — the block entity bridges the two
+/// The steam condenser: a tjunction-shaped fixed port (not a network node) that recycles leftover
+/// steam back into the water line. In north orientation west/east are the water line and north is
+/// the steam line; steam drawn from the north condenses into the water passing W↔E. The three
+/// adjacent runs stay separate networks (it's a connector, not a node); the BE bridges the two
 /// water sides itself.
 /// </summary>
 [EntityRegister]

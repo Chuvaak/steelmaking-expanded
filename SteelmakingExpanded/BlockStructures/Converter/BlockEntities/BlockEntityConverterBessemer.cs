@@ -12,16 +12,11 @@ namespace SteelmakingExpanded.BlockStructures.Converter.BlockEntities;
 
 /// <summary>
 /// The big 3×3×3 converter shell. Construction is handled by the vanilla
-/// <c>RightClickConstructable</c> behavior; this entity mirrors the operational
-/// pose/charge from its <see cref="BlockEntityConverterControl"/> and hands
-/// solidified-charge drops back to the control on break.
-/// <para>
-/// RightClickConstructable suppresses the default block mesh, so we render the
-/// vessel through the animator instead: a permanently-running <c>idle</c>
-/// animation keeps it visible, re-tessellated to the currently-built elements
-/// whenever the construction stage changes, with <c>filling</c>/<c>pouring</c>
-/// layered on top as held tilt poses.
-/// </para>
+/// <c>RightClickConstructable</c> behavior (which suppresses the default mesh, so the vessel
+/// renders through the animator: a permanent <c>idle</c> animation re-tessellated to the built
+/// elements, with <c>filling</c>/<c>pouring</c> as held tilt poses). It mirrors the operational
+/// pose/charge from its <see cref="BlockEntityConverterControl"/> and hands solidified drops back
+/// on break.
 /// </summary>
 [EntityRegister]
 public class BlockEntityConverterBessemer : BlockEntity
@@ -83,19 +78,16 @@ public class BlockEntityConverterBessemer : BlockEntity
   }
 
   /// <summary>
-  /// (Re)builds the animator so it renders exactly the currently-built
-  /// elements. The animator hierarchy stays the full shape (stable cache key);
-  /// only the rendered mesh is filtered to <paramref name="selectiveElements"/>.
+  /// (Re)builds the animator to render exactly the currently-built elements (only the mesh is
+  /// filtered to <paramref name="selectiveElements"/>; the animator hierarchy stays the full shape).
   /// </summary>
   private void RebuildAnimator(string[]? selectiveElements)
   {
     if (Api is not ICoreClientAPI || _animatable == null)
       return;
 
-    // CreateMesh loads and resolves a FRESH shape each call. Reusing a single
-    // shape would re-map its UVs into atlas space on every construction stage,
-    // compounding into stretched textures. Rotation is applied by the renderer
-    // (passed to InitializeAnimator), not baked into the mesh.
+    // CreateMesh resolves a FRESH shape each call; reusing one re-maps UVs into atlas space and
+    // stretches textures. Rotation is applied by the renderer, not baked into the mesh.
     MeshData meshData = _animatable.animUtil.CreateMesh(
       AnimCacheKey,
       null,
@@ -110,10 +102,8 @@ public class BlockEntityConverterBessemer : BlockEntity
       resolvedShape,
       new Vec3f(0, Block.Shape.rotateY, 0)
     );
-    // CreateMesh returns a null shape when the block's shape asset fails to resolve,
-    // leaving animUtil.animator null — only mark ready when it truly exists, so
-    // ApplyPose never queues a pose against a null animator (vanilla GetBlockInfo
-    // would then NRE under extendedDebugInfo). Same guard as the boiler and engine.
+    // A failed shape resolve leaves animUtil.animator null; only mark ready when it exists, so
+    // ApplyPose never poses a null animator (vanilla GetBlockInfo would NRE). Same guard as boiler/engine.
     _animatorReady = _animatable.animUtil.animator != null;
   }
 
@@ -156,10 +146,8 @@ public class BlockEntityConverterBessemer : BlockEntity
 
   #region Animation
 
-  // Spawn box for the rising smoke, in block-relative units: the opening in the
-  // InputLining shape element (the gap between cubes Cube226/Cube228, topping out
-  // at y=32/16). Rotated per orientation by RotateXZ below. No tilt math is
-  // needed — these only spawn while the vessel is upright (Normal/processing).
+  // Spawn box for the rising smoke (block-relative): the opening in the InputLining element,
+  // rotated per orientation by RotateXZ. Only spawns while upright, so no tilt math.
   private const float LiningX1 = -0.375f,
     LiningX2 = 0f;
   private const float LiningZ1 = 0.3125f,
@@ -170,10 +158,8 @@ public class BlockEntityConverterBessemer : BlockEntity
   /// <summary>Emits rising smoke from the vessel mouth while refining; called from the control's tick.</summary>
   public void SpawnSmokeParticles(float intensity = 1f)
   {
-    // Called from the control's server-side production tick. SimpleParticleProperties
-    // spawned on the server are replicated to nearby clients, so we must NOT gate on
-    // the client API here (the old `Api is not ICoreClientAPI` guard silently
-    // suppressed every particle, since the tick only ever runs server-side).
+    // Called from the control's server tick; server-spawned particles replicate to clients, so
+    // don't gate on the client API here.
     if (Api == null)
       return;
 
@@ -215,8 +201,7 @@ public class BlockEntityConverterBessemer : BlockEntity
     );
   }
 
-  // Rotates a block-relative (x,z) around the block centre (0.5,0.5) to match the
-  // shape's rotateY for this orientation (north 0, west 90, south 180, east 270).
+  // Rotates a block-relative (x,z) around the block centre to match the shape's rotateY.
   private void RotateXZ(ref float x, ref float z) =>
     ExOrientation.RotateAroundCenter(
       ref x,
@@ -248,7 +233,7 @@ public class BlockEntityConverterBessemer : BlockEntity
       {
         Animation = code,
         Code = code,
-        // The whole vessel tilts — slow and heavy. Idle just holds it visible.
+        // The whole vessel tilts - slow and heavy. Idle just holds it visible.
         AnimationSpeed = code == "idle" ? 1f : 0.3f,
         EaseInSpeed = 3f,
         EaseOutSpeed = 3f,
@@ -271,16 +256,14 @@ public class BlockEntityConverterBessemer : BlockEntity
   #region HUD
 
   /// <summary>
-  /// The vessel is the big block the player looks at, so it carries the live
-  /// operational readout (charge, refining progress, power, status). The actual
-  /// state lives on the control brain, which builds the text for us.
+  /// The vessel carries the live operational readout (charge, progress, power, status); the state
+  /// lives on the control brain, which builds the text.
   /// </summary>
   public override void GetBlockInfo(IPlayer forPlayer, StringBuilder dsc)
   {
     base.GetBlockInfo(forPlayer, dsc);
 
-    // While still under construction the RightClickConstructable interaction
-    // help covers what to do next — don't show operational state yet.
+    // During construction the RCC interaction help covers what's next - no operational state yet.
     if (!IsConstructed)
       return;
 

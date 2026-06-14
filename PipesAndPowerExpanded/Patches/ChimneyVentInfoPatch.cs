@@ -9,10 +9,9 @@ using Vintagestory.API.MathTools;
 namespace PipesAndPowerExpanded.Patches;
 
 /// <summary>
-/// Harmony patch on the vanilla chimney block. When a chimney caps the open top
-/// connector of one of our passthrough / passthrough-bend / outlet pipes, the network
-/// draws gas through it (see <c>PipeNetwork</c>); this postfix adds a look-at info line
-/// to the chimney so the player can see it is venting the network.
+/// Harmony patch on the vanilla chimney block: when a chimney caps the open top connector of one
+/// of our passthrough/outlet pipes, the network draws gas through it (see <c>PipeNetwork</c>); this
+/// postfix adds a look-at info line so the player sees it venting.
 /// </summary>
 [HarmonyPatch(typeof(Block), nameof(Block.GetPlacedBlockInfo))]
 public static class ChimneyVentInfoPatch

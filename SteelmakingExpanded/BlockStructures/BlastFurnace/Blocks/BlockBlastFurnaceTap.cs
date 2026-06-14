@@ -52,7 +52,7 @@ public class BlockBlastFurnaceTap : Block
         }
       }
 
-      // The tap no longer swaps to a separate opened/closed block — its pouring
+      // The tap no longer swaps to a separate opened/closed block - its pouring
       // state lives on the block entity and is shown by holding the "open"
       // animation pose (see BlockEntityBlastFurnaceTap.ApplyPourPose).
       if (world.Side == EnumAppSide.Server)

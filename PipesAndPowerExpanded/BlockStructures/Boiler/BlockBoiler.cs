@@ -10,29 +10,24 @@ using Vintagestory.GameContent;
 namespace PipesAndPowerExpanded.BlockStructures.Boiler;
 
 /// <summary>
-/// Shared base for the boiler mega-blocks. Each occupies a single grid cell but
-/// renders across a multi-cell volume that is reserved with invisible structure
-/// fillers (see <see cref="StructureFillers"/>) so the player gets real collision
-/// over the whole boiler. Construction is driven by the RightClickConstructable
-/// block-entity behavior declared in the block JSON.
+/// Shared base for the boiler mega-blocks. Each occupies one grid cell but renders across a
+/// multi-cell volume reserved with invisible structure fillers (so the player gets real
+/// collision); construction is driven by the RightClickConstructable behavior in the block JSON.
 /// </summary>
 public abstract class BlockBoiler
   : Block,
     INetworkConnector,
     IFillerInteractionTarget
 {
-  // The structure body extends along the local +z ("south") axis. Offset the
-  // placement angle by 180° so HorizontalOrientable raises it AWAY from the player
-  // instead of into them; the JSON rotateYByType is offset to match so the visual,
-  // fillers and connectors stay aligned.
+  // The body extends along local +z; offset the angle 180° so HorizontalOrientable raises it
+  // AWAY from the player. rotateYByType is offset to match, keeping visual/fillers/connectors aligned.
   private int Angle =>
     (ExOrientation.AngleFromSide(Variant["side"]) + 180) % 360;
 
   /// <summary>The structure/filler rotation angle, for multiblockStructure verification.</summary>
   public int StructureAngle => Angle;
 
-  // The boiler draws water through a pipe on its bottom face; steam and exhaust leave
-  // through their dedicated outlet blocks placed at the cells named by the attributes.
+  // Water draws through a pipe on the bottom face; steam and exhaust leave via their outlet cells.
   public string NetworkType => "pipe";
 
   public bool HasConnectorAt(BlockFacing face) => face == BlockFacing.DOWN;
@@ -43,46 +38,36 @@ public abstract class BlockBoiler
     Vec3i fallback
   ) => ExOrientation.WorldPosFromAttr(this, boilerPos, attr, fallback, Angle);
 
-  /// <summary>
-  /// World cell of the firebox slot.
-  /// </summary>
+  /// <summary>World cell of the firebox slot.</summary>
   public BlockPos FuelWorldPos(BlockPos boilerPos) =>
     OffsetWorldPos(boilerPos, "fuelOffset", new Vec3i(0, 0, -1));
 
-  /// <summary>
-  /// World cell of the exhaust gas outlet.
-  /// </summary>
+  /// <summary>World cell of the exhaust gas outlet.</summary>
   public BlockPos ExhaustOutletWorldPos(BlockPos boilerPos) =>
     OffsetWorldPos(boilerPos, "exhaustOutletOffset", new Vec3i(0, 1, 4));
 
-  /// <summary>
-  /// World cell of the filler that carries the access lid.
-  /// </summary>
+  /// <summary>World cell of the filler that carries the access lid.</summary>
   public BlockPos LidWorldPos(BlockPos boilerPos) =>
     OffsetWorldPos(boilerPos, "lidOffset", new Vec3i(0, 1, 0));
 
   /// <summary>
-  /// World cell of the boiler's steam connector (the port filler at the top of the body); the
-  /// steam pipe attaches in the cell directly above it. Rotated to the current orientation.
+  /// World cell of the steam connector (the port filler atop the body); the steam pipe attaches
+  /// in the cell directly above it.
   /// </summary>
   public BlockPos SteamPipeWorldPos(BlockPos boilerPos) =>
     OffsetWorldPos(boilerPos, "steamConnectorOffset", new Vec3i(0, 1, 2));
 
   /// <summary>
-  /// World cell the animated vessel mesh is lit from. The boiler renders its whole footprint
-  /// through one animator, which vanilla lights from the block's own (firebox-adjacent) cell —
-  /// so the burning firebox tints the entire vessel red at night. This points the light sample
-  /// at a cell on the vessel body instead (default the top-rear of the body, sky-exposed and
-  /// well clear of the firebox). Read from <c>lightSampleOffset</c> (local), rotated by angle.
+  /// World cell the animated vessel mesh is lit from. Vanilla lights the whole footprint from
+  /// the block's firebox-adjacent cell, tinting the vessel red at night; this points the light
+  /// sample at a body cell instead. Read from <c>lightSampleOffset</c>, rotated by angle.
   /// </summary>
   public BlockPos LightSampleWorldPos(BlockPos boilerPos) =>
     OffsetWorldPos(boilerPos, "lightSampleOffset", new Vec3i(0, 1, 2));
 
   /// <summary>
-  /// World cell at the centre of the boiler's footprint (the vessel body mid-point), where
-  /// the burst explosion is centred so it goes off inside the boiler rather than off to the
-  /// firebox side. Read from <c>explosionCenterOffset</c> (local), rotated by the structure
-  /// angle.
+  /// World cell at the footprint centre, where the burst explosion is centred so it goes off
+  /// inside the boiler. Read from <c>explosionCenterOffset</c>, rotated by angle.
   /// </summary>
   public BlockPos ExplosionCenterPos(BlockPos boilerPos) =>
     OffsetWorldPos(boilerPos, "explosionCenterOffset", new Vec3i(0, 1, 1));
@@ -105,8 +90,7 @@ public abstract class BlockBoiler
     if (!base.CanPlaceBlock(world, byPlayer, blockSel, ref failureCode))
       return false;
 
-    // The boiler fills a multi-cell volume; refuse placement unless that whole volume
-    // is clear, otherwise the fillers would silently fail to spawn.
+    // Refuse placement unless the whole volume is clear, else the fillers fail to spawn.
     var cells = StructureFillers.FootprintCells(this, blockSel.Position, Angle);
     if (!StructureFillers.CanPlace(world, cells))
     {
@@ -132,10 +116,8 @@ public abstract class BlockBoiler
   }
 
   /// <summary>
-  /// Turns the steam-connector filler cell (<see cref="SteamPipeWorldPos"/>, the top of the
-  /// boiler body) into an upward "pipe" port, so a steam pipe placed directly above it
-  /// connects (auto-orients down, no leak) straight into the boiler instead of dangling over
-  /// an inert filler.
+  /// Turns the steam-connector filler cell (<see cref="SteamPipeWorldPos"/>) into an upward "pipe"
+  /// port, so a steam pipe placed above it connects straight into the boiler.
   /// </summary>
   private void MarkSteamPort(IWorldAccessor world, BlockPos boilerPos)
   {
@@ -160,8 +142,7 @@ public abstract class BlockBoiler
     float dropQuantityMultiplier = 1f
   )
   {
-    // Clear the reserved volume first so a thrown construction-drop path can't
-    // leave invisible solid cells behind.
+    // Clear the reserved volume first so no invisible solid cells are left behind.
     StructureFillers.RemoveFillers(
       world,
       pos,
@@ -173,13 +154,10 @@ public abstract class BlockBoiler
 
   #region Lid interactions
 
-  // The lid and the manual water fill live on one specific footprint cell — the filler
-  // that carries the lid (LidWorldPos). Interactions arrive either directly on the
-  // boiler's own cell (the Block.OnBlockInteract* overrides) or forwarded from a filler
-  // (the IFillerInteractionTarget implementation); both funnel into the Handle* helpers
-  // below, which gate the lid handling on the clicked cell being the lid cell and
-  // otherwise return null/false to defer to the default block behavior (construction,
-  // structure projection).
+  // The lid and manual fill live on one footprint cell (LidWorldPos). Interactions arrive on
+  // the boiler's own cell or forwarded from a filler; both funnel into the Handle* helpers,
+  // which gate on the clicked cell being the lid cell and otherwise defer to the default
+  // behavior (construction, structure projection).
 
   /// <summary>Hold duration (seconds) required to toggle the lid open or closed.</summary>
   private const float LidHoldSeconds = 0.5f;
@@ -202,10 +180,8 @@ public abstract class BlockBoiler
     ?? base.OnBlockInteractStart(world, byPlayer, principalSel);
 
   /// <summary>
-  /// Shared lid/fill click logic. <paramref name="sel"/> points at the boiler's own
-  /// cell (for block-entity lookup); <paramref name="clickedCell"/> is the cell the
-  /// player actually looked at. Returns <c>null</c> to defer to the default block
-  /// behavior, or an explicit handled result.
+  /// Shared lid/fill click logic. <paramref name="sel"/> is the boiler's own cell (for BE lookup);
+  /// <paramref name="clickedCell"/> is the cell looked at. Returns <c>null</c> to defer.
   /// </summary>
   private bool? HandleInteractStart(
     IWorldAccessor world,
@@ -220,8 +196,7 @@ public abstract class BlockBoiler
     )
       return null;
 
-    // Ctrl+Shift is the shared structure-projection gesture; pre-construction clicks
-    // drive RightClickConstructable. Both belong to the default block behavior.
+    // Ctrl+Shift is the structure-projection gesture; pre-construction clicks drive RCC.
     if (byPlayer.Entity.Controls.CtrlKey && byPlayer.Entity.Controls.ShiftKey)
       return null;
     if (!be.IsConstructed)
@@ -241,8 +216,7 @@ public abstract class BlockBoiler
       return true;
     }
 
-    // Empty hands → begin the lid hold (open AND close both need the hold). The
-    // toggle itself happens in the step loop once the hold passes the threshold.
+    // Empty hands → begin the lid hold; the toggle happens in the step loop past the threshold.
     if (slot?.Empty != false)
     {
       be.LidToggled = false;
@@ -292,15 +266,12 @@ public abstract class BlockBoiler
     )
       return null;
 
-    // Only the empty-handed lid hold uses the step loop; a held item (e.g. the pour)
-    // ends the interaction immediately.
+    // Only the empty-handed hold uses the step loop; a held item ends the interaction at once.
     if (byPlayer.InventoryManager?.ActiveHotbarSlot?.Empty != true)
       return false;
 
-    // Toggle exactly once when the hold passes the threshold, then keep the
-    // interaction alive until the button is released. Holding the button open keeps
-    // returning true so the engine does not restart the interaction (which would
-    // toggle the lid again and again).
+    // Toggle once past the threshold, then keep returning true until release so the engine
+    // doesn't restart the interaction (which would toggle the lid repeatedly).
     if (secondsUsed >= LidHoldSeconds && !be.LidToggled)
     {
       be.LidToggled = true;

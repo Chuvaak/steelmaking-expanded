@@ -68,7 +68,7 @@ public class BlockMoltenCanalTap : BlockMoltenCanal
       if (be.HasContent)
       {
         // A mold full of still-liquid metal may only be taken into an empty
-        // hand — anywhere else in the inventory it instantly spills.
+        // hand - anywhere else in the inventory it instantly spills.
         bool liquidMold =
           !be.IsBarrel
           && MoltenMoldSpill.IsLiquidContent(
@@ -199,7 +199,7 @@ public class BlockMoltenCanalTap : BlockMoltenCanal
   )
   {
     // A parked barrel/mold is stored on the BE (the player's item was consumed on
-    // placement), not as a separate block, so drop it — with its contents — before
+    // placement), not as a separate block, so drop it - with its contents - before
     // the tap is removed, otherwise it is silently lost.
     if (
       world.Side == EnumAppSide.Server

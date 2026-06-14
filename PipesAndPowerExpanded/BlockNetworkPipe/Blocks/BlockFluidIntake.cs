@@ -17,17 +17,15 @@ public class BlockFluidIntake : BlockNetworkNode
   protected override string GetFallbackOrientation(string? type) => "s";
 
   /// <summary>
-  /// The intake rests on the water below in any horizontal facing, so the wrench
-  /// must rotate it through the full topology-derived cycle (all four when
-  /// standalone) rather than the single facing it snapped to at placement. Opting in
-  /// here makes <c>GetWrenchOrientations</c> recompute the cycle on the fly.
+  /// The intake rests on water in any horizontal facing, so the wrench must cycle all four
+  /// facings rather than the one it snapped to. Opting in makes <c>GetWrenchOrientations</c>
+  /// recompute the cycle on the fly.
   /// </summary>
   protected override bool IsFullCube => true;
 
   /// <summary>
-  /// The intake may only be placed directly on top of a water block — it draws from
-  /// the pond it sits on. The full functional check (whole cube below is water, no
-  /// crowding) lives in <see cref="BlockEntities.BlockEntityFluidIntake"/>.
+  /// The intake may only be placed on top of a water block. The full functional check (whole cube
+  /// below is water, no crowding) lives in <see cref="BlockEntities.BlockEntityFluidIntake"/>.
   /// </summary>
   public override bool TryPlaceBlock(
     IWorldAccessor world,
@@ -43,8 +41,8 @@ public class BlockFluidIntake : BlockNetworkNode
     );
     if (below.LiquidCode != "water")
     {
-      // Shown to the player as Lang.Get("placefailure-" + code), so this must be
-      // a plain code with a matching "game:placefailure-…" lang entry, not text.
+      // Shown as Lang.Get("placefailure-" + code), so this must be a plain code with a
+      // matching "game:placefailure-…" lang entry, not text.
       failureCode = "ppex-fluidintake-nowater";
       return false;
     }
@@ -59,11 +57,9 @@ public class BlockFluidIntake : BlockNetworkNode
   }
 
   /// <summary>
-  /// Unlike thin pipes, the intake is a standalone source block that rests on the
-  /// water it pumps. Water is not an attachable surface, so the base self-break (no
-  /// network neighbour + no solid support → break) would wrongly destroy a freshly
-  /// placed intake before pipes are run to it. Keep its orientation in sync but never
-  /// self-break; losing the water just disables intake (handled by the block entity).
+  /// The intake is a standalone source block resting on the water it pumps. Water is not an
+  /// attachable surface, so the base self-break would wrongly destroy a freshly placed intake.
+  /// Keep its orientation in sync but never self-break; losing the water just disables it.
   /// </summary>
   public override void OnNeighbourBlockChange(
     IWorldAccessor world,

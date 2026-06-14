@@ -9,11 +9,10 @@ using Vintagestory.API.Common;
 namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 
 /// <summary>
-/// Pressure valve: a network endpoint that vents an adjacent network's gas to
-/// atmosphere whenever its pressure exceeds the valve's player-set gate pressure.
-/// Right-click raises the gate in 0.5 atm steps, sneak + right-click lowers it,
-/// bounded by 1 atm default and the valve's own material rating
-/// (iron 5 / steel 10 atm).
+/// Pressure valve: a network endpoint that spills its input network's overflow (above the
+/// player-set gate pressure) into the output network, or vents to atmosphere when none is plumbed.
+/// Right-click raises the gate, sneak+right-click lowers it (see
+/// <see cref="BlockEntityPressureValve.GatePressureStep"/>), bounded by the valve's material rating.
 /// </summary>
 [EntityRegister]
 public class BlockPressureValve : BlockValve
@@ -24,7 +23,7 @@ public class BlockPressureValve : BlockValve
   public override bool IsNetworkEndPoint => true;
 
   // Right-click adjusts the gate pressure instead of the inherited open/close toggle:
-  // plain RMB raises it, sneak + RMB lowers it, both in 0.5 atm steps.
+  // plain RMB raises it, sneak + RMB lowers it.
   public override bool OnBlockInteractStart(
     IWorldAccessor world,
     IPlayer byPlayer,

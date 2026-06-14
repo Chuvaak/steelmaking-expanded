@@ -12,18 +12,13 @@ using Vintagestory.GameContent;
 namespace PipesAndPowerExpanded.BlockStructures.Engine;
 
 /// <summary>
-/// Base class (and the designation the engine looks up) for the engine sub-machines —
-/// fluid pump, air blower, MP generator. Each is placed at the engine's sub-machine cell
-/// and reads the master engine's <see cref="BlockEntityEngine.AvailablePower"/> to scale
-/// its output; the engine, not the sub-machine, is the source of truth for the cycle tempo.
-/// <para>
-/// This base owns all the generic sub-machine behavior: engine discovery, per-second server
-/// work (<see cref="DoWork"/>), and the animator — every sub-machine holds an <c>idle</c>
-/// animation at rest and switches to the <c>cycle</c> animation (synced to the engine's speed)
-/// while driven. A sub-machine block therefore only needs an <c>Animatable</c> behavior plus
-/// <c>idle</c>/<c>cycle</c> animations in its shape; extend this and implement
-/// <see cref="DoWork"/> to add a new one.
-/// </para>
+/// Base class for the engine sub-machines - fluid pump, air blower, MP generator. Each is placed
+/// at the engine's sub-machine cell and reads the master engine's
+/// <see cref="BlockEntityEngine.AvailablePower"/> to scale its output; the engine is the source
+/// of truth for the cycle tempo. This base owns the generic behavior (engine discovery, per-second
+/// <see cref="DoWork"/>, and the <c>idle</c>/<c>cycle</c> animator), so a new sub-machine only
+/// needs an <c>Animatable</c> behavior with <c>idle</c>/<c>cycle</c> animations plus a
+/// <see cref="DoWork"/> implementation.
 /// </summary>
 public abstract class BlockEntityEngineSubmachine : BlockEntity
 {
@@ -41,11 +36,10 @@ public abstract class BlockEntityEngineSubmachine : BlockEntity
   /// <summary>World position of the master engine, located on initialize.</summary>
   protected BlockPos? EnginePos;
 
-  /// <summary>The master engine block entity (Cornish or Watt), or <c>null</c> if not found.
-  /// Re-resolves <see cref="EnginePos"/> on demand: the engine and sub-machine BEs initialize in
-  /// arbitrary chunk-load order, so a one-shot lookup at Initialize can miss the engine (especially
-  /// on the client, where nothing else re-runs FindEngine) — which would leave the MP generator's
-  /// render-driven engine animation dead. Lazily retrying while unresolved fixes that.</summary>
+  /// <summary>The master engine block entity, or <c>null</c> if not found. Re-resolves
+  /// <see cref="EnginePos"/> on demand: the BEs initialize in arbitrary chunk-load order, so a
+  /// one-shot lookup at Initialize can miss the engine (especially client-side). Lazily retrying
+  /// while unresolved fixes that.</summary>
   public BlockEntityEngine? Engine
   {
     get
@@ -80,8 +74,7 @@ public abstract class BlockEntityEngineSubmachine : BlockEntity
     {
       _animatable = GetBehavior<BEBehaviorAnimatable>();
       InitAnimator();
-      // Hold the rest pose immediately; the poll below switches to the cycle if the
-      // engine is already running when this sub-machine loads in.
+      // Hold the rest pose immediately; the poll switches to cycle if the engine already runs.
       var engine = Engine;
       _animRunning = engine?.IsRunning ?? false;
       _animSpeed = engine?.AnimationSpeed ?? 1f;
@@ -93,9 +86,8 @@ public abstract class BlockEntityEngineSubmachine : BlockEntity
   }
 
   /// <summary>
-  /// Fires the per-stroke piston sounds as this sub-machine's <c>cycle</c> animation crosses
-  /// its up/down keyframes, mirroring the engine. The cycle is phase-locked to the engine, so
-  /// the two machines stroke in step.
+  /// Fires per-stroke piston sounds as the <c>cycle</c> animation crosses its up/down keyframes.
+  /// Phase-locked to the engine, so the two stroke in step.
   /// </summary>
   private void OnKeyframeTick(float dt)
   {
@@ -119,11 +111,8 @@ public abstract class BlockEntityEngineSubmachine : BlockEntity
   }
 
   /// <summary>
-  /// Reacts to the <c>cycle</c> animation advancing from <paramref name="lastFrame"/> to
-  /// <paramref name="currentFrame"/> this client tick — the hook for per-stroke piston sounds
-  /// and effects. The base plays the shared engine-piston stroke sounds (the fluid pump uses
-  /// them as-is); a sub-machine with its own cylinder overrides this to fire its own keyframe
-  /// effects (see the air blower's bellows/clang + ambient-air inhale).
+  /// Hook for per-stroke effects as the <c>cycle</c> advances. The base plays the shared engine
+  /// piston strokes; a sub-machine with its own cylinder overrides this (see the air blower).
   /// </summary>
   protected virtual void OnCycleStroke(
     float lastFrame,
@@ -139,9 +128,8 @@ public abstract class BlockEntityEngineSubmachine : BlockEntity
     );
 
   /// <summary>
-  /// The pipe network connected across one of this sub-machine's connector faces, or
-  /// <c>null</c> when the adjacent pipe has no connector facing back (so it is not actually
-  /// plumbed in). Sub-machines only ever touch networks they are genuinely connected to.
+  /// The pipe network across one of this sub-machine's connector faces, or <c>null</c> when the
+  /// adjacent pipe has no connector facing back.
   /// </summary>
   protected PipeNetwork? ConnectedNetwork(BlockFacing connectorFace) =>
     NetSystem?.GetConnectedNetworkAcross(
@@ -153,11 +141,9 @@ public abstract class BlockEntityEngineSubmachine : BlockEntity
   /// <summary>Locates the engine that owns this sub-machine cell (assumes aligned orientation).</summary>
   private BlockPos? FindEngine()
   {
-    // The engine places the sub-machine at engine + rotate(submachineOffset, engineBodyAngle)
-    // (see BlockEngine.SubmachinePos); invert that to get back to the engine cell. BodyAngle is
-    // the engine's AngleFromSide + 180 — the +180 "body" frame the mesh, fillers and connectors
-    // all live in — so match it here. The offset is read from this block's own JSON attribute so
-    // it stays in step with the engine's.
+    // Invert BlockEngine.SubmachinePos (engine + rotate(submachineOffset, bodyAngle)) to get the
+    // engine cell. BodyAngle = AngleFromSide + 180 (the body frame), matched here; the offset is
+    // read from this block's own JSON so it stays in step with the engine's.
     int angle =
       (ExOrientation.AngleFromSide(Block.Variant["side"]) + 180) % 360;
     Vec3i off = ExOrientation.ReadOffset(
@@ -192,8 +178,7 @@ public abstract class BlockEntityEngineSubmachine : BlockEntity
     DoWork(engine.AvailablePower, dt);
   }
 
-  // Mirror the engine's cycle animation — the engine sets the tempo. Re-apply on a
-  // run-state flip or a meaningful speed change so the sub-machine stays in step.
+  // Mirror the engine's cycle animation; re-apply on a run-state flip or meaningful speed change.
   private void OnClientAnimTick(float dt)
   {
     var engine = Engine;
@@ -210,18 +195,14 @@ public abstract class BlockEntityEngineSubmachine : BlockEntity
   }
 
   /// <summary>
-  /// Client-side hook polled alongside the animation mirror (~twice a second), for sub-machine
-  /// specific state-driven effects such as a continuous work-loop sound. The base does nothing;
-  /// a sub-machine overrides it to start/stop its own looping sound from a synced state flag
-  /// (see the fluid pump's water-drawing loop). Runs only on the client.
+  /// Client-side hook polled alongside the animation mirror (~twice a second) for state-driven
+  /// effects such as a work-loop sound. The base does nothing (see the fluid pump's water loop).
   /// </summary>
   protected virtual void OnClientStateTick(float dt) { }
 
   /// <summary>
-  /// Builds the animator from the block's shape so the sub-machine renders its animated
-  /// mesh. Client-side; leaves <see cref="_animatorReady"/> false if the shape fails to
-  /// resolve, so we never queue a pose against a null animator (vanilla GetBlockInfo would
-  /// then NRE iterating the animator under extended debug info).
+  /// Builds the animator from the block's shape. Leaves <see cref="_animatorReady"/> false if the
+  /// shape fails to resolve, so we never pose a null animator (vanilla GetBlockInfo would NRE).
   /// </summary>
   private void InitAnimator()
   {
@@ -245,9 +226,8 @@ public abstract class BlockEntityEngineSubmachine : BlockEntity
   }
 
   /// <summary>
-  /// Holds exactly one animation at a time: <c>cycle</c> (at the engine's speed) while
-  /// driven, <c>idle</c> otherwise. Keeping one always active stops the animator-rendered
-  /// mesh from vanishing (and the debug GetBlockInfo NRE) when nothing is playing.
+  /// Holds one animation at a time: <c>cycle</c> (at the engine's speed) while driven, <c>idle</c>
+  /// otherwise. Keeping one active stops the animator mesh vanishing (and the GetBlockInfo NRE).
   /// </summary>
   protected virtual void ApplyAnim(bool running, float speed)
   {
@@ -300,8 +280,8 @@ public abstract class BlockEntityEngineSubmachine : BlockEntity
   }
 
   /// <summary>
-  /// Snaps our just-started <c>cycle</c> animation to the engine's current cycle progress so
-  /// the piston strokes in lockstep with the engine regardless of when each animation began.
+  /// Snaps our just-started <c>cycle</c> to the engine's current progress so the pistons stroke
+  /// in lockstep regardless of when each animation began.
   /// </summary>
   private void PhaseLockToEngine()
   {
@@ -319,10 +299,8 @@ public abstract class BlockEntityEngineSubmachine : BlockEntity
 
   /// <summary>
   /// Fired when the engine snaps this sub-machine to its matching orientation via
-  /// <c>ExchangeBlock</c> (case 1: engine placed onto an already-present sub-machine), which
-  /// keeps this block entity alive. Re-resolve the engine (our offset back to it now points a
-  /// different way) and rebind the animator to the new orientation's renderer rotation, then
-  /// restore the current pose. Fires on both sides; only the client has an animator.
+  /// <c>ExchangeBlock</c> (engine placed onto an existing sub-machine), keeping this BE alive.
+  /// Re-resolve the engine and rebind the animator to the new orientation, then restore the pose.
   /// </summary>
   public override void OnExchanged(Block block)
   {

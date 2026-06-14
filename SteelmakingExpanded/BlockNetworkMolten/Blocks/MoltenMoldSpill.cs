@@ -7,17 +7,13 @@ namespace SteelmakingExpanded.BlockNetworkMolten.Blocks;
 
 /// <summary>
 /// Shared rule: a tool mold holding still-molten (liquid) metal may only be
-/// safely carried in the active hand. Anywhere else — another hotbar slot, a
-/// backpack, a chest, a mold rack — the liquid metal spills out, emptying the
+/// safely carried in the active hand. Anywhere else - another hotbar slot, a
+/// backpack, a chest, a mold rack - the liquid metal spills out, emptying the
 /// mold. Hardened/cooling castings are unaffected.
 /// </summary>
 public static class MoltenMoldSpill
 {
-  /// <summary>
-  /// Error code used for the spill notification. The message is resolved
-  /// client-side from the "game:ingameerror-{code}" lang key (the game only
-  /// translates the code when the message argument is null).
-  /// </summary>
+  /// <summary>Spill notification code, resolved client-side from "game:ingameerror-{code}".</summary>
   public const string ErrorCode = "smex-moltenspill";
 
   /// <summary>
@@ -55,7 +51,7 @@ public static class MoltenMoldSpill
 
   /// <summary>
   /// True when <paramref name="contents"/>/<paramref name="units"/> describe metal
-  /// that is still liquid — a mold holding it may only travel in an empty hand.
+  /// that is still liquid - a mold holding it may only travel in an empty hand.
   /// </summary>
   public static bool IsLiquidContent(
     IWorldAccessor world,
@@ -88,10 +84,8 @@ public static class MoltenMoldSpill
   }
 
   /// <summary>
-  /// Hands <paramref name="stack"/> to the player. A liquid mold goes straight
-  /// into the (verified empty) active hand so the generic give logic cannot park
-  /// it in a backpack slot where it would instantly spill; anything else uses the
-  /// normal give-or-drop flow.
+  /// Hands <paramref name="stack"/> to the player. A liquid mold goes straight into the (verified
+  /// empty) active hand so it can't be parked in a backpack where it would spill; else give-or-drop.
   /// </summary>
   public static void GiveMoldStack(
     IWorldAccessor world,

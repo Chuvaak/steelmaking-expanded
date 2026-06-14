@@ -39,10 +39,8 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
     base.Initialize(api);
     if (api.Side == EnumAppSide.Server)
     {
-      // The monitor tick runs unconditionally so the structure is detected both
-      // when it is completed (gain) and when it is broken (loss). The production
-      // tick only runs while complete — and each OnProductionTick also guards on
-      // StructureComplete, so it is harmless if it briefly runs otherwise.
+      // The monitor tick runs unconditionally to detect both completion and breakage; the
+      // production tick runs only while complete (and OnProductionTick re-guards on it anyway).
       StartMonitorTick();
       if (StructureComplete)
         StartProductionTick();
@@ -128,18 +126,11 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
   protected abstract void UpdateStructureRotation();
 
   /// <summary>
-  /// Canonical body for <see cref="UpdateStructureRotation"/>: (re)loads the block's
-  /// <c>multiblockStructure</c> JSON attribute when the structure is missing or
-  /// <paramref name="angle"/> differs from the cached <see cref="_currentAngle"/>, calls
-  /// <c>InitForUse(angle + initAngleOffset)</c>, stores <paramref name="angle"/>, and
-  /// clears any stale client-side build projection (which was laid out for the old
-  /// rotation). Subclasses only derive the angle; the loading is identical everywhere.
-  /// <para>
-  /// <paramref name="initAngleOffset"/> covers machines whose local frame faces opposite
-  /// the stored angle (e.g. the bessemer control initialises at <c>angle + 180</c> while
-  /// its <c>GetGlobalPos</c> override compensates the same way) — see the
-  /// <c>_currentAngle</c>/<c>InitForUse</c> convention note on this class.
-  /// </para>
+  /// Canonical body for <see cref="UpdateStructureRotation"/>: (re)loads the
+  /// <c>multiblockStructure</c> JSON when missing or <paramref name="angle"/> changed, calls
+  /// <c>InitForUse(angle + initAngleOffset)</c>, caches the angle, and clears any stale build
+  /// projection. <paramref name="initAngleOffset"/> covers machines whose local frame faces
+  /// opposite the stored angle (e.g. the bessemer control at <c>angle + 180</c>).
   /// </summary>
   protected void SetStructureAngle(int angle, int initAngleOffset = 0)
   {
@@ -164,12 +155,10 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
     ExOrientation.GlobalPos(Pos, localX, localY, localZ, _currentAngle);
 
   /// <summary>
-  /// Player interaction entry point (the structure-projection toggle): re-checks
-  /// completeness, fires the completed/lost callbacks, and (client-side) shows the
-  /// build outline + missing-block count, or — once complete — clears the outline and
-  /// reports completion. There is no separate "hide" gesture: showing an already
-  /// complete structure hides it, and <see cref="FromTreeAttributes"/> also clears the
-  /// projection automatically the moment the structure becomes complete.
+  /// Player interaction entry point (the structure-projection toggle): re-checks completeness,
+  /// fires the completed/lost callbacks, and client-side shows the build outline + missing count
+  /// or clears it once complete. <see cref="FromTreeAttributes"/> also auto-clears the projection
+  /// the moment the structure completes.
   /// </summary>
   public virtual void Interact(IPlayer byPlayer)
   {
@@ -177,17 +166,15 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
     if (_structure == null)
       return;
 
-    // Tally which blocks are missing (keyed by the wanted code) while counting,
-    // so we can both draw the projection and print an exact shopping list.
+    // Tally missing blocks by wanted code while counting, to both draw the projection and
+    // print an exact shopping list.
     var missingByCode = new Dictionary<AssetLocation, int>();
     int missingCount = _structure.InCompleteBlockCount(
       Api.World,
       Pos,
       (haveBlock, wantBlockCode) =>
       {
-        // Slots that air satisfies (the open shaft, an optional coal pile) or
-        // that are auto-filled with structure fillers are not player-gathered
-        // materials, so leave them out of the shopping list.
+        // Air-satisfied or auto-filled slots aren't player-gathered, so leave them out.
         if (IsAutoFilled(wantBlockCode))
           return;
         missingByCode.TryGetValue(wantBlockCode, out int count);
@@ -238,14 +225,10 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
   }
 
   /// <summary>
-  /// Crash-safe replacement for vanilla <see cref="MultiblockStructure.HighlightIncompleteParts"/>.
-  /// The vanilla method tints each empty slot with <c>SearchBlocks(wantedCode)[0]</c>;
-  /// when a wanted (possibly wildcard) code resolves to no registered block, that
-  /// indexes an empty array and throws <see cref="System.IndexOutOfRangeException"/>.
-  /// Because this runs from a render-stage interaction, the exception is a critical
-  /// mod error that aborts the whole interaction — so the build outline silently
-  /// never appears. This mirrors the vanilla logic but falls back to a neutral tint
-  /// for any slot whose wanted block cannot be resolved.
+  /// Crash-safe replacement for vanilla <see cref="MultiblockStructure.HighlightIncompleteParts"/>,
+  /// which tints each empty slot with <c>SearchBlocks(wantedCode)[0]</c> and throws
+  /// <see cref="System.IndexOutOfRangeException"/> when a (wildcard) code resolves to no block.
+  /// This mirrors the vanilla logic but falls back to a neutral tint for unresolvable slots.
   /// </summary>
   private void HighlightIncompleteSafe(
     MultiblockStructure structure,
@@ -256,8 +239,7 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
     if (offsets == null)
       return;
 
-    // Vanilla keeps its number -> code map private, so rebuild it from the public
-    // BlockNumbers dictionary to learn what block each offset slot wants.
+    // Vanilla keeps its number→code map private; rebuild it from the public BlockNumbers.
     var codeByNumber = new Dictionary<int, AssetLocation>();
     foreach (var kv in structure.BlockNumbers)
       codeByNumber[kv.Value] = kv.Key;
@@ -282,7 +264,7 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
 
       if (actual.Id != 0)
       {
-        // A wrong solid block occupies the slot — vanilla tints these red.
+        // A wrong solid block occupies the slot - vanilla tints these red.
         colors.Add(ColorUtil.ColorFromRgba(215, 94, 94, 0x60));
         continue;
       }
@@ -312,10 +294,8 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
   private static readonly AssetLocation AirCode = new("game:air");
 
   /// <summary>
-  /// True when this structure slot is satisfied without the player gathering a
-  /// block — either an empty (air) slot (e.g. the open shaft or an
-  /// "@(air|coalpile)" fuel slot) or a cell auto-filled with an invisible
-  /// structure filler. Such positions are excluded from the materials report.
+  /// True when a slot is satisfied without the player gathering a block - an air slot (open shaft,
+  /// "@(air|coalpile)" fuel) or a structure-filler cell. Excluded from the materials report.
   /// </summary>
   private static bool IsAutoFilled(AssetLocation wantBlockCode) =>
     WildcardUtil.Match(wantBlockCode, AirCode)
@@ -334,8 +314,7 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
     if (missingByCode.Count == 0)
       return;
 
-    // ExpandedLib ships inside ppex, so the shared report strings live in ppex's lang
-    // (ppex is always loaded when this code runs, whether or not smex is installed).
+    // ExpandedLib ships inside ppex, so the shared report strings live in ppex's lang.
     var sb = new StringBuilder();
     sb.Append(Lang.Get("ppex:structure-missing-header"));
 
@@ -363,8 +342,8 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
   }
 
   /// <summary>
-  /// Resolves a structure block code — which may be a wildcard such as
-  /// "smex:blastfurnacedoor*" — to a human-readable display name.
+  /// Resolves a structure block code - which may be a wildcard such as
+  /// "smex:blastfurnacedoor*" - to a human-readable display name.
   /// </summary>
   private string ResolveBlockName(AssetLocation wantBlockCode)
   {
@@ -413,9 +392,7 @@ public abstract class BlockEntityMultiblockStructure : BlockEntity
     bool wasComplete = StructureComplete;
     StructureComplete = tree.GetBool("structureComplete");
 
-    // Auto-hide the build projection the moment the structure finishes (the sync
-    // that flips StructureComplete on the client also retracts the hologram), so the
-    // player never has to dismiss it manually.
+    // Auto-hide the build projection the moment the structure finishes.
     if (
       !wasComplete
       && StructureComplete

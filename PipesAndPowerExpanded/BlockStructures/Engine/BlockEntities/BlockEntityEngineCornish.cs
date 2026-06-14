@@ -7,18 +7,11 @@ using Vintagestory.API.Datastructures;
 namespace PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 
 /// <summary>
-/// The Cornish engine — the steel, high-pressure, efficient tier. Its steam control
-/// rods (wrench right-click to raise, wrench ctrl + right-click to lower) set how much
-/// steam it admits, which sets its power:
-/// <list type="bullet">
-///   <item><b>Low</b> — half steam, half power.</item>
-///   <item><b>Normal</b> — nominal steam, nominal power.</item>
-///   <item><b>High</b> — double steam, double power.</item>
-/// </list>
-/// The control rods also raise the operating band with the steam admission: low works on
-/// a gentle 4–6 atm, normal on 6–8 atm, high demands a hot 8–9 atm — so throttling up needs
-/// a hotter line to engage and breaks sooner once it does. The break itself lives in
-/// <see cref="BlockEntityEngine"/>.
+/// The Cornish engine - the steel, high-pressure, efficient tier. Its steam control rods (wrench
+/// right-click to raise, wrench ctrl+right-click to lower) set how much steam it admits, hence its
+/// power: low = half, normal = nominal, high = double. Throttling up also raises the operating band
+/// (see the per-setting <see cref="EngagePressure"/>/<see cref="BreakPressure"/>), so it needs a
+/// hotter line to engage. The break itself lives in <see cref="BlockEntityEngine"/>.
 /// </summary>
 [EntityRegister]
 public class BlockEntityEngineCornish : BlockEntityEngine
@@ -36,9 +29,8 @@ public class BlockEntityEngineCornish : BlockEntityEngine
 
   protected override float MaxPowerValue => PpexValues.CornishEngineMaxPower;
 
-  // The control rods raise the whole operating band with the steam admission: low runs on a
-  // gentle 4–6 atm, normal on 6–8 atm, high demands a hot 8–9 atm. Throttling up therefore
-  // needs a hotter line, and throttling down lets the engine work off a softer one.
+  // The control rods raise the operating band with the steam admission, so throttling up needs
+  // a hotter line and throttling down works off a softer one.
   protected override float EngagePressure =>
     ThrottleIndex switch
     {
@@ -55,8 +47,7 @@ public class BlockEntityEngineCornish : BlockEntityEngine
       _ => PpexValues.CornishEngineBreakPressureNormal,
     };
 
-  // Cylinder steam scales with the throttle: double the puff when running high, none at all
-  // when throttled down to its gentle low setting.
+  // Cylinder steam scales with throttle: double the puff on high, none on low.
   protected override int CylinderSteamPuffCount =>
     ThrottleIndex switch
     {
@@ -65,8 +56,7 @@ public class BlockEntityEngineCornish : BlockEntityEngine
       _ => 2,
     };
 
-  // Overclocked, the engine works a hotter, harder cycle — its strokes hit louder and the gear
-  // train growls lower and meaner. Normal and low settings are left unchanged.
+  // Overclocked (high), strokes hit louder and the gear train growls lower; low/normal unchanged.
   protected override float SoundVolumeFactor =>
     ThrottleIndex == 2 ? PpexValues.CornishEngineOverclockVolume : 1f;
 
@@ -98,10 +88,8 @@ public class BlockEntityEngineCornish : BlockEntityEngine
     };
 
   /// <summary>
-  /// Moves the control rods one step in <paramref name="direction"/> (positive raises
-  /// toward <c>high</c>, negative lowers toward <c>low</c>), clamped at either end.
-  /// Returns <c>true</c> when the setting actually changed (so the caller can give the
-  /// "already at max/min" feedback otherwise). Called server-side.
+  /// Moves the control rods one step in <paramref name="direction"/> (positive = toward high),
+  /// clamped. Returns <c>true</c> when the setting changed. Server-side.
   /// </summary>
   public bool AdjustThrottle(int direction)
   {

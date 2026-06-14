@@ -10,13 +10,11 @@ using Vintagestory.API.MathTools;
 namespace PipesAndPowerExpanded.BlockNetworkPipe;
 
 /// <summary>
-/// Live state of a pipe run. A connected pipe network carries exactly ONE medium at a
-/// time — a gas (Air / Steam / Exhaust) or a liquid (Water) — never both. The medium is
-/// claimed by the first producer and held until the run empties completely. Gas and
-/// liquid keep their own physics: a gas's <see cref="Pressure"/> is the volume ratio
-/// <c>Volume / MaxVolume</c> (uncapped — producers overflow up to their own choke),
-/// while a liquid's pressure is set by the pump that drives it. Temperature is a single
-/// network-wide value (no spatial gradient — every pipe reports the same).
+/// Live state of a pipe run. A network carries exactly ONE medium - a gas (Air/Steam/Exhaust)
+/// or a liquid (Water), never both - claimed by the first producer and held until empty. A
+/// gas's <see cref="Pressure"/> is the volume ratio <c>Volume / MaxVolume</c> (uncapped -
+/// producers overflow up to their own choke); a liquid's is set by the pump. Temperature is a
+/// single network-wide value.
 /// </summary>
 public class PipeNetworkState
 {
@@ -32,7 +30,7 @@ public class PipeNetworkState
   /// <summary>Current medium: "Air", "Steam", "Exhaust", "Water", or "" when empty.</summary>
   public string MediumType { get; set; } = "";
 
-  /// <summary>Pressure in atm — for a gas, <c>Volume / MaxVolume</c> (uncapped); for a
+  /// <summary>Pressure in atm - for a gas, <c>Volume / MaxVolume</c> (uncapped); for a
   /// liquid, the value set by the pump.</summary>
   public float Pressure { get; set; }
 
@@ -40,10 +38,9 @@ public class PipeNetworkState
   public int OpeningsCount { get; set; } = 0;
 
   /// <summary>
-  /// Throughput in L/s — the volume that moved through the network over the last second
-  /// (max of produced and consumed). Computed once per second by <see cref="PipeNetwork.OnTick"/>.
-  /// Marks a live line even when the run sits near 0 L because a producer feeds it and a
-  /// consumer drains it at the same rate each tick.
+  /// Throughput in L/s - the volume moved over the last second (max of produced and consumed),
+  /// computed once per second by <see cref="PipeNetwork.OnTick"/>. Marks a live line even when
+  /// the run sits near 0 L (a producer feeds and a consumer drains at the same rate).
   /// </summary>
   public float FlowRate { get; set; } = 0f;
 
@@ -54,7 +51,7 @@ public class PipeNetworkState
   public bool IsLeaking => OpeningsCount > 0;
 
   /// <summary>Whether <paramref name="medium"/> can be produced into a run currently
-  /// carrying <paramref name="current"/> — same family only (gases mix; water is its own
+  /// carrying <paramref name="current"/> - same family only (gases mix; water is its own
   /// medium), or an empty run that hasn't claimed a medium yet.</summary>
   public static bool MediaCompatible(string current, string medium) =>
     current.Length == 0 || (current == "Water") == (medium == "Water");
@@ -81,16 +78,10 @@ public class PipeNetworkState
 
 /// <summary>
 /// Concrete <see cref="BlockNetwork"/> for the pipe system. Owns a single-medium
-/// <see cref="PipeNetworkState"/> and implements production, consumption, pressure,
-/// merge/split and tick logic.
-/// <para>
-/// Gas producers call <see cref="TryProduceGas"/> (with an optional
-/// <c>maxOutputPressure</c> choke); gas consumers call <see cref="TryConsumeGas"/>.
-/// Water producers (the pump) call <see cref="TryProduceLiquid"/> and set the
-/// liquid pressure; water consumers (the boiler) call <see cref="TryConsumeLiquid"/>.
-/// Each pair refuses to act on a run already carrying the other medium, so a run only
-/// ever holds gas or liquid.
-/// </para>
+/// <see cref="PipeNetworkState"/> and implements production/consumption, pressure, merge/split
+/// and tick logic. Gas uses <see cref="TryProduceGas"/>/<see cref="TryConsumeGas"/>, water uses
+/// <see cref="TryProduceLiquid"/>/<see cref="TryConsumeLiquid"/>; each pair refuses a run
+/// already carrying the other medium.
 /// </summary>
 public class PipeNetwork : BlockNetwork
 {
@@ -100,9 +91,8 @@ public class PipeNetwork : BlockNetwork
     : base(system) { }
 
   /// <summary>
-  /// Live pipe state for this network, or <c>null</c> when empty. Backed by the
-  /// base <see cref="BlockNetwork.State"/> so the typed accessor and base-class
-  /// code always read the same object.
+  /// Live pipe state, or <c>null</c> when empty. Backed by the base
+  /// <see cref="BlockNetwork.State"/> so the typed accessor and base code share one object.
   /// </summary>
   public new PipeNetworkState? State
   {
@@ -120,11 +110,9 @@ public class PipeNetwork : BlockNetwork
   private float _producedAccum;
   private float _consumedAccum;
 
-  // The raw per-tick throughput is bursty: a boiler tops up its whole intake buffer
-  // (hundreds of litres) in a single draw, then sits idle for many ticks, so the readout
-  // would otherwise swing between "empty" and 100+ L/s second to second. We display an
-  // exponential moving average instead, and only let a drained run clear back to "empty"
-  // after a few seconds with no real flow — so the medium label survives brief drains.
+  // Raw per-tick throughput is bursty (a boiler draws its whole intake buffer at once, then
+  // idles), so we display an EMA and only clear a drained run back to "empty" after a few
+  // seconds with no real flow, so the medium label survives brief drains.
   private float _smoothedFlow;
   private float _secondsSinceFlow;
   private const float FlowSmoothingAlpha = 0.3f;
@@ -139,9 +127,8 @@ public class PipeNetwork : BlockNetwork
   // tick stamps it, so no evaporation is charged for time the network was unloaded.
   private double _lastEvapDays = -1;
 
-  // Seconds the run has sat at (or above) its weakest pipe's burst pressure with no
-  // relief. Counts up in OnTick; at PipeOverpressureSeconds a pipe bursts. Transient —
-  // a reload resets the grace, which is fine since an unloaded run isn't pressurising.
+  // Seconds the run has sat at/above its weakest pipe's burst pressure; at
+  // PipeOverpressureSeconds a pipe bursts. Transient (a reload resets the grace).
   private float _overpressureSeconds;
 
   #region State inheritance
@@ -158,10 +145,9 @@ public class PipeNetwork : BlockNetwork
   #region Gas pool
 
   /// <summary>
-  /// Injects up to <paramref name="volume"/> litres of gas into the network. Gas may
-  /// overflow above 1 atm up to <paramref name="maxOutputPressure"/> · MaxVolume —
-  /// each producer enforces its own choke (intake 1.0, boiler/blower from steam pressure).
-  /// Returns <c>true</c> if any gas was accepted or the type/temperature changed.
+  /// Injects up to <paramref name="volume"/> L of gas. Gas may overflow above 1 atm up to
+  /// <paramref name="maxOutputPressure"/> · MaxVolume (each producer's own choke). Returns
+  /// <c>true</c> if any gas was accepted or the type/temperature changed.
   /// </summary>
   public bool TryProduceGas(
     float volume,
@@ -173,17 +159,15 @@ public class PipeNetwork : BlockNetwork
   )
   {
     State ??= new PipeNetworkState();
-    // A run already carrying water rejects gas — one medium per network.
+    // A run already carrying water rejects gas - one medium per network.
     if (!PipeNetworkState.MediaCompatible(State.MediumType, gasType))
       return false;
     State.MaxVolume = Nodes.Count * PpexValues.LitresPerPipe;
 
-    // The run physically cannot be charged past the weakest pipe's burst rating, and a
-    // leaking run vents anything over 1 atm — so a producer's own choke is clamped by
-    // both before it ever decides how much gas the network can swallow this tick.
-    // <paramref name="bypassLeakCap"/> lifts the 1-atm clamp so a caller that hand-limits its
-    // <paramref name="volume"/> to the run's leak rate can push that trickle straight through
-    // a leaking run (it flows in and leaks back out) without it backing up.
+    // The run can't be charged past the weakest pipe's burst rating, and a leaking run vents
+    // anything over 1 atm - so clamp the producer's choke by both. bypassLeakCap lifts the
+    // 1-atm clamp so a caller that hand-limits volume to the leak rate can push that trickle
+    // straight through (it flows in and leaks back out) without backing up.
     float ceilingPressure = Math.Min(
       maxOutputPressure,
       MinBurstPressure(blockAccessor)
@@ -225,7 +209,7 @@ public class PipeNetwork : BlockNetwork
       return true;
     }
 
-    // Network is at its choke — only upgrade the gas type if needed.
+    // Network is at its choke - only upgrade the gas type if needed.
     if (State.MediumType != gasType)
     {
       string upgraded = PipeNetworkState.GetHigherPriorityGas(
@@ -243,10 +227,9 @@ public class PipeNetwork : BlockNetwork
   }
 
   /// <summary>
-  /// Same as <see cref="TryProduceGas"/> but returns the litres actually accepted
-  /// (0 when nothing fit or the medium was rejected). The canonical call for producers
-  /// that must know the accepted volume — boiler steam push, pressure-valve overflow —
-  /// instead of each measuring a before/after <c>State.Volume</c> delta themselves.
+  /// Like <see cref="TryProduceGas"/> but returns the litres actually accepted (0 when nothing
+  /// fit). The canonical call for producers that need the accepted volume (boiler steam push,
+  /// pressure-valve overflow).
   /// </summary>
   public float ProduceGasMeasured(
     float volume,
@@ -312,7 +295,7 @@ public class PipeNetwork : BlockNetwork
   )
   {
     State ??= new PipeNetworkState();
-    // A run already carrying gas rejects water — one medium per network.
+    // A run already carrying gas rejects water - one medium per network.
     if (!PipeNetworkState.MediaCompatible(State.MediumType, "Water"))
       return false;
     State.MaxVolume = Nodes.Count * PpexValues.LitresPerPipe;
@@ -335,9 +318,8 @@ public class PipeNetwork : BlockNetwork
   }
 
   /// <summary>
-  /// Same as <see cref="TryProduceLiquid"/> but returns the litres actually accepted.
-  /// The canonical call for producers that must know the accepted volume (fluid
-  /// intake), instead of measuring a before/after <c>State.Volume</c> delta.
+  /// Like <see cref="TryProduceLiquid"/> but returns the litres actually accepted. The canonical
+  /// call for producers that need the accepted volume (fluid intake).
   /// </summary>
   public float ProduceLiquidMeasured(
     float volume,
@@ -401,8 +383,8 @@ public class PipeNetwork : BlockNetwork
 
     State.MaxVolume = Nodes.Count * PpexValues.LitresPerPipe;
 
-    // Two runs of incompatible media (gas joined to water) can't blend — the larger one
-    // wins the merged run and the smaller's content is discarded (it can't coexist).
+    // Incompatible media (gas joined to water) can't blend - the larger run wins, the
+    // smaller's content is discarded.
     if (
       !PipeNetworkState.MediaCompatible(
         State.MediumType,
@@ -422,7 +404,7 @@ public class PipeNetwork : BlockNetwork
       return;
     }
 
-    // Same medium — blend volume-weighted temperature and combine volume.
+    // Same medium - blend volume-weighted temperature and combine volume.
     float total = State.Volume + otherPipe.State.Volume;
     if (total > 0)
     {
@@ -502,8 +484,8 @@ public class PipeNetwork : BlockNetwork
     _producedAccum = 0f;
     _consumedAccum = 0f;
 
-    // Refresh the weakest-pipe rating once per tick so chunk load/unload changes are
-    // picked up; producer calls between ticks then reuse it at O(1).
+    // Refresh the weakest-pipe rating once per tick (picks up chunk load/unload); producer
+    // calls between ticks reuse it at O(1).
     _minBurstCache = null;
 
     if (State == null)
@@ -555,10 +537,9 @@ public class PipeNetwork : BlockNetwork
     );
     float waterLeakFrac = Math.Clamp((State.Volume - 1f) / 4f, 0f, 1f);
 
-    // Single pass: detect open connectors and classify each — a vanilla chimney capping
-    // the TOP connector of a passthrough / passthrough-bend / outlet is a gas vent (not a
-    // leak); an air-exposed end is a leak (gas bleeds, and liquid sprays out as a splash);
-    // count gas consumers too.
+    // Single pass: detect and classify open connectors - a chimney on the TOP connector of a
+    // passthrough/outlet is a gas vent (not a leak), an air-exposed end is a leak; count
+    // consumers too.
     int consumers = 0;
     int totalLeaks = 0;
     var chimneyVents = new List<BlockPos>();
@@ -588,8 +569,8 @@ public class PipeNetwork : BlockNetwork
         BlockFacing face = openFaces[i];
         BlockPos nPos = pos.AddCopy(face);
         Block neighbour = blockAccessor.GetBlock(nPos);
-        // A chimney sitting on the open TOP connector draws gas from the network (no
-        // leak). Matched by code so it works for vanilla chimneys and any mod's variant.
+        // A chimney on the open TOP connector draws gas (no leak). Matched by code so it
+        // works for vanilla chimneys and any mod's variant.
         if (
           chimneyCapable
           && face == BlockFacing.UP
@@ -630,7 +611,7 @@ public class PipeNetwork : BlockNetwork
       changed = true;
     }
 
-    // Chimney draw (gas only) — ChimneyGasDrawRate L/s per chimney-capped top
+    // Chimney draw (gas only) - ChimneyGasDrawRate L/s per chimney-capped top
     // connector. Each drawing chimney puffs smoke so the venting is visible.
     if (!liquid && chimneyVents.Count > 0 && State.Volume > 0)
     {
@@ -676,9 +657,8 @@ public class PipeNetwork : BlockNetwork
           _chimneyFireMs.Remove(key);
     }
 
-    // Leak loss — a gas leak is a pressure relief (it only bleeds the volume above 1 atm,
-    // at a small FIXED rate no matter how many open ends, so a run needs a chimney/stack to
-    // vent in bulk); a water leak drains at a fixed rate per tick.
+    // Leak loss - a gas leak is pressure relief (a small FIXED rate regardless of open-end
+    // count, so bulk venting needs a chimney/stack); a water leak drains at a fixed rate.
     if (totalLeaks > 0 && State.Volume > 0f)
     {
       if (liquid)
@@ -698,9 +678,8 @@ public class PipeNetwork : BlockNetwork
       changed = true;
     }
 
-    // Natural evaporation of a water run (in-game time based; same rate as the boiler).
-    // Measured off the calendar so it is independent of tick cadence and charges nothing
-    // for time the network spent unloaded.
+    // Natural evaporation of a water run, measured off the calendar so it's independent of
+    // tick cadence and charges nothing for time spent unloaded (same rate as the boiler).
     double nowDays = manager.ServerWorld?.Calendar?.TotalDays ?? -1;
     if (nowDays >= 0)
     {
@@ -739,9 +718,8 @@ public class PipeNetwork : BlockNetwork
       changed = true;
     }
 
-    // Clear empty state — only once the run is drained AND has carried no real flow for a
-    // few seconds, so a push-and-drain water line (which sits near 0 L while busy) keeps its
-    // "Water" label instead of flickering to "empty" between draws.
+    // Clear empty state only once drained AND idle for a few seconds, so a push-and-drain
+    // water line (near 0 L while busy) keeps its "Water" label instead of flickering.
     if (State.Volume <= 0 && _secondsSinceFlow >= EmptyClearDelaySeconds)
     {
       State = null;
@@ -752,11 +730,9 @@ public class PipeNetwork : BlockNetwork
     if (changed)
       BroadcastUpdate(blockAccessor);
 
-    // Over-pressure failure timer. Production is capped at the weakest pipe's burst
-    // rating and leaks vent anything over 1 atm, so a sealed, over-fed run sits exactly
-    // at its burst pressure with nowhere to go. Hold there for PipeOverpressureSeconds
-    // and a pipe lets go; any relief (a consumer drawing it down, a new leak) that drops
-    // the pressure below the rating resets the grace.
+    // Over-pressure timer: a sealed, over-fed run sits exactly at its burst pressure with
+    // nowhere to go. Hold there for PipeOverpressureSeconds and a pipe lets go; any relief
+    // dropping the pressure below the rating resets the grace.
     bool pressureFailure = false;
     if (State != null)
     {
@@ -780,9 +756,8 @@ public class PipeNetwork : BlockNetwork
         _overpressureSeconds = 0f;
     }
 
-    // Over-pressure failures — collected above, executed last so we never mutate the
-    // node set while reading it. Each burst removes a node (fracturing the run) and
-    // drops the pipe's materials.
+    // Executed last so we never mutate the node set while reading it. Each burst removes a
+    // node (fracturing the run) and drops the pipe's materials.
     if (State != null && pressureFailure)
     {
       foreach (var pos in CollectBursts(blockAccessor))
@@ -790,11 +765,8 @@ public class PipeNetwork : BlockNetwork
     }
   }
 
-  // The weakest-pipe rating is consulted by EVERY TryProduceGas call (each producer,
-  // each tick), so walking all nodes per call scaled O(producers × nodes) per second.
-  // Cache it; the value only changes when the node set changes (invalidated via
-  // OnTopologyChanged) — plus a once-per-tick refresh in OnTick so pipes in chunks
-  // that load/unload mid-session are picked up within a second.
+  // Consulted by every TryProduceGas call, so cache it; only changes with the node set
+  // (invalidated via OnTopologyChanged) plus a once-per-tick refresh in OnTick.
   private float? _minBurstCache;
 
   /// <summary>Drops topology-derived caches when the manager changes the node set.</summary>
@@ -803,7 +775,7 @@ public class PipeNetwork : BlockNetwork
     _minBurstCache = null;
   }
 
-  /// <summary>The weakest pipe's burst pressure (atm) across the whole run — the rating
+  /// <summary>The weakest pipe's burst pressure (atm) across the whole run - the rating
   /// that caps how far the gas pool can be pressurised. <see cref="float.MaxValue"/> when
   /// the run holds no pipes (e.g. only machine ports).</summary>
   private float MinBurstPressure(IBlockAccessor world) =>
@@ -882,9 +854,8 @@ public class PipeNetwork : BlockNetwork
   }
 
   /// <summary>
-  /// Puffs smoke out of a chimney that is actively drawing gas from the network, so the
-  /// venting reads visually. The plume is dark and sooty for combustion exhaust, white
-  /// for pressurised air or steam vapour. Spawned server-side (broadcasts to clients).
+  /// Puffs smoke out of a chimney drawing gas so the venting reads visually - sooty for
+  /// exhaust, white for air/steam. Spawned server-side (broadcasts to clients).
   /// </summary>
   private static void SpawnChimneySmoke(
     BlockNetworkModSystem manager,

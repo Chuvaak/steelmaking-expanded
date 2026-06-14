@@ -3,16 +3,11 @@ using Vintagestory.API.Common;
 namespace PipesAndPowerExpanded.BlockStructures.Engine.Blocks;
 
 /// <summary>
-/// Shared base for the engine sub-machines (fluid pump, air blower, MP generator). Its only
-/// job is placement orientation: a sub-machine placed at the sub-machine cell of an already
-/// present engine snaps to the facing that lines up with that engine
-/// (<see cref="BlockEngine.SubmachineSide"/>) instead of the player's look direction, so the
-/// sub-machine under an engine can only ever sit in the one correct orientation. With no
-/// engine nearby it places normally via the <c>HorizontalOrientable</c> behavior.
-/// <para>
-/// The reverse direction (placing the engine onto an existing sub-machine) is handled by the
-/// engine re-orienting the sub-machine in <see cref="BlockEngine.OnBlockPlaced"/>.
-/// </para>
+/// Shared base for the engine sub-machines (fluid pump, air blower, MP generator). Its only job is
+/// placement orientation: at an existing engine's sub-machine cell it snaps to the matching facing
+/// (<see cref="BlockEngine.SubmachineSide"/>) instead of the player's look; with no engine nearby
+/// it places normally. The reverse (engine onto an existing sub-machine) is handled in
+/// <see cref="BlockEngine.OnBlockPlaced"/>.
 /// </summary>
 public abstract class BlockEngineSubmachine : Block
 {
@@ -24,8 +19,7 @@ public abstract class BlockEngineSubmachine : Block
     ref string failureCode
   )
   {
-    // Only override the orientation when this cell is an engine's sub-machine slot; otherwise
-    // fall through to the normal look-direction placement.
+    // Only override orientation at an engine's sub-machine slot; else use normal placement.
     if (
       BlockEngine.TryFindEngineFor(
         world.BlockAccessor,

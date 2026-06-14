@@ -18,9 +18,8 @@ public abstract class BlockEntityNetworkNode : BlockEntity, INetworkNode
 
   public override void Initialize(ICoreAPI api)
   {
-    // Capture persisted state before base.Initialize() triggers AddNode.
-    // AddNode may broadcast null state, which would clear _savedNetworkState
-    // via OnNetworkUpdate — but we've already captured it in the local below.
+    // Capture persisted state before base.Initialize() triggers AddNode, which may broadcast
+    // null state and clear _savedNetworkState via OnNetworkUpdate.
     object? pendingRestore = _savedNetworkState;
 
     base.Initialize(api);
@@ -75,21 +74,20 @@ public abstract class BlockEntityNetworkNode : BlockEntity, INetworkNode
     _savedNetworkState = DeserializeNetworkState(tree);
   }
 
-  #region Persistence hooks — override in concrete BEs
+  #region Persistence hooks - override in concrete BEs
 
   /// <summary>Returns <c>true</c> when <paramref name="state"/> is worth caching and restoring.
-  /// Default: any non-null state.  Override to require non-empty content (e.g. amount > 0).</summary>
+  /// Default: any non-null state. Override to require non-empty content (e.g. amount > 0).</summary>
   protected virtual bool IsNetworkStateMeaningful(object? state) =>
     state != null;
 
-  /// <summary>Deserializes the network state that was previously written by
-  /// <see cref="SerializeNetworkState"/>.  Return <c>null</c> when no state was saved
-  /// or the network should start empty.  Called from <see cref="FromTreeAttributes"/>.</summary>
+  /// <summary>Deserializes the network state written by <see cref="SerializeNetworkState"/>; returns
+  /// <c>null</c> when none was saved. Called from <see cref="FromTreeAttributes"/>.</summary>
   protected virtual object? DeserializeNetworkState(ITreeAttribute tree) =>
     null;
 
-  /// <summary>Serializes <paramref name="state"/> into <paramref name="tree"/> so it
-  /// survives a save/reload.  Called from <see cref="ToTreeAttributes"/>.</summary>
+  /// <summary>Serializes <paramref name="state"/> into <paramref name="tree"/> for save/reload.
+  /// Called from <see cref="ToTreeAttributes"/>.</summary>
   protected virtual void SerializeNetworkState(
     ITreeAttribute tree,
     object? state

@@ -20,7 +20,7 @@ public class BlockConverterBessemer : Block
   // RightClickConstructable block-entity behaviour by the "BlockEntityInteract"
   // block behaviour declared in the block JSON.
 
-  // The converter is welded steel — breaking it needs a steel-tier pickaxe.
+  // The converter is welded steel - breaking it needs a steel-tier pickaxe.
   // The actual mining requirement is enforced via "requiredMiningTier" in the
   // block JSON; here we just scatter whatever solidified charge it held.
   public override void OnBlockBroken(
@@ -48,7 +48,7 @@ public class BlockConverterBessemer : Block
     // expands wildcard codes (e.g. metalplate-*) using the wildcard values
     // captured at build time; a converter raised before "storeWildCard" was
     // added to the recipe has none stored, so vanilla GetDrops throws while
-    // expanding the "*" — and because it runs before the block is cleared, the
+    // expanding the "*" - and because it runs before the block is cleared, the
     // exception escapes to the client and crashes the game. Guard it so a
     // legacy/corrupt construction state degrades to "no construction drops"
     // and the block is still removed.

@@ -4,15 +4,10 @@ using Vintagestory.API.Datastructures;
 namespace ExpandedLib.BlockMigrations;
 
 /// <summary>
-/// Optional companion to <see cref="IBlockCodeMigration"/>. Implement it on the same
-/// migration class when the block carries block-entity state that must survive the
-/// swap (inventory, accumulated progress, …) instead of being discarded.
-///
-/// <para>Without this interface <see cref="BlockMigrationModSystem"/> does a plain
-/// block-id swap, which is correct for stateless blocks such as network nodes. With it,
-/// the system reads the old block entity's serialized tree just before replacing the
-/// block and calls <see cref="MigrateBlockEntity"/> so you can copy or reshape that
-/// state onto the freshly placed block entity.</para>
+/// Optional companion to <see cref="IBlockCodeMigration"/>, implemented on the same class when the
+/// block carries BE state that must survive the swap (inventory, progress, …). Without it the swap
+/// is a plain block-id replace; with it, the old BE's serialized tree is read before the swap and
+/// handed to <see cref="MigrateBlockEntity"/> to copy or reshape onto the new BE.
 /// </summary>
 public interface IBlockEntityMigration
 {
@@ -26,9 +21,9 @@ public interface IBlockEntityMigration
   /// entity (e.g. the old block-entity class no longer exists).
   /// </param>
   /// <param name="newBlockEntity">
-  /// The block entity of the just-placed replacement block. Mutate it directly — e.g.
+  /// The block entity of the just-placed replacement block. Mutate it directly - e.g.
   /// <c>newBlockEntity.FromTreeAttributes(oldState, world)</c> for a verbatim copy, or
-  /// rename/convert fields first — then it is marked dirty for you.
+  /// rename/convert fields first - then it is marked dirty for you.
   /// </param>
   /// <param name="world">The world accessor (for resolving stacks during deserialization).</param>
   void MigrateBlockEntity(

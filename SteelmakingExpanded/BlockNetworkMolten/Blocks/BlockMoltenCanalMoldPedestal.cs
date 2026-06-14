@@ -107,7 +107,7 @@ public class BlockMoltenCanalMoldPedestal : BlockMoltenCanalTap
     else
     {
       // A mold full of still-liquid metal may only be taken into an empty
-      // hand — anywhere else in the inventory it instantly spills.
+      // hand - anywhere else in the inventory it instantly spills.
       bool liquidMold = MoltenMoldSpill.IsLiquidContent(
         world,
         be.MoldMetalContent,

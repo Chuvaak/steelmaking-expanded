@@ -6,22 +6,12 @@ using Vintagestory.API.MathTools;
 namespace PipesAndPowerExpanded.BlockStructures.Boiler;
 
 /// <summary>
-/// Drop-in replacement for the vanilla <see cref="AnimatableRenderer"/> that samples
-/// block light at <see cref="LightPos"/> rather than at the render origin.
-/// <para>
-/// The boiler is a single-cell mega-block rendered across its whole footprint through
-/// one animator. Vanilla lights that entire mesh from the light at the block-entity's
-/// own cell — which sits directly against the firebox. At night the firebox's warm
-/// burning light is the dominant source there, so the whole vessel takes on a uniform
-/// red tint. Pointing the light sample at a cell on the vessel body instead (away from
-/// the firebox, exposed to the sky) restores the boiler's natural colour while leaving
-/// the render origin, rotation and animation exactly as vanilla draws them.
-/// </para>
-/// <para>
-/// This re-declares <see cref="IRenderer"/> so the engine dispatches to this
-/// <see cref="OnRenderFrame"/> override; the body is a faithful copy of the base
-/// renderer's, differing only in the one line that chooses the light cell.
-/// </para>
+/// Drop-in replacement for vanilla's <see cref="AnimatableRenderer"/> that samples block light at
+/// <see cref="LightPos"/> rather than at the render origin. Vanilla lights the boiler's whole
+/// footprint mesh from the block-entity cell (against the firebox), tinting the vessel red at
+/// night; pointing the sample at a body cell restores its natural colour. Re-declares
+/// <see cref="IRenderer"/> so the engine dispatches to this <see cref="OnRenderFrame"/> override,
+/// a faithful copy of the base differing only in the light-cell line.
 /// </summary>
 public class BoilerAnimatableRenderer(
   ICoreClientAPI capi,

@@ -9,17 +9,14 @@ using Vintagestory.API.Common;
 namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 
 /// <summary>
-/// Manually-toggled gas valve sitting in-line on a pipe run. While open it is a normal
-/// pipe node and the run flows straight through it (so a machine port butted against it
-/// reads the run directly); while closed it severs the run at its own cell (see
-/// <see cref="BlockEntityValve.IsConnectionBroken"/>), splitting it in two. Right-clicking
-/// with an empty hand toggles it.
+/// Manually-toggled in-line valve on a pipe run. Open, it is a normal pipe node and the run flows
+/// through; closed, it severs the run at its cell (see
+/// <see cref="BlockEntityValve.IsConnectionBroken"/>). Empty-hand right-click toggles it.
 /// </summary>
 [EntityRegister]
 public class BlockValve : BlockPipe
 {
-  // Cached once — this is consulted on every placement/neighbour recalculation, so it
-  // must not allocate a fresh dictionary per read.
+  // Cached once - consulted on every placement/neighbour recalc, so it must not allocate per read.
   public override Dictionary<string, string[]> AllowedOrientations { get; } =
     new() { { "valve", ["ns", "we", "ud", "sn", "ew", "du"] } };
 
@@ -36,12 +33,11 @@ public class BlockValve : BlockPipe
       is BlockEntityValve be
     )
     {
-      // Prevent toggling if the player is holding an item/block
+      // Don't toggle while holding an item/block.
       if (!byPlayer.Entity.RightHandItemSlot.Empty)
         return false;
 
-      // Toggling changes graph connectivity: opening rejoins the two sides into one run,
-      // closing severs them. ToggleOpen re-walks the network to apply that immediately.
+      // ToggleOpen re-walks the network so the connectivity change applies immediately.
       if (world.Side == EnumAppSide.Server)
         be.ToggleOpen();
 

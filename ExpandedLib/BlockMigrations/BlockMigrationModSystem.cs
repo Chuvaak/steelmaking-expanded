@@ -12,30 +12,16 @@ namespace ExpandedLib.BlockMigrations;
 
 /// <summary>
 /// Generic, server-side world migrator for renamed/re-variantted blocks. Collects every
-/// <see cref="IBlockCodeMigration"/> in the mod assembly into a single legacy-code →
-/// replacement-block table and rewrites matching blocks as chunk columns load.
-///
-/// <para>How it works: when a block code is removed, the engine keeps every placed
-/// instance as a "missing" placeholder block that retains the original code (see
-/// <c>ServerSystemBlockIdRemapper</c>), so no data is lost to air. On each
-/// <see cref="IServerEventAPI.ChunkColumnLoaded"/> this system resolves the live block
-/// for every stored id and matches on its <see cref="Block.Code"/> — not a precomputed
-/// id, because the engine can renumber block ids while reconciling the save mapping on
-/// load — then swaps in the replacement via <see cref="IBlockAccessor.SetBlock(int,
-/// BlockPos)"/>. The replacement gets a fresh block entity that reconstructs its state
-/// (e.g. a network node's orientation/connectors) from the new variant code.</para>
-///
-/// <para>By default this is a plain block-id swap that discards block-entity state,
-/// which is appropriate for stateless blocks such as network nodes. A migration that
-/// also implements <see cref="IBlockEntityMigration"/> opts into block-entity handling:
-/// the old block entity's tree is read just before the swap and handed to the migration
-/// to copy or reshape onto the new block entity.</para>
-///
-/// <para>The same migrated blocks can also exist as item stacks rather than placed blocks —
-/// in container block entities (chests, ground storage, mold racks) and in player
-/// inventories. Those are rewritten too: container inventories during the chunk scan, and
-/// player inventories on join. Stack size and attributes (e.g. a filled mold's stored
-/// contents) are preserved.</para>
+/// <see cref="IBlockCodeMigration"/> in all loaded assemblies into one legacy-code → replacement
+/// table and rewrites matching blocks as chunk columns load. It matches on <see cref="Block.Code"/>
+/// (not a precomputed id, since the engine renumbers ids on load) so it also catches the
+/// missing-block placeholders the engine keeps for removed codes.
+/// <para>
+/// A plain migration is a bare block-id swap (state reconstructed from the new variant code); one
+/// that also implements <see cref="IBlockEntityMigration"/> gets the old BE's tree handed to it.
+/// Migrated blocks held as item stacks (container BEs, player inventories) are rewritten too,
+/// preserving stack size and attributes.
+/// </para>
 /// </summary>
 public class BlockMigrationModSystem : ModSystem
 {
@@ -49,12 +35,11 @@ public class BlockMigrationModSystem : ModSystem
 
   private ICoreServerAPI _sapi = null!;
 
-  /// <summary>Log prefix, e.g. "[smex]" / "[ppex]" — the owning mod's id.</summary>
+  /// <summary>Log prefix, e.g. "[smex]" / "[ppex]" - the owning mod's id.</summary>
   private string Tag => "[" + Mod.Info.ModID + "]";
 
-  // Legacy block code -> replacement, merged across all discovered migrations. Keyed by
-  // code (not id) because the engine can renumber block ids when it reconciles the save
-  // mapping on load, so a precomputed id would not match what is actually in the chunk.
+  // Legacy block code -> replacement, merged across all discovered migrations. Keyed by code
+  // (not id) because the engine can renumber block ids on load.
   private readonly Dictionary<AssetLocation, RemapEntry> _remap = [];
   private bool _initialized;
 
@@ -65,14 +50,12 @@ public class BlockMigrationModSystem : ModSystem
   public override void StartServerSide(ICoreServerAPI api)
   {
     _sapi = api;
-    // Two passes are needed because the spawn-area chunks are already loaded by the time
-    // this event is wired up, so ChunkColumnLoaded never fires for them:
-    //   - a one-time sweep of all currently-loaded chunks once the world is up, and
-    //   - the event handler for every chunk column that loads afterwards.
+    // Spawn-area chunks are already loaded before this event is wired up, so sweep them once at
+    // RunGame and handle every column that loads afterwards via the event.
     api.Event.ServerRunPhase(EnumServerRunPhase.RunGame, SweepLoadedChunks);
     api.Event.ChunkColumnLoaded += OnChunkColumnLoaded;
-    // Molds (and other migrated blocks) can also sit as item stacks in a player's
-    // inventory; the chunk scan never sees those, so remap them as each player joins.
+    // Migrated blocks can also sit as item stacks in a player's inventory (the chunk scan never
+    // sees those), so remap them on join.
     api.Event.PlayerJoin += OnPlayerJoin;
   }
 
@@ -95,8 +78,7 @@ public class BlockMigrationModSystem : ModSystem
     int chunksTall = _sapi.WorldManager.MapSizeY / GlobalConstants.ChunkSize;
     int total = 0;
 
-    // Copy the keys: ReplaceBlock mutates chunks, and we do not want to enumerate the
-    // live dictionary while that happens.
+    // Copy the keys: ReplaceBlock mutates chunks, so don't enumerate the live dictionary.
     foreach (
       long index2d in _sapi.WorldManager.AllLoadedMapchunks.Keys.ToArray()
     )
@@ -128,7 +110,7 @@ public class BlockMigrationModSystem : ModSystem
   {
     if (!EnsureInitialized())
     {
-      // Nothing in this world matches any migration — stop listening entirely.
+      // Nothing in this world matches any migration - stop listening entirely.
       _sapi.Event.ChunkColumnLoaded -= OnChunkColumnLoaded;
       return;
     }
@@ -160,8 +142,8 @@ public class BlockMigrationModSystem : ModSystem
       if (id == 0)
         continue;
 
-      // Resolve the live block for this id and match on its code, so renumbered ids
-      // (and the missing-block placeholders that keep their original code) are handled.
+      // Resolve the live block and match on its code, so renumbered ids and missing-block
+      // placeholders are both handled.
       Block block = _sapi.World.GetBlock(id);
       if (
         block?.Code == null
@@ -180,10 +162,9 @@ public class BlockMigrationModSystem : ModSystem
       migrated++;
     }
 
-    // Block entities that hold an inventory (chests, ground storage, mold racks, …) can be
-    // storing migrated blocks as item stacks. The voxel loop above only saw the container
-    // block itself, so scan each container's slots too. Snapshot the values first: the
-    // ReplaceBlock calls above may have added/removed entries in this same dictionary.
+    // Container BEs (chests, ground storage, mold racks) can store migrated blocks as item stacks
+    // the voxel loop didn't see, so scan their slots too. Snapshot the values first - ReplaceBlock
+    // above may have mutated this dictionary.
     if (chunk.BlockEntities != null)
       foreach (BlockEntity be in chunk.BlockEntities.Values.ToArray())
         if (be is IBlockEntityContainer { Inventory: { } inv })
@@ -237,15 +218,14 @@ public class BlockMigrationModSystem : ModSystem
       KeyValuePair<string, IInventory> kv in player.InventoryManager.Inventories
     )
     {
-      // The creative inventory is a virtual search list, not real storage, and its Count
-      // getter NREs on the server during join — skip it (nothing migratable lives there).
+      // The creative inventory is a virtual search list whose Count getter NREs on join - skip it.
       if (
         kv.Value is not { } inv
         || inv.ClassName == GlobalConstants.creativeInvClassName
       )
         continue;
 
-      // Be defensive: a single misbehaving (e.g. modded) inventory must not abort the join.
+      // A single misbehaving (e.g. modded) inventory must not abort the join.
       try
       {
         changed += RemapInventory(inv);
@@ -285,9 +265,8 @@ public class BlockMigrationModSystem : ModSystem
       int count = 0;
       foreach (var (oldCode, newCode) in migration.GetRemaps(_sapi))
       {
-        // GetBlock(code) resolves missing-block placeholders too (they are registered in
-        // BlocksByCode), so a null here means this world has no such legacy block — skip
-        // it, which keeps _remap empty when there is nothing to migrate.
+        // GetBlock resolves missing-block placeholders too, so a null means this world has no
+        // such legacy block - skip it.
         if (_sapi.World.GetBlock(oldCode) == null)
           continue;
 
@@ -336,10 +315,9 @@ public class BlockMigrationModSystem : ModSystem
   }
 
   /// <summary>
-  /// Swaps the block at <paramref name="pos"/> for its replacement. For a plain
-  /// (code-only) migration this is a bare <see cref="IBlockAccessor.SetBlock(int,
-  /// BlockPos)"/>; when the migration handles block-entity state, the old entity's tree
-  /// is captured first and applied to the new entity afterwards.
+  /// Swaps the block at <paramref name="pos"/> for its replacement. A plain migration is a bare
+  /// <c>SetBlock</c>; one that handles BE state captures the old entity's tree first and applies it
+  /// to the new entity afterwards.
   /// </summary>
   private void ReplaceBlock(IBlockAccessor ba, BlockPos pos, RemapEntry entry)
   {
@@ -371,8 +349,7 @@ public class BlockMigrationModSystem : ModSystem
     }
   }
 
-  // Scan every loaded assembly, not just this lib's: this system lives in the shared
-  // exlib mod, but the mods that depend on it (ppex, smex) declare their own migrations.
+  // Scan every loaded assembly: this system lives in exlib, but ppex/smex declare their own migrations.
   private static IEnumerable<IBlockCodeMigration> DiscoverMigrations()
   {
     foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())

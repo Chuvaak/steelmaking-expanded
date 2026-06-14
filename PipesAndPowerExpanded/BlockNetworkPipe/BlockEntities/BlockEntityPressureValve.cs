@@ -11,18 +11,12 @@ using Vintagestory.API.MathTools;
 namespace PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 
 /// <summary>
-/// Block entity for the pressure-relief valve — a <em>directional</em> overflow. It
-/// reads the network on its input face (the first letter of the orientation; north in
-/// the default "ns", flipped to south when wrenched to "sn") and, whenever that
-/// network's gas pressure exceeds the valve's player-set <em>gate pressure</em>, spills
-/// the excess (<c>CurrentVolume − gate · MaxVolume</c>) into the network on its output
-/// face. The liquid pool spills the same way once its pump-set feed pressure tops the
-/// gate. If the output face has no network at all it is treated as an open end: the overflow
-/// vents to atmosphere capped like a pipe leak (gas <see cref="PpexValues.GasLeakRate"/>,
-/// liquid <see cref="PpexValues.LiquidLeakRate"/>) and sprays particles out
-/// the open face. The gate defaults to 1 atm and can be dialled in 0.5 atm steps from
-/// <see cref="MinGatePressure"/> up to the valve's own material rating
-/// (iron 5 / steel 10 atm).
+/// Block entity for the pressure-relief valve - a <em>directional</em> overflow. It reads the
+/// network on its input face (orientation[0]; wrench flips "ns" ↔ "sn") and, whenever its
+/// pressure exceeds the player-set gate, spills the excess into the output-face network. Liquid
+/// spills the same way once its pump-set feed pressure tops the gate. With no output network the
+/// output face is an open end: the overflow vents to atmosphere capped at the pipe-leak rate with
+/// particles. The gate defaults to 1 atm, dialled in steps up to the valve's material rating.
 /// </summary>
 [EntityRegister]
 public class BlockEntityPressureValve : BlockEntityPipe
@@ -40,7 +34,7 @@ public class BlockEntityPressureValve : BlockEntityPipe
   /// <summary>Pressure (atm, gauge) above which this valve starts venting.</summary>
   public float GatePressure => _gatePressure;
 
-  /// <summary>The valve's material rating — the highest the gate may be set to.</summary>
+  /// <summary>The valve's material rating - the highest the gate may be set to.</summary>
   public float MaxGatePressure =>
     Block is BlockPressureValve v ? v.BurstPressure : 0f;
 
@@ -91,9 +85,8 @@ public class BlockEntityPressureValve : BlockEntityPipe
     BlockFacing inFace = BlockFacing.FromFirstLetter(valve.Orientation[0]);
     BlockFacing outFace = BlockFacing.FromFirstLetter(valve.Orientation[1]);
 
-    // Only act on networks whose pipe actually presents a connector back at the valve's
-    // input/output face — a pipe merely sitting in the adjacent cell with its connectors
-    // pointing elsewhere is not plumbed into this valve.
+    // Only act on networks whose pipe presents a connector back at the valve's face; one
+    // merely sitting adjacent with connectors elsewhere is not plumbed in.
     var ba = Api.World.BlockAccessor;
     var inNet =
       NetworkSystem?.GetConnectedNetworkAcross(ba, Pos, inFace) as PipeNetwork;
@@ -128,7 +121,7 @@ public class BlockEntityPressureValve : BlockEntityPipe
     if (inState.Volume <= allowed)
       return 0f;
 
-    // Don't push gas into a run that carries water — the receiver would reject it.
+    // Don't push gas into a run that carries water - the receiver would reject it.
     if (outNet?.State is { } os && os.IsLiquid)
       return 0f;
 
@@ -137,19 +130,13 @@ public class BlockEntityPressureValve : BlockEntityPipe
     float temp = inState.Temperature;
     string gasType = inState.MediumType;
 
-    // If there is any output network, push the overflow into it so it is dealt with there.
-    // A sealed run (a chimney/stack drains it) can take the whole excess up to its burst
-    // ceiling. A bare open-ended run can't be pressurised past 1 atm, so we feed it only the
-    // trickle its open ends can shed (GasLeakRatePerOpening) and lift the 1-atm cap for
-    // exactly that much — the gas flows in and leaks back out the far end at the open-end rate
-    // rather than backing up, and the run never climbs toward a burst. A stack is still needed
-    // to vent a run in bulk.
+    // Push the overflow into the output run. A sealed run takes the whole excess up to its
+    // burst ceiling; a leaking run can't be pressurised past 1 atm, so feed it only the
+    // trickle its open ends shed (bypassLeakCap lifts the 1-atm cap for exactly that).
     if (outNet != null)
     {
-      // A never-charged output run has a null State (PipeNetwork creates it lazily on
-      // first production), so branch on the network itself — not on State — or a fresh
-      // output run is mistaken for an open end and the overflow vents to atmosphere
-      // instead of filling the run. TryProduceGas creates the State on demand.
+      // Branch on the network, not State - a never-charged run has a null State (created
+      // lazily on first production) and would be mistaken for an open end.
       bool leaking = outNet.State?.IsLeaking ?? false;
       float push = leaking ? Math.Min(excess, PpexValues.GasLeakRate) : excess;
       float accepted = outNet.ProduceGasMeasured(
@@ -165,8 +152,8 @@ public class BlockEntityPressureValve : BlockEntityPipe
       return accepted;
     }
 
-    // No output network at all — the valve face is itself an open end, so vent to atmosphere
-    // at the small fixed open-end leak rate (a chimney is needed to vent a run in bulk).
+    // No output network - the valve face is an open end, so vent to atmosphere at the fixed
+    // open-end leak rate (a chimney is needed to vent in bulk).
     float vented = inNet!.TryConsumeGas(
       Math.Min(excess, PpexValues.GasLeakRate),
       ba
@@ -210,7 +197,7 @@ public class BlockEntityPressureValve : BlockEntityPipe
     float temp = inState.Temperature;
     float press = inState.Pressure;
 
-    // Don't draw water for a run that carries gas — it can't be deposited and would be lost.
+    // Don't draw water for a run that carries gas - it can't be deposited and would be lost.
     if (outNet?.State is { } os && !os.IsLiquid && os.MediumType.Length > 0)
       return 0f;
 

@@ -61,10 +61,8 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
   private BlockNetworkModSystem? _netSystem;
   private BEBehaviorAnimatable? _animatable;
 
-  // Sound throttles (world-elapsed ms): the refining roar and the molten
-  // filling/pouring hiss are looping ambience, gated so the per-second tick
-  // doesn't spam audio. Filling and pouring are mutually exclusive, so they
-  // share one throttle.
+  // Sound throttles (world-elapsed ms) for the looping ambience. Filling and pouring are
+  // mutually exclusive, so they share _lastMoltenSoundMs.
   private long _lastProcessSoundMs;
   private long _lastFireSoundMs;
   private long _lastMoltenSoundMs;
@@ -78,9 +76,8 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
     _netSystem = api.ModLoader.GetModSystem<BlockNetworkModSystem>();
     _animatable = GetBehavior<BEBehaviorAnimatable>();
 
-    // Establish the structure angle up front so GetGlobalPos resolves
-    // peripherals correctly on the very first production tick (which can fire
-    // before the slower completion tick runs UpdateStructureRotation).
+    // Establish the structure angle up front so GetGlobalPos resolves peripherals on the first
+    // production tick (which can fire before the slower completion tick).
     UpdateStructureRotation();
 
     if (api is ICoreClientAPI capi && _animatable != null)
@@ -94,9 +91,8 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
         )
         ?.ToObject<Shape>();
       if (shape != null)
-        // Use the BlockEntityAnimationUtil overload (CreateMesh): rotation is
-        // applied only by the renderer, not baked into the mesh. Initialize
-        // ShapeAndAnimator does both and would rotate the control 180° off.
+        // Rotation is applied only by the renderer, not baked into the mesh (InitializeShapeAnd-
+        // Animator does both and would rotate the control 180° off).
         _animatable.animUtil.InitializeAnimator(
           "bessemercontrol-" + Block.Variant["side"],
           shape,
@@ -163,10 +159,8 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
       return;
     }
 
-    // Refining only applies to molten iron. Once it has become steel the charge
-    // just waits to be poured; any other metal is foreign. In both cases we stop
-    // here — no blast is drawn, the process clock stops, and (crucially) no
-    // process particles are emitted once the conversion has finished.
+    // Refining applies only to molten iron: steel just waits to be poured, anything else is
+    // foreign. Either way stop here so no blast is drawn and no process particles are emitted.
     if (!IsMoltenIron())
     {
       bool isSteel = _content.Collectible.Code.ToString() == SteelCode;
@@ -206,9 +200,8 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
       0.5f
     );
 
-    // Crackling fire layered over the blast while iron is being blown — the
-    // burning carbon roaring off in the bessemer. Offset from the embers throttle
-    // so the two loops overlap rather than firing in lockstep.
+    // Crackling fire over the blast (the carbon burning off), offset from the embers throttle so
+    // the two loops overlap rather than fire in lockstep.
     ExSounds.PlayThrottled(
       Api,
       Pos.AddCopy(0, 0, 2),
@@ -237,9 +230,8 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
 
     var inputCell = GetMoltenCell(InputTapLocal);
 
-    // Respect the tap's open/closed state. A closed tap's cell keeps receiving
-    // metal from the network (IsPouring only gates the tap's own draining), so we
-    // must check it here or the vessel would fill straight through a shut tap.
+    // Respect the tap's open/closed state: a closed tap's cell still receives metal from the
+    // network, so check it here or the vessel would fill through a shut tap.
     if (inputCell is BlockEntityMoltenCanalTap { IsPouring: false })
     {
       SetStatus(Lang.Get("smex:bessemer-status-filling-tapclosed"));
@@ -333,9 +325,8 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
     float accepted = outputCell.PushMetal(amount, _content, Api.World);
     if (accepted <= 0f)
     {
-      // Output canal is brim-full: keep bathing it in our hot content so it stays
-      // molten and keeps feeding downstream, instead of cooling to a plug while we
-      // wait for it to drain. Mirrors the furnace tap's full-cell heat soak.
+      // Output canal full: keep bathing it in our hot content so it stays molten and keeps
+      // feeding downstream instead of cooling to a plug. Mirrors the furnace tap's heat soak.
       outputCell.SoakHeat(
         Api.World,
         _content.Collectible.GetTemperature(Api.World, _content)
@@ -423,9 +414,8 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
   #endregion
 
   #region Peripheral access
-  // The converter's local frame faces opposite the structure angle, so its global
-  // mapping is the shared rotation taken at _currentAngle + 180 (see the cowper/
-  // converter +180 convention).
+  // The converter's local frame faces opposite the structure angle, so peripherals map at
+  // _currentAngle + 180 (see the +180 convention).
   protected override BlockPos GetGlobalPos(
     int localX,
     int localY,
@@ -448,18 +438,15 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
 
   private float TryConsumeBlast(float amount)
   {
-    // The intake is a fixed connector, not a network node — the blast network
-    // lives in the cell on the other side of its connector face, not in the
-    // intake cell itself.
+    // The intake is a fixed connector, not a node - the blast network lives in the cell across
+    // its connector face, not in the intake cell.
     BlockPos intakePos = PeripheralPos(GasIntakeLocal);
     if (
       Api.World.BlockAccessor.GetBlock(intakePos)
       is not Blocks.BlockConverterIntake intake
     )
       return 0f;
-    // Only draw blast from a network whose pipe actually presents a connector back at the
-    // intake's connector face — air merely sitting in a pipe routed past the intake without
-    // a connector facing it is not plumbed into the converter.
+    // Only draw blast from a network whose pipe presents a connector back at the intake face.
     if (
       _netSystem?.GetConnectedNetworkAcross(
         Api.World.BlockAccessor,
@@ -506,9 +493,8 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
     GetConverter()?.IsConstructed ?? false;
 
   /// <summary>
-  /// The gas intake must face the same way as the control (its <c>side</c> variant
-  /// matches), otherwise its blast connector won't line up with the vessel. The
-  /// multiblock check accepts any orientation, so we validate here.
+  /// The gas intake must face the same way as the control (matching <c>side</c> variant) or its
+  /// blast connector won't line up. The multiblock check accepts any orientation, so validate here.
   /// </summary>
   public bool IsGasIntakeAligned()
   {
@@ -522,10 +508,8 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
   }
 
   /// <summary>
-  /// The transmission must face the same way as the control (its "side" variant
-  /// matches), otherwise the axle connector won't line up under the vessel. The
-  /// multiblock check accepts any orientation, so we validate here — exactly like
-  /// the gas intake.
+  /// The transmission must face the same way as the control (matching "side" variant) or its axle
+  /// connector won't line up. Validated here like the gas intake.
   /// </summary>
   public bool IsTransmissionAligned()
   {
@@ -657,9 +641,8 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
       return false;
     }
 
-    // The converter is a single block that renders across a 3x3x3 volume; that
-    // volume is reserved with invisible filler blocks so the player can't walk
-    // through it or build into it. Make sure every cell is free first.
+    // The converter renders across a 3x3x3 volume reserved with invisible fillers; check every
+    // cell is free first.
     int fillerAngle = ExOrientation.AngleFromSide(converter.Variant["side"]);
     var fillerCells = StructureFillers.FootprintCells(
       converter,
@@ -672,7 +655,7 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
       return false;
     }
 
-    // Creative builders get the vessel for free — no gears/rods needed.
+    // Creative builders get the vessel for free - no gears/rods needed.
     bool isCreative =
       byPlayer.WorldData?.CurrentGameMode == EnumGameMode.Creative;
 
@@ -696,8 +679,7 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
     )
       be.LinkControl(Pos);
 
-    // Reserve the rest of the 3x3x3 volume with filler blocks pointing back at
-    // the converter; breaking any of them breaks the converter.
+    // Reserve the volume with fillers pointing back at the converter; breaking any breaks it.
     StructureFillers.PlaceFillers(Api.World, pos, fillerCells);
 
     if (!isCreative)
@@ -713,8 +695,7 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
     );
   }
 
-  // Spawn materials are deliberately drawn from the hotbar only (the player presents
-  // them), unlike engine repairs which search the whole inventory.
+  // Spawn materials are drawn from the hotbar only (the player presents them), unlike engine repairs.
   private static bool IsSpawnGear(ItemStack stack) =>
     stack.Collectible?.Code?.ToString() == "game:gear-rusty";
 
@@ -807,7 +788,7 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
         {
           Animation = code,
           Code = code,
-          AnimationSpeed = 3.0f, // lever pull — quick
+          AnimationSpeed = 3.0f, // lever pull - quick
           EaseInSpeed = 8f,
           EaseOutSpeed = 8f,
         }.Init()
@@ -839,9 +820,8 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
     if (Block == null)
       return;
 
-    // The control's local frame faces opposite the stored angle: the structure is
-    // initialised at angle + 180 while peripherals compensate the same way in
-    // GetGlobalPos (see the +180 convention note there).
+    // The control's local frame faces opposite the stored angle: init at angle + 180, matched by
+    // GetGlobalPos (the +180 convention).
     SetStructureAngle(
       ExOrientation.AngleFromSide(Block.Variant["side"]),
       initAngleOffset: 180
@@ -860,7 +840,7 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
 
   /// <summary>
   /// Brief setup guidance on the control. The live operational readout (charge,
-  /// process, power, status) is shown on the converter vessel itself — see
+  /// process, power, status) is shown on the converter vessel itself - see
   /// <see cref="AppendStructureState"/>, which the converter forwards to.
   /// </summary>
   public override void GetBlockInfo(IPlayer forPlayer, StringBuilder dsc)
@@ -875,9 +855,8 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
       dsc.AppendLine(Lang.Get("smex:bessemer-info-notbuilt"));
       return;
     }
-    // Converter is in place — its full live readout is displayed on the vessel.
-    // The control just surfaces the mechanical-power state here, since power is
-    // wired to the transmission directly under this block.
+    // The vessel shows the full readout; the control just surfaces power state (wired to the
+    // transmission directly under it).
     dsc.AppendLine(
       Lang.Get(
         "smex:bessemer-info-power",
@@ -916,9 +895,7 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
       return;
     }
 
-    // Only the actual charge (amount/metal/temp) is unique info; the empty and
-    // solidified states are already conveyed by the status line below, so don't
-    // repeat them here.
+    // Only the charge (amount/metal/temp) is unique info; empty/solidified are in the status line.
     if (_content != null && _contentUnits > 0)
     {
       float temp = _content.Collectible.GetTemperature(Api.World, _content);

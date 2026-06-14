@@ -11,12 +11,10 @@ using Vintagestory.API.MathTools;
 namespace PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 
 /// <summary>
-/// Cornish-engine sub-machine: a water pump. The pump is not itself a source of water —
-/// the fluid intake is the generator. While powered, the pump looks for a fluid intake on
-/// the network below it: if there is one, it makes that intake produce water into the
-/// bottom (source) network and transfers the same volume on into the left (water-line)
-/// network at a pressure proportional to the engine's inlet steam. With no intake the
-/// pump still runs (and demands power) but moves nothing.
+/// Engine sub-machine: a water pump. The pump is not the source - the fluid intake is the
+/// generator. While powered it makes an intake on the bottom (source) network produce water and
+/// transfers the same volume into the left (water-line) network at a pressure proportional to the
+/// engine's inlet steam. With no intake it still runs but moves nothing.
 /// </summary>
 [EntityRegister]
 public class BlockEntityEngineFluidPump : BlockEntityEngineSubmachine
@@ -47,8 +45,7 @@ public class BlockEntityEngineFluidPump : BlockEntityEngineSubmachine
 
     float pressure =
       (Engine?.InletPressure ?? 0f) * PpexValues.SteamEngineEfficiency;
-    // Output scales with the engine's absolute mechanical power, so a stronger engine pumps
-    // proportionally more (Watt at 0.3 → 5 L/s, Cornish 0.2/0.4/0.8 → 3.3/6.7/13.3 L/s).
+    // Output scales with the engine's absolute power, so a stronger engine pumps more.
     float amount = PpexValues.PumpWaterPerSecond * power * dt;
 
     float move = Math.Min(amount, OutputFreeCapacity(leftNet));
@@ -93,7 +90,7 @@ public class BlockEntityEngineFluidPump : BlockEntityEngineSubmachine
 
   /// <summary>
   /// Runs a watering trickle loop while the pump is actually drawing water, on top of the
-  /// shared piston-stroke sounds — the same loop the manual fluid pump uses.
+  /// shared piston-stroke sounds - the same loop the manual fluid pump uses.
   /// </summary>
   protected override void OnClientStateTick(float dt)
   {

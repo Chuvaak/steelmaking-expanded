@@ -24,8 +24,7 @@ public class BlockEntityMoltenCanalStart
   // Throttle for the molten-pour sound as metal enters here.
   private long _lastPourSoundMs;
 
-  // The start is a source fitting — it must keep accepting/passing metal, so it
-  // never clogs like a plain canal run.
+  // The start is a source fitting that keeps accepting/passing metal, so it never clogs.
   protected override bool SolidifiesWhenCold => false;
 
   #region ILiquidMetalSink
@@ -40,10 +39,9 @@ public class BlockEntityMoltenCanalStart
     && (CellAmount <= 0f || CellMetalType == metal.Collectible.Code.ToString());
 
   /// <summary>
-  /// Looser than <see cref="CanReceive"/>: also true when the cell is FULL of the
-  /// same metal. The furnace tap uses this so it keeps pouring (transferring heat
-  /// via <see cref="ReceiveLiquidMetal"/>'s soak path) into a brim-full start
-  /// instead of stopping and letting it cool to a plug.
+  /// Looser than <see cref="CanReceive"/>: also true when the cell is FULL of the same metal, so
+  /// the furnace tap keeps pouring (soaking heat via <see cref="ReceiveLiquidMetal"/>) instead of
+  /// letting a brim-full start cool to a plug.
   /// </summary>
   public bool CanReceiveOrSoak(ItemStack metal) =>
     !Solidified
@@ -71,20 +69,16 @@ public class BlockEntityMoltenCanalStart
     }
 
     string type = metal.Collectible.Code.ToString();
-    // Reject only on solidification or a metal-type mismatch. A FULL cell must NOT
-    // bail here: hot metal poured over it still soaks heat in (below), so a start
-    // fed by the furnace stays molten even while it can't accept more volume.
+    // Reject only on solidification or metal-type mismatch - a FULL cell still soaks heat below,
+    // so a start fed by the furnace stays molten even when it can't accept more volume.
     if (Solidified || (CellAmount > 0f && CellMetalType != type))
       return;
 
-    // Use the pour temperature directly (the furnace tap passes the live tap temp),
-    // rather than re-deriving it from the stack.
+    // Use the pour temperature directly (the tap passes the live tap temp).
     int accepted = PushMetalRaw(amount, type, temperature, Api!.World);
     amount -= accepted;
 
-    // Whatever could not be accepted (cell already full) still bathes the cell in
-    // fresh hot metal — soak that heat in so the start never cools to a plug while
-    // the furnace keeps tapping.
+    // Unaccepted overflow still bathes the cell in hot metal - soak that heat so it never plugs.
     bool soaked = amount > 0 && SoakHeat(Api.World, temperature);
 
     if (accepted > 0 || soaked)

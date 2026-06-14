@@ -4,7 +4,7 @@ using Vintagestory.API.Common;
 namespace SteelmakingExpanded;
 
 /// <summary>
-/// JSON-serializable gameplay tunables for Steelmaking Expanded — the "magic
+/// JSON-serializable gameplay tunables for Steelmaking Expanded - the "magic
 /// numbers" that balance the machines and the molten/gas systems. Loaded from
 /// (and written to) <c>ModConfig/smex.json</c>; the property defaults below are
 /// used when the file is missing or a key is absent. Accessed through
@@ -16,10 +16,10 @@ public class SmexConfig
   /// <summary>Temperature cooldown speed applied to molten-metal stacks held by the molten system (canal cells, taps, barrels, molds, the bessemer charge).</summary>
   public float MoltenCooldownSpeed { get; set; } = 24f;
 
-  /// <summary>Max metal (units) that flows across one canal-to-canal connection per second. Higher = metal races down the run before it can cool; balance against <see cref="MoltenCooldownSpeed"/>.</summary>
+  /// <summary>Max metal (units) flowing across one canal connection per second; balance against <see cref="MoltenCooldownSpeed"/>.</summary>
   public int MoltenFlowRate { get; set; } = 50;
 
-  /// <summary>Minimum metal (units) that must be able to move across a canal-to-canal connection for any flow to happen that tick. Stops sub-unit dribbles and keeps cells from endlessly equalising by tiny amounts.</summary>
+  /// <summary>Minimum metal (units) that must move across a canal connection for any flow that tick (stops sub-unit dribbles).</summary>
   public int MoltenMinFlowAmount { get; set; } = 10;
 
   /// <summary>Default per-canal-block capacity (units) when a block sets no <c>maxUnits</c> attribute.</summary>
@@ -64,10 +64,9 @@ public class SmexConfig
   /// <summary>Pressure (atm) at or above which air in a pipe network counts as "blast".</summary>
   public float BlastPressureThreshold { get; set; } = 2.5f;
 
-  /// <summary>Air (L/s) the air blower injects per unit of the engine's mechanical power output —
-  /// output scales directly with that power (Cornish 0.2/0.4/0.8 → 9.6/19.2/38.4 L/s, Watt at
-  /// 0.3 → 14.4 L/s). Output pressure tracks the engine's inlet steam pressure
-  /// × <see cref="PipesAndPowerExpanded.PpexValues.SteamEngineEfficiency"/>.</summary>
+  /// <summary>Air (L/s) the blower injects per unit of engine power (Cornish 0.2/0.4/0.8 →
+  /// 9.6/19.2/38.4 L/s, Watt 0.3 → 14.4 L/s); output pressure tracks the engine's inlet steam ×
+  /// <see cref="PipesAndPowerExpanded.PpexValues.SteamEngineEfficiency"/>.</summary>
   public float AirBlowerOutputPerSecond { get; set; } = 48f;
   #endregion
 
@@ -95,7 +94,7 @@ public class SmexConfig
   /// <summary>Per-second rate the regenerator loses heat into the air it reheats into hot blast.</summary>
   public float CowperCoolingSpeedAir { get; set; } = 0.0012f;
 
-  /// <summary>Gas (L/s) the cowper stove draws each tick from each of its intakes — the furnace exhaust it soaks heat from, and the air it reheats into hot blast.</summary>
+  /// <summary>Gas (L/s) the cowper stove draws each tick from each of its intakes - the furnace exhaust it soaks heat from, and the air it reheats into hot blast.</summary>
   public float CowperIntakeVolume { get; set; } = 24f;
   #endregion
 
@@ -187,7 +186,7 @@ public class SmexConfig
 /// Central, JSON-configurable access point for the mod's gameplay tunables. Call
 /// <see cref="Load"/> once during mod startup; until then (and if the config
 /// fails to load) the hard-coded defaults in <see cref="SmexConfig"/> apply.
-/// Use the members here everywhere in code — e.g. <c>SmexValues.MoltenCooldownSpeed</c>.
+/// Use the members here everywhere in code - e.g. <c>SmexValues.MoltenCooldownSpeed</c>.
 /// </summary>
 public static class SmexValues
 {

@@ -5,7 +5,7 @@ namespace SteelmakingExpanded.BlockNetworkMolten;
 
 /// <summary>
 /// The single definition of how a carried barrel / tool-mold item round-trips its metal
-/// through the stack's <c>blockEntityAttributes</c> tree — the same trees the vanilla
+/// through the stack's <c>blockEntityAttributes</c> tree - the same trees the vanilla
 /// tool mold and this mod's barrel block entity persist, so a parked item placed back
 /// into the world restores seamlessly. The tap, the mold pedestal, the barrel block and
 /// the held-item info all used to hand-roll these reads/writes.
@@ -45,7 +45,7 @@ public static class MoltenContents
   /// stack clean) when there is nothing to carry.
   /// <para>
   /// For molds (<see cref="MoldUnitsKey"/>) the vanilla-compatible <c>shattered</c> and
-  /// <c>meshAngle</c> keys are written too — without <c>meshAngle</c> the vanilla
+  /// <c>meshAngle</c> keys are written too - without <c>meshAngle</c> the vanilla
   /// tool-mold's <c>hasMeshAngle</c> path triggers a server-side block exchange on
   /// placement.
   /// </para>

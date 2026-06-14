@@ -4,18 +4,11 @@ using Vintagestory.API.MathTools;
 namespace ExpandedLib;
 
 /// <summary>
-/// The single source of truth for the mod family's horizontal rotation math. Every
-/// oriented block (boilers, engines, converters, cowper stoves, smoke stacks) places its
-/// fillers, connectors, particle boxes and sub-cells relative to a "north" (0°) layout and
-/// then rotates by the structure's angle. Keeping that rotation in one place means a block
-/// only has to pick the right <em>angle</em> — the translation itself is identical
-/// everywhere, so orientation bugs no longer have to be chased per block.
-/// <para>
-/// All methods share one convention (matching
-/// <see cref="BlockStructures.BlockEntityMultiblockStructure.GetGlobalPos"/>):
-/// north 0°, west 90°, south 180°, east 270°, with
+/// Single source of truth for the mod family's horizontal rotation math. Every oriented block
+/// places its fillers, connectors, particle boxes and sub-cells relative to a "north" (0°) layout
+/// and rotates by the structure's angle, so a block only has to pick the right <em>angle</em>. All
+/// methods share one convention: north 0°, west 90°, south 180°, east 270°, with
 /// <c>(x,z) → 90:(z,-x) · 180:(-x,-z) · 270:(-z,x)</c>.
-/// </para>
 /// </summary>
 public static class ExOrientation
 {
@@ -71,9 +64,8 @@ public static class ExOrientation
   }
 
   /// <summary>
-  /// Reads a single structure-local <c>{ x, y, z }</c> offset from a block's JSON
-  /// attributes (e.g. <c>submachineOffset</c>), falling back to <paramref name="fallback"/>
-  /// when the attribute is absent. Keeps placement offsets data-driven and in one format.
+  /// Reads a structure-local <c>{ x, y, z }</c> offset from a block's JSON attributes, falling
+  /// back to <paramref name="fallback"/> when absent.
   /// </summary>
   public static Vec3i ReadOffset(Block block, string attr, Vec3i fallback)
   {
@@ -88,10 +80,8 @@ public static class ExOrientation
   }
 
   /// <summary>
-  /// Reads a single structure-local <c>{ x, y, z }</c> offset with fractional (block-unit
-  /// double) coordinates from a block's JSON attributes (e.g. <c>cylinderVentOffset</c>),
-  /// falling back to <paramref name="fallback"/> when the attribute is absent. The double
-  /// counterpart of <see cref="ReadOffset"/> for continuous points (particle anchors).
+  /// The fractional (double) counterpart of <see cref="ReadOffset"/>, for continuous points
+  /// (particle anchors). Falls back to <paramref name="fallback"/> when the attribute is absent.
   /// </summary>
   public static Vec3d ReadOffsetD(Block block, string attr, Vec3d fallback)
   {
@@ -106,10 +96,9 @@ public static class ExOrientation
   }
 
   /// <summary>
-  /// Resolves an attribute-declared structure-local offset straight to a world cell:
-  /// <c>origin + RotateOffset(ReadOffset(attr), angle)</c>. The one canonical way a
-  /// machine block turns a JSON offset (firebox, lid, port, sub-machine cell, …) into
-  /// the world position for its placed rotation.
+  /// Resolves an attribute-declared structure-local offset to a world cell:
+  /// <c>origin + RotateOffset(ReadOffset(attr), angle)</c>. The canonical way a machine turns a
+  /// JSON offset into a world position for its placed rotation.
   /// </summary>
   public static BlockPos WorldPosFromAttr(
     Block block,
@@ -126,10 +115,8 @@ public static class ExOrientation
 
   /// <summary>
   /// Returns copies of <paramref name="boxes"/> rotated around the block centre by
-  /// <paramref name="angle"/> degrees (Y axis). JSON collision/selection boxes are
-  /// authored in the north orientation and do not auto-rotate with a placed "side"
-  /// variant, so oriented port blocks rotate them to match the shape's rotateY.
-  /// Returns the input array unchanged for angle 0.
+  /// <paramref name="angle"/>° (Y axis). JSON boxes are authored north-facing and don't auto-rotate
+  /// with the "side" variant, so port blocks rotate them to match. Unchanged for angle 0.
   /// </summary>
   public static Cuboidf[] RotateBoxes(Cuboidf[] boxes, int angle)
   {
@@ -158,11 +145,9 @@ public static class ExOrientation
   }
 
   /// <summary>
-  /// Rotates a block-relative float coordinate around a cell centre by
-  /// <paramref name="angle"/> — the same rotation as <see cref="RotateOffset(Vec3i, int)"/>
-  /// but for continuous coordinates (particle/render boxes). The caller supplies whichever
-  /// angle source is correct for its case (the visual <c>Shape.rotateY</c> or a structure
-  /// angle); the rotation itself is convention-agnostic.
+  /// Rotates a block-relative float coordinate around a cell centre by <paramref name="angle"/> -
+  /// the continuous-coordinate counterpart of <see cref="RotateOffset(Vec3i, int)"/> (particle/
+  /// render boxes). The caller supplies the correct angle source.
   /// </summary>
   public static void RotateAroundCenter(
     ref float x,

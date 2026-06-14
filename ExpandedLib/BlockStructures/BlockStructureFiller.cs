@@ -12,19 +12,16 @@ namespace ExpandedLib.BlockStructures;
 /// occupies (see <see cref="StructureFillers"/>). It renders nothing but provides
 /// real per-cell collision/selection, and reroutes every player-facing operation
 /// to the "principal" controller block recorded on its
-/// <see cref="BlockEntityStructureFiller"/> — mirroring vanilla's
+/// <see cref="BlockEntityStructureFiller"/> - mirroring vanilla's
 /// <c>BlockMPMultiblockGear</c>.
 /// </summary>
 [EntityRegister]
 public class BlockStructureFiller : Block, INetworkConnector
 {
-  // --- INetworkConnector: optional per-cell network port ---
-  // A plain filler is inert (network type ""), so it never affects pipe orientation or
-  // connectivity. A principal can turn one footprint cell into a fixed port by setting
-  // PortFace/PortNetworkType on that cell's BE (e.g. the boiler's steam outlet sits on the
-  // filler directly below the steam pipe); only that cell then reads as a connector, on that
-  // one face. The position-less members below are the inert fallback; the network system uses
-  // the position-aware overloads, which consult the BE.
+  // INetworkConnector: a plain filler is inert (type ""), but a principal can turn one cell into
+  // a fixed port by setting PortFace/PortNetworkType on its BE (e.g. the boiler's steam outlet).
+  // The position-less members are the inert fallback; the network system uses the position-aware
+  // overloads, which consult the BE.
   public string NetworkType => "";
 
   public bool HasConnectorAt(BlockFacing face) => false;
@@ -42,10 +39,9 @@ public class BlockStructureFiller : Block, INetworkConnector
     world.GetBlockEntity(pos) is BlockEntityStructureFiller be
     && be.PortFace == face.Code[0].ToString();
 
-  // Fillers are solid (sidesolid:all) so they collide, but by default they must not
-  // act as an attachment surface — otherwise torches, vines, slabs, etc. could be
-  // hung on the invisible footprint. A cell opts back in via its fillerOffsets
-  // "allowAttach" flag, recorded on the BE at placement time.
+  // Fillers are solid so they collide, but by default aren't an attachment surface (else
+  // torches/vines/slabs could hang on the invisible footprint). A cell opts back in via its
+  // fillerOffsets "allowAttach" flag.
   public override bool CanAttachBlockAt(
     IBlockAccessor blockAccessor,
     Block block,
@@ -69,10 +65,8 @@ public class BlockStructureFiller : Block, INetworkConnector
   }
 
   /// <summary>
-  /// Inherits the principal's interaction sounds (hit, break, place, walk, inside,
-  /// ambient) so the invisible footprint sounds like the block it stands in for —
-  /// otherwise hitting or walking on a filler is silent. Every sound the engine plays
-  /// for a block is resolved through this method.
+  /// Inherits the principal's interaction sounds so the invisible footprint sounds like the block
+  /// it stands in for (otherwise hitting/walking on a filler is silent).
   /// </summary>
   public override BlockSounds GetSounds(
     IBlockAccessor blockAccessor,
@@ -132,19 +126,15 @@ public class BlockStructureFiller : Block, INetworkConnector
     BlockSelection blockSel
   )
   {
-    // A held placeable block means the player wants to build on the footprint, not drive
-    // the principal — skip the forward so the placement runs (the allowAttach branch below,
-    // or base). Liquid containers are the one exception: a held bucket is itself a block,
-    // but the principal (e.g. a boiler pouring from it) needs to see it, so those still
-    // forward.
+    // A held placeable block means the player is building on the footprint, not driving the
+    // principal - skip the forward. Liquid containers are the exception: the principal (e.g. a
+    // boiler pouring from a bucket) still needs to see them, so those forward.
     ItemStack? held = byPlayer.InventoryManager?.ActiveHotbarSlot?.Itemstack;
     bool placingBlock =
       held?.Block != null && held.Collectible is not BlockLiquidContainerBase;
 
-    // Forward to the principal first. If it handles the click (e.g. a boiler pouring from a
-    // held bucket or toggling its lid) we are done. Cell-aware principals
-    // (IFillerInteractionTarget) also get the originally-clicked cell, so they can restrict
-    // an interaction to a specific footprint cell.
+    // Forward to the principal first; if it handles the click we're done. Cell-aware principals
+    // (IFillerInteractionTarget) also get the clicked cell, to restrict an interaction to it.
     if (
       !placingBlock
       && TryGetPrincipal(world, blockSel.Position, out var pp, out var pb)
@@ -158,10 +148,8 @@ public class BlockStructureFiller : Block, INetworkConnector
         return true;
     }
 
-    // The principal didn't handle it. On a cell flagged allowAttach (a buildable
-    // surface, e.g. a boiler's deck), return false so the engine performs its normal
-    // block placement on the filler's face instead of the click being swallowed —
-    // otherwise only sneak+RMB would place a block here.
+    // Unhandled: on an allowAttach cell (a buildable surface), return false so the engine does
+    // its normal placement on the filler's face instead of swallowing the click.
     if (
       world.BlockAccessor.GetBlockEntity(blockSel.Position)
         is BlockEntityStructureFiller be
@@ -169,9 +157,7 @@ public class BlockStructureFiller : Block, INetworkConnector
     )
       return false;
 
-    // Cell is not a buildable surface: swallow a block-placement click so the engine
-    // can't drop a block on the filler's face. Other interactions still fall through
-    // to base.
+    // Non-buildable cell: swallow a block-placement click so no block drops on the filler's face.
     if (placingBlock)
       return true;
 
@@ -260,9 +246,8 @@ public class BlockStructureFiller : Block, INetworkConnector
     float dropQuantityMultiplier = 1f
   )
   {
-    // Breaking any filler breaks the whole structure: forward to the principal,
-    // whose OnBlockBroken clears every filler cell (including this one) via
-    // StructureFillers.RemoveFillers. Orphaned fillers fall back to a plain remove.
+    // Breaking any filler breaks the whole structure: the principal's OnBlockBroken clears every
+    // filler cell via StructureFillers.RemoveFillers. Orphaned fillers fall back to a plain remove.
     if (!TryGetPrincipal(world, pos, out var pp, out var pb))
     {
       base.OnBlockBroken(world, pos, byPlayer, dropQuantityMultiplier);
@@ -270,8 +255,7 @@ public class BlockStructureFiller : Block, INetworkConnector
     }
     pb.OnBlockBroken(world, pp, byPlayer, dropQuantityMultiplier);
 
-    // Safety net: if the principal's break did not clear us (e.g. mismatched
-    // footprint), make sure this cell does not linger as an orphan filler.
+    // Safety net: if the principal's break didn't clear us, don't linger as an orphan.
     if (world.BlockAccessor.GetBlock(pos).Id == BlockId)
       world.BlockAccessor.SetBlock(0, pos);
   }

@@ -15,7 +15,7 @@ public struct FillQuadDef
 
 /// <summary>
 /// Reads the molten-surface fill geometry attributes (<c>fillQuadsByLevel</c>,
-/// <c>fillStart</c>, <c>fillHeight</c> — or a prefixed variant like the pedestal's
+/// <c>fillStart</c>, <c>fillHeight</c> - or a prefixed variant like the pedestal's
 /// <c>moldFill*</c>) that every molten container block declares for its
 /// <see cref="MoltenRenderer"/>. One reader for the canal, tap, pedestal and barrel,
 /// which each carried their own copy of this parsing.

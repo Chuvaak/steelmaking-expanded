@@ -42,8 +42,8 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
   /// <summary>This cell's metal temperature (°C), updated from <see cref="_cellMetalStack"/> each tick.</summary>
   public float CellTemperature => _cellTemperature;
 
-  // Server-side temperature carrier: an ItemStack so VS applies time-based
-  // cooling. Null on clients and when the cell is empty; rebuilt lazily on load.
+  // Server-side temperature carrier: an ItemStack so VS applies time-based cooling. Null on
+  // clients and when empty; rebuilt lazily on load.
   private ItemStack? _cellMetalStack;
   private float _cellTemperature;
 
@@ -62,7 +62,7 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
 
   /// <summary>
   /// A sealed node severs connectivity at its position (manual valve), and so does
-  /// a solidified one — a hardened cell must not pass metal or pull freshly placed
+  /// a solidified one - a hardened cell must not pass metal or pull freshly placed
   /// neighbours into itself. Clear it with a chisel + hammer
   /// (see <see cref="ClearSolidified"/>) or break it to restore flow.
   /// </summary>
@@ -72,11 +72,9 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
   public bool HasMoltenMetal => !Solidified && CellAmount > 0f;
 
   /// <summary>
-  /// Whether this cell's metal has cooled enough to be chiselled out — fully
-  /// hardened below 0.3 × its melting point. A just-solidified cell (below the
-  /// melting point yet still glowing hot) already blocks flow, but is too hot to
-  /// chip out until it reaches this point. Works on both sides (melting point is
-  /// resolved from <see cref="CellMetalType"/>, which is synced).
+  /// Whether this cell's metal has cooled enough to be chiselled out (below the hardened
+  /// threshold × melting point). A just-solidified cell blocks flow but is too hot to chip out
+  /// until then. Works on both sides (melting point resolves from the synced <see cref="CellMetalType"/>).
   /// </summary>
   public bool IsHardened
   {
@@ -97,19 +95,16 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
 
   #region Incandescent block light
   /// <summary>
-  /// Block-light value (0–24) this cell emits from its hot metal (the shared
-  /// <see cref="MoltenMetal.GlowLevel"/> scale). Read by
-  /// <see cref="Blocks.BlockMoltenCanal.GetLightHsv"/>; 0 when empty or cool.
-  /// Liquid or solidified — a freshly hardened cell still glows until it cools.
+  /// Block-light value (0-24) this cell emits from its hot metal. Read by
+  /// <see cref="Blocks.BlockMoltenCanal.GetLightHsv"/>; 0 when empty. A hardened cell still glows
+  /// until it cools.
   /// </summary>
   public byte GlowLightLevel =>
     CellAmount > 0 ? MoltenMetal.GlowLevel(_cellTemperature) : (byte)0;
 
   /// <summary>
-  /// Re-lights the block when the emitted glow level has shifted from
-  /// <paramref name="oldGlow"/>. The block id doesn't change, so the engine won't
-  /// relight on its own — we nudge it via <c>MarkBlockDirty</c> exactly like the
-  /// heat sink does.
+  /// Re-lights the block via <c>MarkBlockDirty</c> when the glow level shifted from
+  /// <paramref name="oldGlow"/> (the block id doesn't change, so the engine won't relight on its own).
   /// </summary>
   private void RelightIfGlowChanged(byte oldGlow)
   {
@@ -119,17 +114,15 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
   #endregion
 
   /// <summary>
-  /// Whether this cell latches <see cref="Solidified"/> when its metal cools below
-  /// the melting point. Plain canal runs do (they clog and must be chiselled);
-  /// functional fittings (start, tap, mold pedestal) are sinks/sources, not
-  /// storage, so they override this to keep passing metal even when it has cooled.
+  /// Whether this cell latches <see cref="Solidified"/> when its metal cools below the melting
+  /// point. Plain canals do (they clog); functional fittings (start, tap, pedestal) override this
+  /// to keep passing metal even when cool.
   /// </summary>
   protected virtual bool SolidifiesWhenCold => true;
 
   /// <summary>
-  /// Seals or unseals this canal, then re-registers the node so the network graph
-  /// splits around the seal (<c>RemoveNode</c> runs fracture detection) or rejoins
-  /// the two runs when the seal is removed (<c>AddNode</c> merges the neighbours).
+  /// Seals or unseals this canal, then re-registers the node so the graph splits around the seal
+  /// (or rejoins when removed).
   /// </summary>
   public void SetSealed(bool sealedState)
   {
@@ -143,11 +136,8 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
   }
 
   /// <summary>
-  /// Re-walks the network graph at this position so a change to
-  /// <see cref="IsConnectionBroken"/> (seal, tap close, …) splits or rejoins the
-  /// run immediately instead of waiting for the next placement/break.
-  /// <c>RemoveNode</c> runs fracture detection; <c>AddNode</c> re-merges (or, for a
-  /// now-broken node, isolates it). Server-side only.
+  /// Re-walks the graph at this position so a change to <see cref="IsConnectionBroken"/> (seal, tap
+  /// close, …) splits or rejoins the run immediately. Server-side only.
   /// </summary>
   protected void ResyncNetworkNode()
   {
@@ -254,11 +244,9 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
   }
 
   /// <summary>
-  /// Raises this cell's temperature toward <paramref name="incomingTemp"/> without
-  /// adding any volume. Models hot metal poured over an already-full cell: the pour
-  /// keeps bathing the surface, so a continuously-fed fitting stays molten instead
-  /// of cooling to a solid plug once it can no longer accept more metal. Returns
-  /// true if the temperature was raised. Server-side.
+  /// Raises this cell's temperature toward <paramref name="incomingTemp"/> without adding volume -
+  /// hot metal poured over an already-full cell, so a continuously-fed fitting stays molten instead
+  /// of plugging. Returns true if raised. Server-side.
   /// </summary>
   internal bool SoakHeat(IWorldAccessor world, float incomingTemp)
   {
@@ -331,10 +319,9 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
 
   #region Solidified clearing / drops
   /// <summary>
-  /// Server-side: chips the hardened metal out of <em>this cell only</em> — returns
-  /// the recoverable solid-metal drop, empties the cell and lifts its solidified
-  /// latch, then rebuilds so the freed cell rejoins the run. Returns <c>null</c>
-  /// off-server or when this cell isn't solidified.
+  /// Server-side: chips the hardened metal out of this cell - returns the recoverable drop, empties
+  /// the cell, lifts its latch, and rebuilds so it rejoins the run. Returns <c>null</c> off-server
+  /// or when not solidified.
   /// </summary>
   public ItemStack? ClearSolidified()
   {
@@ -346,7 +333,7 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     Solidified = false;
     MarkDirty(true);
 
-    // No longer broken — rebuild so this cell re-merges with its neighbours.
+    // No longer broken - rebuild so this cell re-merges with its neighbours.
     if (NetworkSystem != null && Api.World?.BlockAccessor is { } ba)
       NetworkSystem.RebuildFromRoot(ba, Pos, NetworkType);
 
@@ -387,14 +374,10 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     ITesselatorAPI tesselator
   )
   {
-    // Recompute open faces from the current neighbours every tessellation rather
-    // than trusting the cached value. On chunk load the cache is populated before
-    // adjacent blocks (especially across a chunk boundary) are available, capping
-    // a face that is actually connected. The engine re-tessellates edge blocks
-    // once the neighbour chunk arrives, but that re-bakes the same stale cache —
-    // so the wrong cap persists until a network broadcast (e.g. pouring metal)
-    // happens to refresh it. Refreshing here lets that automatic re-tessellation
-    // self-correct without needing a broadcast.
+    // Recompute open faces every tessellation, not from the cache: on chunk load the cache is
+    // populated before cross-boundary neighbours exist, capping a connected face. The engine
+    // re-tessellates edge blocks once the neighbour chunk arrives, so refreshing here self-corrects
+    // without needing a network broadcast.
     RefreshOpenConnectorFaces();
 
     var baseShapeLoc = new AssetLocation(
@@ -470,8 +453,7 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
       return;
     }
 
-    // A sealed canal cuts itself off from the network, so every connector face is a
-    // capped end regardless of its neighbours — that capping is the visible seal.
+    // A sealed canal caps every connector face regardless of neighbours - the visible seal.
     if (Sealed)
     {
       BlockFacing[]? faces = netBlock.GetConnectorFaces();
@@ -600,21 +582,20 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     _cellTemperature = tree.GetFloat("cellTemperature");
     // _cellMetalStack is rebuilt lazily server-side in EnsureMetalStack.
 
-    // Invariant: an empty cell is never solidified (also scrubs phantom solid
-    // flags from pre-per-cell saves, whose metal didn't carry over).
+    // Invariant: an empty cell is never solidified (also scrubs phantom flags from old saves).
     if (CellAmount <= 0f)
     {
       Solidified = false;
       CellMetalType = "";
     }
 
-    // Authoritative state has arrived — drop any client-predicted pour fill.
+    // Authoritative state has arrived - drop any client-predicted pour fill.
     _pendingFillAmount = 0f;
 
     RefreshOpenConnectorFaces();
     UpdateRenderer();
 
-    // Client received new authoritative state — re-light if the glow level moved.
+    // Client received new authoritative state - re-light if the glow level moved.
     if (Api?.Side == EnumAppSide.Client)
       RelightIfGlowChanged(oldGlow);
   }

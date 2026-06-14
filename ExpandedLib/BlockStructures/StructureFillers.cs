@@ -16,18 +16,16 @@ public readonly record struct FillerOffset(Vec3i Offset, bool AllowAttach);
 public readonly record struct FillerCell(BlockPos Pos, bool AllowAttach);
 
 /// <summary>
-/// Shared helper for the invisible mega-block footprint system. A mega-block
-/// (bessemer converter, lancashire boiler) occupies a single grid cell but renders
-/// across many; collision and selection are resolved per cell, so the surrounding
-/// cells are filled with <see cref="BlockStructureFiller"/> placeholders that
-/// provide real collision and reroute interaction/break/info to the principal.
+/// Shared helper for the invisible mega-block footprint system. A mega-block occupies one grid
+/// cell but renders across many; since collision resolves per cell, the surrounding cells are
+/// filled with <see cref="BlockStructureFiller"/> placeholders that provide real collision and
+/// reroute interaction/break/info to the principal.
 /// </summary>
 public static class StructureFillers
 {
   /// <summary>
-  /// Asset code of the invisible filler block. The Expanded Lib mod (<c>exlib</c>) ships
-  /// the one shared <c>structurefiller</c> block and points this at it during
-  /// <see cref="ExpandedLibModSystem.Start"/>; every dependent mod's mega-blocks reuse it.
+  /// Asset code of the invisible filler block. <c>exlib</c> ships the one shared
+  /// <c>structurefiller</c> block and points this at it; every dependent mod reuses it.
   /// </summary>
   public static AssetLocation FillerCode { get; set; } =
     new("exlib:structurefiller");

@@ -5,7 +5,7 @@ namespace ExpandedLib;
 
 /// <summary>
 /// Shared item-stack lookups for interaction help. Results are cached in the API's
-/// <c>ObjectCache</c>, which lives exactly as long as the game session/world — a plain
+/// <c>ObjectCache</c>, which lives exactly as long as the game session/world - a plain
 /// static cache would hand out stacks of a previous world's items after rejoining.
 /// </summary>
 public static class ExItems
@@ -13,7 +13,7 @@ public static class ExItems
   private const string WrenchCacheKey = "exlib:wrenchStacks";
 
   /// <summary>
-  /// One stack per registered wrench item (code path containing "wrench" — the same
+  /// One stack per registered wrench item (code path containing "wrench" - the same
   /// test the engine repair applies to the held tool), for "rotate"/"repair"
   /// interaction-help icons.
   /// </summary>

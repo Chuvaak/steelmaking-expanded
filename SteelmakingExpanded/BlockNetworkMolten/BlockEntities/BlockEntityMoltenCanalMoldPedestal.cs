@@ -32,20 +32,17 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
       if (_isPouring == value)
         return;
       _isPouring = value;
-      // Open/closed flips IsConnectionBroken, so re-walk the graph to sever the
-      // pedestal from (or rejoin it to) the run. No-op off-server / before
-      // Initialize, where base.Initialize's AddNode registers the right state.
+      // Open/closed flips IsConnectionBroken, so re-walk the graph to sever/rejoin the pedestal.
+      // No-op off-server / before Initialize (where base.Initialize's AddNode handles it).
       ResyncNetworkNode();
     }
   }
 
-  // The pedestal is a drain fitting — its cell must keep delivering to the mold,
-  // so it never clogs like a plain canal run.
+  // The pedestal is a drain fitting that keeps delivering to the mold, so it never clogs.
   protected override bool SolidifiesWhenCold => false;
 
-  // A closed pedestal severs itself from the run (it's a single-connector leaf) so
-  // no metal flows into its cell — IsPouring otherwise only gates its own draining
-  // into the mold, leaving the cell to keep filling from the network.
+  // A closed pedestal severs itself from the run (single-connector leaf) so no metal flows into
+  // its cell - otherwise IsPouring only gates draining into the mold, leaving the cell to fill.
   public override bool IsConnectionBroken() =>
     base.IsConnectionBroken() || !IsPouring;
 
@@ -87,10 +84,8 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
     if (api.Side == EnumAppSide.Server)
       RegisterGameTickListener(OnServerTick, 1000);
     else
-      // The mold metal keeps cooling after the pour stops broadcasting (full /
-      // hardened), so refresh the surface glow on the client from the stack's live
-      // temperature — otherwise it freezes at the last server value and snaps cold
-      // on the next interaction.
+      // Mold metal keeps cooling after the pour stops broadcasting, so refresh the surface glow
+      // from the stack's live temperature, or it freezes hot and snaps cold on interaction.
       RegisterGameTickListener(_ => UpdateRenderer(), 1000);
   }
 
@@ -277,8 +272,7 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
   {
     base.OnTesselation(mesher, tesselator);
 
-    // When pouring is disabled, cap the inlet with the canal end piece — same as
-    // the canal tap — so a paused pedestal visually reads as closed.
+    // Pouring disabled: cap the inlet with the canal end piece so it reads as closed (like the tap).
     if (!IsPouring)
     {
       if (_endMesh == null && Orientation != null)
@@ -307,8 +301,7 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
       tesselator.TesselateBlock(MoldStack.Block, out _moldMesh);
       _tessellatedMoldCode = MoldStack.Block.Code;
 
-      // Pedestal main body tops out at y = 11/16; translate the mold mesh up
-      // so it rests on the stone surface rather than floating at block origin.
+      // Body tops out at y = 11/16; raise the mold mesh so it rests on the surface.
       _moldMesh.Translate(0f, 11f / 16f, 0f);
 
       float rotY = (Block?.Shape?.rotateY ?? 0f) * GameMath.DEG2RAD;

@@ -3,8 +3,8 @@ using ExpandedLib.EntityRegistry;
 namespace PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 
 /// <summary>
-/// The Watt engine — the cheap, iron-buildable, low-pressure tier. Runs on the
-/// pressures a Cornish boiler supplies (2–4 atm band) but is thirsty: it draws a fixed
+/// The Watt engine - the cheap, iron-buildable, low-pressure tier. Runs on the
+/// pressures a Cornish boiler supplies (2-4 atm band) but is thirsty: it draws a fixed
 /// 30 L/s of steam while running and has no control rods. All behavior lives in
 /// <see cref="BlockEntityEngine"/>.
 /// </summary>

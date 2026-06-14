@@ -9,10 +9,9 @@ using Vintagestory.API.Common;
 namespace PipesAndPowerExpanded;
 
 /// <summary>
-/// Main mod system for Pipes and Power Expanded. Loads the gameplay tunables, points the
-/// shared structure-filler at this mod's own filler block, auto-registers every
-/// <see cref="EntityRegisterAttribute"/>-decorated class, adds the creative tab, and
-/// registers the unified "pipe" network type that carries both gases and liquids.
+/// Main mod system for Pipes and Power Expanded. Loads the gameplay tunables, patches the vanilla
+/// chimney look-at info, auto-registers every <see cref="EntityRegisterAttribute"/>-decorated
+/// class, adds the creative tab, and registers the unified "pipe" network type (gases + liquids).
 /// </summary>
 public class PipesAndPowerExpandedModSystem : ModSystem
 {

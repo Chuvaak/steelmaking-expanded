@@ -12,13 +12,10 @@ using Vintagestory.GameContent;
 namespace PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 
 /// <summary>
-/// A manually-toggled in-line valve. While open it is a normal pipe node and the run
-/// flows straight through it as one network — so a machine port butted against it reads
-/// the run directly. While closed it severs the run at its own cell
-/// (<see cref="IsConnectionBroken"/>), splitting it in two; toggling re-walks the graph
-/// to apply the change. The open/closed state lives on the block entity and is shown by
-/// holding the shape's <c>open</c> animation pose (driven through the
-/// <see cref="BEBehaviorAnimatable"/> behavior).
+/// A manually-toggled in-line valve. Open, it is a normal pipe node and the run flows straight
+/// through it as one network; closed, it severs the run at its own cell
+/// (<see cref="IsConnectionBroken"/>), splitting it in two. Toggling re-walks the graph. The
+/// state is shown by holding the shape's <c>open</c> animation pose.
 /// </summary>
 [EntityRegister]
 public class BlockEntityValve : BlockEntityPipe
@@ -64,8 +61,7 @@ public class BlockEntityValve : BlockEntityPipe
     if (shape == null)
       return;
 
-    // Rotation is applied by the renderer (per-orientation rotateX/Y from the
-    // blocktype), not baked into the mesh — same approach as the bessemer parts.
+    // Rotation is applied by the renderer (per-orientation), not baked into the mesh.
     _animatable?.animUtil.InitializeAnimator(
       "gasvalve-" + Block.Variant["orientation"],
       shape,
@@ -73,13 +69,9 @@ public class BlockEntityValve : BlockEntityPipe
       new Vec3f(Block.Shape.rotateX, Block.Shape.rotateY, Block.Shape.rotateZ)
     );
 
-    // AnimatableRenderer only honours the Y component of that rotation vector;
-    // rotateX/rotateZ are silently dropped. The vertical valve variants (ud/du) place
-    // their pipe along rotateX=90, so the held "open" pose rendered flat (horizontal)
-    // while the static closed mesh — rotated by the chunk tesselator — stayed vertical,
-    // making an opening valve appear to snap sideways. Drive the full rotation through
-    // the renderer's CustomTransform instead, replicating the exact model-space rotation
-    // the tesselator bakes into a block's CompositeShape so every orientation matches.
+    // AnimatableRenderer only honours the Y rotation; rotateX/Z are dropped, so the vertical
+    // valve variants (ud/du, pipe along rotateX=90) rendered the "open" pose flat while the
+    // static mesh stayed vertical. Drive the full rotation through CustomTransform instead.
     if (_animatable?.animUtil.renderer is { } renderer)
       renderer.CustomTransform = BuildShapeRotationTransform(
         Block.Shape.rotateX,
@@ -92,12 +84,9 @@ public class BlockEntityValve : BlockEntityPipe
   }
 
   /// <summary>
-  /// Builds the model→world matrix that matches how the chunk tesselator rotates a
-  /// block's <see cref="Vintagestory.API.Common.CompositeShape"/>:
-  /// <c>T(centre) · RotateXYZ · T(-centre)</c> about the block centre (0.5, 0.5, 0.5),
-  /// with X→Y→Z applied in the same order as <c>MeshData.Rotate</c>. Assigned to the
-  /// animator renderer's <c>CustomTransform</c> so the animated pose lines up with the
-  /// static block mesh in every orientation, including the vertical ones.
+  /// Builds the model→world matrix matching how the chunk tesselator rotates a CompositeShape:
+  /// <c>T(centre) · RotateXYZ · T(-centre)</c> about (0.5, 0.5, 0.5), X→Y→Z order. Assigned to
+  /// the renderer's <c>CustomTransform</c> so the animated pose lines up in every orientation.
   /// </summary>
   private static float[] BuildShapeRotationTransform(
     float rotXDeg,
@@ -122,15 +111,9 @@ public class BlockEntityValve : BlockEntityPipe
   }
 
   /// <summary>
-  /// A wrench rotates the valve via <c>ExchangeBlock</c>, which swaps the block to
-  /// the new orientation variant but keeps this block entity alive — so
-  /// <see cref="Initialize"/> never re-runs and the animator stays bound to the
-  /// <em>original</em> orientation's renderer rotation. The static mesh
-  /// re-tessellates into the new facing while the held "open" pose kept rendering
-  /// in the old one, making the valve appear to flip between orientations as it
-  /// was toggled. Re-bind the animator to the new block's rotation (the core
-  /// <c>InitializeAnimator</c> disposes the stale renderer first) and restore the
-  /// current pose. Fires on both sides; only the client has an animator.
+  /// A wrench rotates the valve via <c>ExchangeBlock</c>, which keeps this BE alive so
+  /// <see cref="Initialize"/> never re-runs and the animator stays bound to the original
+  /// orientation. Re-bind the animator to the new block's rotation and restore the pose.
   /// </summary>
   public override void OnExchanged(Block block)
   {
@@ -138,11 +121,8 @@ public class BlockEntityValve : BlockEntityPipe
 
     if (Api is ICoreClientAPI capi && _animatable != null)
     {
-      // Only re-init when the orientation actually changed. A network re-walk can
-      // re-exchange the valve to an equivalent orientation variant (e.g. ns<->sn);
-      // re-initing the animator every time would reset the held "open" pose to its
-      // start, making the valve appear to reset its position and re-open over and
-      // over while gas flows.
+      // Only re-init on a real orientation change. A network re-walk can re-exchange to an
+      // equivalent variant (ns<->sn); re-initing each time would reset the "open" pose.
       if (
         _animatorReady
         && _animatorOrientation == block.Variant["orientation"]
@@ -163,8 +143,8 @@ public class BlockEntityValve : BlockEntityPipe
     _open = !_open;
     MarkDirty(true);
 
-    // RemoveNode runs fracture detection (closing splits the run); AddNode re-merges with
-    // both sides when open, or re-isolates the cell when closed (IsConnectionBroken).
+    // RemoveNode runs fracture detection (closing splits the run); AddNode re-merges both
+    // sides when open, or re-isolates the cell when closed.
     if (
       Api?.Side == EnumAppSide.Server
       && NetworkSystem != null
@@ -182,12 +162,9 @@ public class BlockEntityValve : BlockEntityPipe
   }
 
   /// <summary>
-  /// Drops any cached/persisted network pool. A closed valve is an isolated single cell
-  /// that holds nothing, but closing severs it without a broadcast — so the pressurised
-  /// <see cref="PipeNetworkState"/> it cached while open (part of a charged run) lingers in
-  /// <c>_savedNetworkState</c>, gets serialised, and is restored into the isolated cell on
-  /// reload, immediately over-pressuring and bursting it. Clearing it keeps closed-valve
-  /// saves empty and the display honest.
+  /// Drops any cached/persisted network pool. Closing severs the cell without a broadcast, so the
+  /// pressurised state it cached while open would otherwise serialise and be restored into the
+  /// isolated cell on reload, bursting it. Clearing keeps closed-valve saves empty.
   /// </summary>
   private void DiscardNetworkPool()
   {
@@ -227,8 +204,7 @@ public class BlockEntityValve : BlockEntityPipe
         Lang.Get(_open ? "ppex:valve-open" : "ppex:valve-closed")
       )
     );
-    // Open, the valve is part of the run, so the base pipe info reports what flows
-    // through it; closed, it is isolated and reads empty.
+    // Open, the base pipe info reports what flows through; closed, it reads empty.
     base.GetBlockInfo(forPlayer, dsc);
   }
 
@@ -250,9 +226,8 @@ public class BlockEntityValve : BlockEntityPipe
     base.FromTreeAttributes(tree, worldForResolving);
     bool prev = _open;
     _open = tree.GetBool("valveOpen");
-    // Closed at save time → the cell was isolated and holds nothing. Drop any persisted
-    // pool (base just read it from the tree) before Initialize captures it for restore, so
-    // a stale pressurised state saved while the valve was open can't burst the cell on load.
+    // Closed at save time → isolated cell holds nothing. Drop any persisted pool before
+    // Initialize captures it for restore, so a stale pressurised state can't burst it on load.
     if (!_open)
       DiscardNetworkPool();
     if (Api?.Side == EnumAppSide.Client && prev != _open)

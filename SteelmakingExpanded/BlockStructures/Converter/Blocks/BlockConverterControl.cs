@@ -7,7 +7,7 @@ using Vintagestory.API.Common;
 namespace SteelmakingExpanded.BlockStructures.Converter.Blocks;
 
 /// <summary>
-/// The bessemer control block — the operator interface and "brain" anchor of the
+/// The bessemer control block - the operator interface and "brain" anchor of the
 /// converter multiblock. Routes player input to the <see cref="BlockEntityConverterControl"/>:
 /// inspecting the structure while building, and selecting the Normal/Filling/Pouring
 /// state once complete.
@@ -30,7 +30,7 @@ public class BlockConverterControl : Block
     var controls = byPlayer.Entity.Controls;
 
     // Ctrl+Shift shows the structure projection while still building (handled by the
-    // shared MultiblockStructure behavior — defer to base so it receives the click).
+    // shared MultiblockStructure behavior - defer to base so it receives the click).
     // Once complete, Sprint/Sneak select the operating state, so stop intercepting.
     if (controls.CtrlKey && controls.ShiftKey && !be.StructureComplete)
       return base.OnBlockInteractStart(world, byPlayer, blockSel);
@@ -60,7 +60,7 @@ public class BlockConverterControl : Block
     if (target == ConverterOpState.Pouring)
     {
       if (be.OpState == ConverterOpState.Pouring)
-        return false; // already pouring — nothing to hold for
+        return false; // already pouring - nothing to hold for
       if (!be.CanOperate(out string pourError))
       {
         if (world.Side == EnumAppSide.Client && pourError.Length > 0)
@@ -73,7 +73,7 @@ public class BlockConverterControl : Block
       return true; // continue into OnBlockInteractStep
     }
 
-    // Normal / Filling are non-destructive — apply immediately on click.
+    // Normal / Filling are non-destructive - apply immediately on click.
     if (be.TrySetState(byPlayer, target, out string error))
     {
       (byPlayer as IClientPlayer)?.TriggerFpAnimation(
@@ -112,7 +112,7 @@ public class BlockConverterControl : Block
     if (secondsUsed < SmexValues.BessemerPourHoldSeconds)
       return true; // keep holding
 
-    // Held long enough — commit the pour (TrySetState re-validates internally).
+    // Held long enough - commit the pour (TrySetState re-validates internally).
     be.TrySetState(byPlayer, ConverterOpState.Pouring, out _);
     return false;
   }

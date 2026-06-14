@@ -13,17 +13,12 @@ using Vintagestory.GameContent;
 namespace PipesAndPowerExpanded.BlockStructures.ManualPump.BlockEntities;
 
 /// <summary>
-/// The manual (hand-cranked) fluid pump. A player-operated counterpart to the engine fluid pump:
-/// it draws no power and is worked by holding right-click on the block (or its top filler).
-/// While cranked it transfers water from the fluid intake on its <em>input</em> line into its
-/// <em>output</em> line at a fixed 1 atm — a manual way to start a boiler's water loop without
-/// hauling buckets, before any steam engine exists.
-/// <para>
-/// Like the engine pump, the pump is not the source of water — the
-/// <see cref="BlockEntityFluidIntake"/> on the input network is the generator. Each work tick the
-/// standing water on the input line is moved out into the output line first, then the intake
-/// refills the input line (see [[ppex-fluidpump-intake-transfer]]).
-/// </para>
+/// The manual (hand-cranked) fluid pump. A no-power counterpart to the engine fluid pump, worked
+/// by holding right-click on the block (or its top filler). While cranked it transfers water from
+/// the fluid intake on its input line into its output line at a fixed 1 atm - a manual way to
+/// start a boiler's water loop before any steam engine exists. The pump is not the source: the
+/// <see cref="BlockEntityFluidIntake"/> on the input network is the generator, and each tick the
+/// standing input water is moved out first, then the intake refills it.
 /// </summary>
 [EntityRegister]
 public class BlockEntityManualFluidPump : BlockEntity
@@ -37,9 +32,8 @@ public class BlockEntityManualFluidPump : BlockEntity
   /// <summary>True while the pump has an active intake on its input line and is moving water.</summary>
   private bool _drawingWater;
 
-  // Server-side watchdog: world ms of the last interaction step. The interaction stop event
-  // normally clears _pumping, but if it is ever missed (player teleport/death/disconnect mid-hold)
-  // the work tick stops the pump once the held interaction has clearly lapsed.
+  // Server-side watchdog: world ms of the last interaction step. The stop event normally clears
+  // _pumping, but if it's missed (teleport/death/disconnect mid-hold) the work tick stops the pump.
   private long _lastStepMs;
   private long _serverTickId;
 
@@ -54,11 +48,11 @@ public class BlockEntityManualFluidPump : BlockEntity
   /// <summary>Horizontal placement angle (north 0, west 90, south 180, east 270).</summary>
   private int Angle => ExOrientation.AngleFromSide(Block.Variant["side"]);
 
-  /// <summary>The input (water source) connector face — south in the north orientation.</summary>
+  /// <summary>The input (water source) connector face - south in the north orientation.</summary>
   private BlockFacing InputFace =>
     ExOrientation.RotateFacing(BlockFacing.SOUTH, Angle);
 
-  /// <summary>The output (delivery) connector face — north in the north orientation.</summary>
+  /// <summary>The output (delivery) connector face - north in the north orientation.</summary>
   private BlockFacing OutputFace =>
     ExOrientation.RotateFacing(BlockFacing.NORTH, Angle);
 
@@ -68,8 +62,7 @@ public class BlockEntityManualFluidPump : BlockEntity
 
     if (api.Side == EnumAppSide.Server)
     {
-      // A pump can never be mid-crank right after load (nobody is holding the button), so
-      // ignore any persisted run state; the work tick's watchdog also self-heals it.
+      // Nobody is holding the button right after load, so ignore any persisted run state.
       _pumping = false;
       _drawingWater = false;
       _netSystem = api.ModLoader.GetModSystem<BlockNetworkModSystem>();
@@ -123,8 +116,7 @@ public class BlockEntityManualFluidPump : BlockEntity
     if (!_pumping)
       return;
 
-    // The interaction-stop event normally clears _pumping; the watchdog covers the case
-    // where it was missed (the held interaction stopped refreshing the step timestamp).
+    // Watchdog: covers a missed stop event (held interaction stopped refreshing the timestamp).
     if (Api.World.ElapsedMilliseconds - _lastStepMs > 1200)
     {
       StopPumping();
@@ -135,10 +127,9 @@ public class BlockEntityManualFluidPump : BlockEntity
   }
 
   /// <summary>
-  /// Moves water from the input line into the output line. Mirrors the engine pump: transfer the
-  /// input line's standing water out (capped by the output's free capacity) first, then have the
-  /// intake refill the input line, so the input pipe reads as a water line rather than the empty
-  /// "Air" gas pool at broadcast time.
+  /// Moves water from the input line to the output line: transfer the standing input water out
+  /// (capped by output free capacity) first, then have the intake refill it, so the input pipe
+  /// reads as a water line rather than an empty "Air" pool at broadcast time.
   /// </summary>
   private void DoWork(float dt)
   {
@@ -155,7 +146,7 @@ public class BlockEntityManualFluidPump : BlockEntity
       float move = Math.Min(amount, OutputFreeCapacity(outputNet));
       float drawn = inputNet?.TryConsumeLiquid(move, ba) ?? 0f;
       if (drawn > 0f)
-        // Hand-cranked head: a fixed 1 atm — enough to lift water into a boiler.
+        // Hand-cranked head: a fixed 1 atm - enough to lift water into a boiler.
         outputNet?.TryProduceLiquid(drawn, 20f, 1f, ba);
       intake!.ProduceWater(amount, 20f, ba);
     }
@@ -214,9 +205,8 @@ public class BlockEntityManualFluidPump : BlockEntity
   }
 
   /// <summary>
-  /// Builds the animator from the block's shape so the pump renders its animated mesh. Leaves
-  /// <see cref="_animatorReady"/> false if the shape fails to resolve, so a pose is never queued
-  /// against a null animator (which makes vanilla's debug GetBlockInfo NRE).
+  /// Builds the animator from the block's shape. Leaves <see cref="_animatorReady"/> false if the
+  /// shape fails to resolve, so a pose is never queued against a null animator (vanilla NREs).
   /// </summary>
   private void InitAnimator()
   {
@@ -240,9 +230,8 @@ public class BlockEntityManualFluidPump : BlockEntity
   }
 
   /// <summary>
-  /// Holds exactly one animation at a time — <c>cycle</c> while cranked, <c>idle</c> otherwise.
-  /// Keeping one always active stops the animator-rendered mesh from vanishing (and the debug
-  /// GetBlockInfo NRE) when nothing is playing.
+  /// Holds one animation at a time - <c>cycle</c> while cranked, <c>idle</c> otherwise. Keeping
+  /// one active stops the animator mesh vanishing (and the GetBlockInfo NRE).
   /// </summary>
   private void ApplyAnim(bool running)
   {
