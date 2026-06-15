@@ -11,8 +11,8 @@ namespace SteelmakingExpanded.BlockStructures.CowperStove.Blocks;
 /// stove. The build-outline projection (Ctrl + Shift + right-click) is provided by the
 /// shared <c>MultiblockStructure</c> block behavior declared in the block JSON.
 /// </summary>
-[EntityRegister]
-public class BlockCowperStoveIntake : Block, INetworkConnector
+[BlockRegister]
+public partial class BlockCowperStoveIntake : Block, INetworkConnector
 {
   public string NetworkType => "pipe";
 

@@ -13,8 +13,8 @@ namespace SteelmakingExpanded.BlockStructures.BlastFurnace.Blocks;
 /// oriented placement of the structure and routes Ctrl + right-click to the
 /// <see cref="BlockEntityBlastFurnace"/> for the show/hide structure outline.
 /// </summary>
-[EntityRegister]
-public class BlockBlastFurnaceDoor : BlockBeeHiveKilnDoor
+[BlockRegister]
+public partial class BlockBlastFurnaceDoor : BlockBeeHiveKilnDoor
 {
   public override bool TryPlaceBlock(
     IWorldAccessor world,

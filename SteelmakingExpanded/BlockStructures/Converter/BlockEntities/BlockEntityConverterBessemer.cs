@@ -18,7 +18,7 @@ namespace SteelmakingExpanded.BlockStructures.Converter.BlockEntities;
 /// pose/charge from its <see cref="BlockEntityConverterControl"/> and hands solidified drops back
 /// on break.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityConverterBessemer : BlockEntity
 {
   private BlockPos? _controlPos;

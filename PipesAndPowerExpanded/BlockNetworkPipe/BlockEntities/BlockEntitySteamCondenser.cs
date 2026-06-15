@@ -16,7 +16,7 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 /// drawn from the north line into that through-flow. An unplumbed face leaks: no outlet sprays the
 /// backed-up water (plus condensate) out, no water line at all vents drawn steam as gas.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntitySteamCondenser : BlockEntity
 {
   private long _tickId;

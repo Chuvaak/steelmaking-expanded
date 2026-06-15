@@ -19,7 +19,7 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 /// output face is an open end: the overflow vents to atmosphere capped at the pipe-leak rate with
 /// particles. The gate defaults to 1 atm, dialled in steps up to the valve's material rating.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityPressureValve : BlockEntityPipe
 {
   /// <summary>Lowest gate pressure the valve can be dialled to (atm, gauge).</summary>

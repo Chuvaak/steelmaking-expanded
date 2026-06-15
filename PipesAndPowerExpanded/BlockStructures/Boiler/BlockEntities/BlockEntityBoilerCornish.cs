@@ -9,7 +9,7 @@ namespace PipesAndPowerExpanded.BlockStructures.Boiler.BlockEntities;
 /// supplies the variant stats (the shorter water-surface footprint comes from the
 /// block's <c>waterRendererBox</c> attribute in the JSON).
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityBoilerCornish : BlockEntityBoiler
 {
   protected override float Capacity => PpexValues.CornishBoilerCapacity;

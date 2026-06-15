@@ -16,7 +16,7 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 /// range (which stops players packing intakes onto one pond). Re-checked on a timer and surfaced
 /// in the HUD.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityFluidIntake : BlockEntityNetworkNode
 {
   public override string NetworkType { get; set; } = "pipe";

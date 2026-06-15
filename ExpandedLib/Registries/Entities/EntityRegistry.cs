@@ -1,22 +1,24 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using Vintagestory.API.Common;
 
 namespace ExpandedLib.Registries.Entities;
 
 /// <summary>
-/// Generic, reflection-driven registration for mods built on ExpandedLib. Scans an assembly
-/// for types carrying <see cref="EntityRegisterAttribute"/> and registers each with the game
-/// under the right registry for its kind (block, item, block entity, behaviour), using the
-/// <c>{modid}.{ClassName}</c> naming convention. Replaces the long hand-written list of
-/// <c>api.Register*Class</c> calls a mod system would otherwise carry.
+/// Generic, reflection-driven registration for mods built on ExpandedLib. Scans an assembly for
+/// types carrying a <see cref="RegisterAttribute"/> (one of the kind-specific
+/// <c>[BlockRegister]</c>, <c>[ItemRegister]</c>, <c>[BlockEntityRegister]</c>,
+/// <c>[BlockBehaviorRegister]</c>, <c>[BlockEntityBehaviorRegister]</c>,
+/// <c>[CollectibleBehaviorRegister]</c> attributes) and registers each with the game under the
+/// matching registry, using the <c>{modid}.{ClassName}</c> naming convention. Replaces the long
+/// hand-written list of <c>api.Register*Class</c> calls a mod system would otherwise carry.
 /// </summary>
 public static class EntityRegistry
 {
   /// <summary>
-  /// Registers every <see cref="EntityRegisterAttribute"/>-decorated class in
-  /// <paramref name="asm"/> (default: the calling mod's own assembly). Call once from
-  /// <c>ModSystem.Start</c>.
+  /// Registers every <see cref="RegisterAttribute"/>-decorated class in <paramref name="asm"/>
+  /// (default: the calling mod's own assembly). Call once from <c>ModSystem.Start</c>.
   /// </summary>
   public static void RegisterAll(ICoreAPI api, Mod mod, Assembly? asm = null)
   {
@@ -25,45 +27,89 @@ public static class EntityRegistry
 
     foreach (Type type in ReflectionScan.GetCandidateTypes(asm))
     {
-      var attr = type.GetCustomAttribute<EntityRegisterAttribute>();
+      var attr = type.GetCustomAttributes()
+        .OfType<RegisterAttribute>()
+        .FirstOrDefault();
       if (attr == null)
         continue;
 
       string baseKey = attr.Code ?? type.Name;
       string key = attr.PrefixModId ? $"{modId}.{baseKey}" : baseKey;
 
-      if (typeof(Block).IsAssignableFrom(type))
-        api.RegisterBlockClass(key, type);
-      else if (typeof(Item).IsAssignableFrom(type))
-        api.RegisterItemClass(key, type);
-      else if (typeof(BlockEntity).IsAssignableFrom(type))
-        RegisterBlockEntity(api, modId, key, attr, type);
-      else if (typeof(BlockEntityBehavior).IsAssignableFrom(type))
-        api.RegisterBlockEntityBehaviorClass(key, type);
-      else if (typeof(BlockBehavior).IsAssignableFrom(type))
-        api.RegisterBlockBehaviorClass(key, type);
-      else if (typeof(CollectibleBehavior).IsAssignableFrom(type))
-        api.RegisterCollectibleBehaviorClass(key, type);
-      else
-        api.Logger.Warning(
-          "[{0}] EntityRegistry: {1} has [EntityRegister] but no known base type; skipped.",
-          modId,
-          type.FullName
-        );
+      switch (attr)
+      {
+        case BlockRegisterAttribute
+          when Validate<Block>(api, modId, type, "block"):
+          api.RegisterBlockClass(key, type);
+          break;
+        case ItemRegisterAttribute
+          when Validate<Item>(api, modId, type, "item"):
+          api.RegisterItemClass(key, type);
+          break;
+        case BlockEntityRegisterAttribute
+          when Validate<BlockEntity>(api, modId, type, "block entity"):
+          RegisterBlockEntity(api, modId, key, attr, type);
+          break;
+        case BlockBehaviorRegisterAttribute
+          when Validate<BlockBehavior>(api, modId, type, "block behavior"):
+          api.RegisterBlockBehaviorClass(key, type);
+          break;
+        case BlockEntityBehaviorRegisterAttribute
+          when Validate<BlockEntityBehavior>(
+            api,
+            modId,
+            type,
+            "block entity behavior"
+          ):
+          api.RegisterBlockEntityBehaviorClass(key, type);
+          break;
+        case CollectibleBehaviorRegisterAttribute
+          when Validate<CollectibleBehavior>(
+            api,
+            modId,
+            type,
+            "collectible behavior"
+          ):
+          api.RegisterCollectibleBehaviorClass(key, type);
+          break;
+      }
     }
+  }
+
+  /// <summary>Logs a warning and returns false when <paramref name="type"/> does not derive from the
+  /// base type its register attribute implies (a mis-applied attribute), so it is skipped rather than
+  /// throwing inside the game's registry.</summary>
+  private static bool Validate<TBase>(
+    ICoreAPI api,
+    string modId,
+    Type type,
+    string kind
+  )
+  {
+    if (typeof(TBase).IsAssignableFrom(type))
+      return true;
+
+    api.Logger.Warning(
+      "[{0}] EntityRegistry: {1} is marked as a {2} but does not derive from {3}; skipped.",
+      modId,
+      type.FullName,
+      kind,
+      typeof(TBase).Name
+    );
+    return false;
   }
 
   /// <summary>
   /// Registers a block entity under its primary key, plus the short-name aliases
   /// (<c>{modid}.{ShortId}</c>, <c>{ShortId}</c>, <c>{shortid}</c>) for classes named
   /// <c>BlockEntityXxx</c> using the default convention. Aliases are skipped when an explicit
-  /// <see cref="EntityRegisterAttribute.Code"/> is given (e.g. a vanilla override).
+  /// <see cref="RegisterAttribute.Code"/> is given (e.g. a vanilla override).
   /// </summary>
   private static void RegisterBlockEntity(
     ICoreAPI api,
     string modId,
     string key,
-    EntityRegisterAttribute attr,
+    RegisterAttribute attr,
     Type type
   )
   {

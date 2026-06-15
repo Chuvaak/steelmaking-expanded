@@ -9,8 +9,8 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 /// Gas outlet: a single-faced pipe that connects the gas network to a structure's
 /// face (e.g. a furnace or cowper-stove port), used to inject or extract gas there.
 /// </summary>
-[EntityRegister]
-public class BlockPipeOutlet : BlockPipe
+[BlockRegister]
+public partial class BlockPipeOutlet : BlockPipe
 {
   /// <summary>Outlets never burst - a machine-port connector is a fixed fitting, not a length
   /// of run that should fail under pressure, so it's exempt from over-pressure failure.</summary>

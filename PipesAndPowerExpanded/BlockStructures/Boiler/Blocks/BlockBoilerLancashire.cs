@@ -1,3 +1,4 @@
+using ExpandedLib.Blocks.Structures;
 using ExpandedLib.Registries.Entities;
 
 namespace PipesAndPowerExpanded.BlockStructures.Boiler.Blocks;
@@ -6,5 +7,8 @@ namespace PipesAndPowerExpanded.BlockStructures.Boiler.Blocks;
 /// The Lancashire boiler mega-block (steel, high-pressure tier). All behavior lives
 /// in <see cref="BlockBoiler"/>.
 /// </summary>
-[EntityRegister]
-public class BlockBoilerLancashire : BlockBoiler { }
+[BlockRegister]
+public partial class BlockBoilerLancashire
+  : BlockBoiler,
+    IFillerHost,
+    IBoilerGeometry { }

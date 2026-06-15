@@ -10,8 +10,8 @@ namespace SteelmakingExpanded.BlockStructures.SmokeStack.Blocks;
 /// provided by the shared <c>MultiblockStructure</c> block behavior declared in the
 /// block JSON.
 /// </summary>
-[EntityRegister]
-public class BlockSmokeStackIntake : BlockPipePassthrough
+[BlockRegister]
+public partial class BlockSmokeStackIntake : BlockPipePassthrough
 {
   public override Dictionary<string, string[]> AllowedOrientations { get; } =
     new() { { "intake", ["n", "s", "w", "e"] } };

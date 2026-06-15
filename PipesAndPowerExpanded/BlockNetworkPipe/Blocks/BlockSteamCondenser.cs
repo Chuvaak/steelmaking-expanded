@@ -13,8 +13,8 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 /// adjacent runs stay separate networks (it's a connector, not a node); the BE bridges the two
 /// water sides itself.
 /// </summary>
-[EntityRegister]
-public class BlockSteamCondenser : Block, INetworkConnector
+[BlockRegister]
+public partial class BlockSteamCondenser : Block, INetworkConnector
 {
   public string NetworkType => "pipe";
 

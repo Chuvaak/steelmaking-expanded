@@ -10,8 +10,8 @@ namespace SteelmakingExpanded.BlockStructures.Converter.Blocks;
 /// Mechanical-power intake for the converter. Couples an axle on the south face
 /// in its natural (north) orientation; the connector follows the "side" variant.
 /// </summary>
-[EntityRegister]
-public class BlockConverterTransmission : Block, IMechanicalPowerBlock
+[BlockRegister]
+public partial class BlockConverterTransmission : Block, IMechanicalPowerBlock
 {
   private BlockFacing ConnectorFace =>
     Variant["side"] switch

@@ -31,7 +31,7 @@ public class ExpandedLibModSystem : ModSystem
 {
   public override void Start(ICoreAPI api)
   {
-    // Auto-register the library's [EntityRegister] classes (filler block + entity, the
+    // Auto-register the library's [BlockRegister]/[BlockEntityRegister]/[BlockBehaviorRegister] classes (filler block + entity, the
     // MultiblockStructure behaviour) under the exlib domain.
     EntityRegistry.RegisterAll(api, Mod, GetType().Assembly);
 

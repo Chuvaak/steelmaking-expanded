@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using ExpandedLib.Helpers;
 using ExpandedLib.Registries.Entities;
+using SteelmakingExpanded.BlockNetworkMolten.Blocks;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -16,7 +17,7 @@ namespace SteelmakingExpanded.BlockNetworkMolten.BlockEntities;
 /// is parked beneath it - a molten barrel or a large tool mold (anvil, helve
 /// hammer) - draining the network each tick while pouring is enabled.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
 {
   private bool _isPouring;
@@ -250,13 +251,10 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     out float fillHeightLevels
   )
   {
-    fillStartY = FillQuads.ReadStartY(block, "fillStart", 1f);
-    fillHeightLevels = FillQuads.ReadHeightLevels(block, "fillHeight", 8f);
-    return FillQuads.ReadBoxes(
-      block,
-      "fillQuadsByLevel",
-      new Cuboidf(4f, 0f, 4f, 12f, 16f, 12f)
-    );
+    fillStartY = BlockMoltenCanal.FillStart / 16f;
+    fillHeightLevels = BlockMoltenCanal.FillHeight;
+    var quads = block is BlockMoltenCanal canal ? canal.FillQuadsByLevel : null;
+    return FillQuads.BoxesFrom(quads, new Cuboidf(4f, 0f, 4f, 12f, 16f, 12f));
   }
 
   #endregion
@@ -271,10 +269,8 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
       MoltenContents.BarrelUnitsKey,
       Api.World
     );
-    BarrelMaxUnits =
-      barrelStack.Block?.Attributes?["maxUnits"].AsInt(
-        SmexValues.BarrelDefaultMaxUnits
-      ) ?? SmexValues.BarrelDefaultMaxUnits;
+    // The parked stack is a molten barrel - its capacity is the generated const (baked from JSON).
+    BarrelMaxUnits = BlockMoltenBarrel.MaxUnits;
     IsBarrel = true;
     IsMold = false;
   }

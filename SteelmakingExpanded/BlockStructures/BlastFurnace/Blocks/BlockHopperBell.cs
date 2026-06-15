@@ -10,8 +10,8 @@ namespace SteelmakingExpanded.BlockStructures.BlastFurnace.Blocks;
 /// The bell hopper block; its <see cref="BlockEntityHopperBell"/> crafts blast
 /// mix and drops it into the furnace.
 /// </summary>
-[EntityRegister]
-public class BlockHopperBell : Block
+[BlockRegister]
+public partial class BlockHopperBell : Block
 {
   public override ItemStack[] GetDrops(
     IWorldAccessor world,

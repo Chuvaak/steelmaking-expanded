@@ -13,7 +13,7 @@ namespace SteelmakingExpanded.BlockStructures.Engine.BlockEntities;
 /// air crosses the blast threshold (≥ 2.5 atm) it counts as blast. The mod's only air
 /// source.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityEngineAirBlower : BlockEntityEngineSubmachine
 {
   // Cylinder cycle keyframes (60-frame loop): the piston tops out at frame 15 (intake) and

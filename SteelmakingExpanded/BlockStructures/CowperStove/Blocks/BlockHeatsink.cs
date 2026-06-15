@@ -10,8 +10,8 @@ namespace SteelmakingExpanded.BlockStructures.CowperStove.Blocks;
 /// Heat sink block on the cowper stove: glows with the stored regenerator heat.
 /// Always drops/picks as the canonical north variant.
 /// </summary>
-[EntityRegister]
-public class BlockHeatSink : Block
+[BlockRegister]
+public partial class BlockHeatSink : Block
 {
   public override byte[] GetLightHsv(
     IBlockAccessor blockAccessor,

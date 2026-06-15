@@ -1,3 +1,4 @@
+using ExpandedLib.Blocks.Structures;
 using ExpandedLib.Registries.Entities;
 
 namespace PipesAndPowerExpanded.BlockStructures.Boiler.Blocks;
@@ -6,5 +7,8 @@ namespace PipesAndPowerExpanded.BlockStructures.Boiler.Blocks;
 /// The Cornish boiler mega-block (iron, low-pressure entry tier). All behavior lives
 /// in <see cref="BlockBoiler"/>.
 /// </summary>
-[EntityRegister]
-public class BlockBoilerCornish : BlockBoiler { }
+[BlockRegister]
+public partial class BlockBoilerCornish
+  : BlockBoiler,
+    IFillerHost,
+    IBoilerGeometry { }

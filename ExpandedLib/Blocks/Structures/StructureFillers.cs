@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using ExpandedLib.Helpers;
 using Vintagestory.API.Common;
+using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 
 namespace ExpandedLib.Blocks.Structures;
@@ -32,21 +33,18 @@ public static class StructureFillers
     new("exlib:structurefiller");
 
   /// <summary>
-  /// Reads the <c>fillerOffsets</c> JSON attribute (north-orientation cells). Each
-  /// entry is <c>{ x, y, z }</c> plus an optional <c>allowAttach</c> bool that
-  /// defaults to <c>false</c> (the filler at that cell rejects attached blocks).
+  /// Parses an already-resolved <c>fillerOffsets</c> node (the principal's generated
+  /// <see cref="IFillerHost.FillerOffsets"/> accessor) into north-orientation cells. Each entry is
+  /// <c>{ x, y, z }</c> plus an optional <c>allowAttach</c> bool that defaults to <c>false</c> (the
+  /// filler at that cell rejects attached blocks).
   /// </summary>
-  public static List<FillerOffset> ReadOffsets(
-    Block block,
-    string attr = "fillerOffsets"
-  )
+  public static List<FillerOffset> ReadOffsets(JsonObject? offsetsNode)
   {
     var result = new List<FillerOffset>();
-    var node = block.Attributes?[attr];
-    if (node == null || !node.Exists)
+    if (offsetsNode == null || !offsetsNode.Exists)
       return result;
 
-    foreach (var entry in node.AsArray() ?? [])
+    foreach (var entry in offsetsNode.AsArray() ?? [])
     {
       result.Add(
         new FillerOffset(
@@ -60,13 +58,13 @@ public static class StructureFillers
 
   /// <summary>Resolves the world footprint cells for a principal block at <paramref name="principalPos"/>.</summary>
   public static List<FillerCell> FootprintCells(
-    Block principal,
+    IFillerHost principal,
     BlockPos principalPos,
     int angle
   )
   {
     var cells = new List<FillerCell>();
-    foreach (var off in ReadOffsets(principal))
+    foreach (var off in ReadOffsets(principal.FillerOffsets))
     {
       Vec3i r = ExOrientation.RotateOffset(off.Offset, angle);
       cells.Add(

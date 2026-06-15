@@ -6,8 +6,8 @@ using Vintagestory.API.MathTools;
 
 namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 
-[EntityRegister]
-public class BlockFluidIntake : BlockNetworkNode
+[BlockRegister]
+public partial class BlockFluidIntake : BlockNetworkNode
 {
   public override string NetworkType => "pipe";
 

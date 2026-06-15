@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using ExpandedLib.Helpers;
 using ExpandedLib.Registries.Entities;
+using SteelmakingExpanded.BlockNetworkMolten.Blocks;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -17,7 +18,7 @@ namespace SteelmakingExpanded.BlockNetworkMolten.BlockEntities;
 /// of a single liquid metal as an <see cref="ILiquidMetalSink"/>, tracks its
 /// temperature/hardening, and yields cast or chiselled metal when emptied.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
 {
   /// <summary>The metal currently stored, or <c>null</c> when empty.</summary>
@@ -26,8 +27,9 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
   /// <summary>Units of metal currently held.</summary>
   public int CurrentUnitAmount = 0;
 
-  /// <summary>Maximum units this barrel can hold.</summary>
-  public int MaxUnitAmount = SmexValues.BarrelDefaultMaxUnits;
+  /// <summary>Maximum units this barrel can hold. Baked at compile time from the block JSON's
+  /// <c>maxUnits</c> attribute by the attribute source generator - no runtime JSON read.</summary>
+  public int MaxUnitAmount = BlockMoltenBarrel.MaxUnits;
 
   private MoltenRenderer? _renderer;
 
@@ -155,10 +157,7 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
   public override void Initialize(ICoreAPI api)
   {
     base.Initialize(api);
-    if (Block?.Attributes != null)
-      MaxUnitAmount = Block
-        .Attributes["maxUnits"]
-        .AsInt(SmexValues.BarrelDefaultMaxUnits);
+    // MaxUnitAmount is the generated BlockMoltenBarrel.MaxUnits const (from the JSON) - no read here.
 
     if (api.Side == EnumAppSide.Client)
     {
@@ -177,17 +176,13 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
 
   private void InitRenderer(ICoreClientAPI capi)
   {
-    Cuboidf[] boxes = FillQuads.ReadBoxes(
-      Block,
-      "fillQuadsByLevel",
+    var barrel = (BlockMoltenBarrel)Block;
+    Cuboidf[] boxes = FillQuads.BoxesFrom(
+      barrel.FillQuadsByLevel,
       new Cuboidf(4f, 0f, 4f, 12f, 16f, 12f)
     );
-    float fillStartY = FillQuads.ReadStartY(Block, "fillStart", 2f);
-    float fillHeightLevels = FillQuads.ReadHeightLevels(
-      Block,
-      "fillHeight",
-      8f
-    );
+    float fillStartY = BlockMoltenBarrel.FillStart / 16f;
+    float fillHeightLevels = BlockMoltenBarrel.FillHeight;
 
     _renderer = new MoltenRenderer(
       Pos,

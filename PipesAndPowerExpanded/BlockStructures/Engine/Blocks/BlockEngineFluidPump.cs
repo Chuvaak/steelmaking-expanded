@@ -9,8 +9,10 @@ namespace PipesAndPowerExpanded.BlockStructures.Engine.Blocks;
 /// The fluid-pump sub-machine. Exposes pipe connectors on its bottom (water source)
 /// and left (delivery) faces, rotated to the placed orientation.
 /// </summary>
-[EntityRegister]
-public class BlockEngineFluidPump : BlockEngineSubmachine, INetworkConnector
+[BlockRegister]
+public partial class BlockEngineFluidPump
+  : BlockEngineSubmachine,
+    INetworkConnector
 {
   public string NetworkType => "pipe";
 

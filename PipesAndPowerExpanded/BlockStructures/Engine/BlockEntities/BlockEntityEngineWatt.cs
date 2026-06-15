@@ -8,7 +8,7 @@ namespace PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 /// 30 L/s of steam while running and has no control rods. All behavior lives in
 /// <see cref="BlockEntityEngine"/>.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityEngineWatt : BlockEntityEngine
 {
   protected override float MaxPowerValue => PpexValues.WattEngineMaxPower;

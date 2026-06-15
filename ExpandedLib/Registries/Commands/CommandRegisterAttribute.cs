@@ -6,7 +6,7 @@ namespace ExpandedLib.Registries.Commands;
 /// <summary>
 /// Marks an <see cref="IExCommand"/> class for automatic registration by
 /// <see cref="CommandRegistry.RegisterAll"/>. Mirrors
-/// <see cref="Entities.EntityRegisterAttribute"/>: a command only needs this one
+/// <see cref="Entities.RegisterAttribute"/>: a command only needs this one
 /// attribute and an <see cref="IExCommand.Register"/> body - no hand-written wiring in the
 /// mod system.
 /// <para>

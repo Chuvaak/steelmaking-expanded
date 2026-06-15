@@ -21,7 +21,7 @@ namespace SteelmakingExpanded.BlockStructures.BlastFurnace.BlockEntities;
 /// machine: consumes blast mix, draws air/blast through the tuyeres, vents exhaust
 /// through the gas outlets, accumulates molten iron and slag, and feeds the taps.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
 {
   /// <summary>Whether the exhaust network is full, stalling production.</summary>

@@ -8,8 +8,8 @@ namespace SteelmakingExpanded.BlockStructures.BlastFurnace.Blocks;
 /// Tuyere: a single-faced gas-pipe node built into the blast furnace through which
 /// air or hot blast is drawn into the hearth.
 /// </summary>
-[EntityRegister]
-public class BlockTuyere : BlockPipe
+[BlockRegister]
+public partial class BlockTuyere : BlockPipe
 {
   public override Dictionary<string, string[]> AllowedOrientations { get; } =
     new() { { "tuyere", ["s", "n", "w", "e"] } };

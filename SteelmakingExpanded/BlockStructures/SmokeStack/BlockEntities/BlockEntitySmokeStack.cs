@@ -18,7 +18,7 @@ namespace SteelmakingExpanded.BlockStructures.SmokeStack.BlockEntities;
 /// sink: each tick it consumes exhaust from the connected network and vents it as smoke, keeping
 /// the network from choking the blast furnace.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntitySmokeStack
   : BlockEntityMultiblockStructure,
     INetworkNode,

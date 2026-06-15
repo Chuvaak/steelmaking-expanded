@@ -20,7 +20,7 @@ namespace SteelmakingExpanded.BlockStructures.CowperStove.BlockEntities;
 /// burning coal pile below), then reheats air passing through into hot blast that
 /// boosts the blast furnace.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityCowperStove : BlockEntityMultiblockStructure
 {
   private BlockFacing _connectorFace = BlockFacing.SOUTH;

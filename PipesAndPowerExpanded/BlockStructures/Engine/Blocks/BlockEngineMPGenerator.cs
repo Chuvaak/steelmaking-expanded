@@ -11,8 +11,8 @@ namespace PipesAndPowerExpanded.BlockStructures.Engine.Blocks;
 /// south in the natural orientation), driving the vanilla mechanical-power network
 /// via the <see cref="BEBehaviorEngineMPGenerator"/> torque producer.
 /// </summary>
-[EntityRegister]
-public class BlockEngineMPGenerator
+[BlockRegister]
+public partial class BlockEngineMPGenerator
   : BlockEngineSubmachine,
     IMechanicalPowerBlock
 {

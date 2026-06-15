@@ -16,7 +16,7 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 /// Block entity for all pipe blocks. Implements <see cref="IPipeNode"/> by delegating to the
 /// owning <see cref="PipeNetwork"/> - the BE holds no network state and never broadcasts directly.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityPipe : BlockEntityNetworkNode, IPipeNode
 {
   public sealed override string NetworkType

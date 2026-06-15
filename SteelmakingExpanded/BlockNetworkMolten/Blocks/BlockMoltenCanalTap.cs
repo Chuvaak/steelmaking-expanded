@@ -15,8 +15,8 @@ namespace SteelmakingExpanded.BlockNetworkMolten.Blocks;
 /// large tool mold placed beneath it. Sneak + right-click adds/removes the
 /// barrel/mold; Ctrl + right-click toggles pouring on and off.
 /// </summary>
-[EntityRegister]
-public class BlockMoltenCanalTap : BlockMoltenCanal
+[BlockRegister]
+public partial class BlockMoltenCanalTap : BlockMoltenCanal
 {
   // Barrel + large molds (anvil, helve hammer) that can be cast in the tap.
   private ItemStack[]? _acceptedContents;

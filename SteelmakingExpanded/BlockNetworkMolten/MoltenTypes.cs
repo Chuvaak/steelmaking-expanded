@@ -1,5 +1,6 @@
 using System.Linq;
 using Vintagestory.API.Common;
+using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 
 namespace SteelmakingExpanded.BlockNetworkMolten;
@@ -16,6 +17,7 @@ public struct FillQuadDef
     z2;
 }
 
+
 /// <summary>
 /// Reads the molten-surface fill geometry attributes (<c>fillQuadsByLevel</c>,
 /// <c>fillStart</c>, <c>fillHeight</c> - or a prefixed variant like the pedestal's
@@ -26,26 +28,21 @@ public struct FillQuadDef
 public static class FillQuads
 {
   /// <summary>
-  /// The renderer footprint boxes from <paramref name="attr"/> (each quad def becomes a
-  /// full-height x/z box), or a single <paramref name="fallback"/> box when the
-  /// attribute is absent.
+  /// Builds the renderer footprint boxes from an already-resolved <c>fillQuadsByLevel</c> node - e.g.
+  /// a block's generated <c>FillQuadsByLevel</c> accessor - so the caller passes a typed value
+  /// instead of an attribute-name string. Each quad def becomes a full-height x/z box; a missing or
+  /// empty node yields a single <paramref name="fallback"/> box.
+  /// <para>
+  /// The fill <em>start</em> (pixels → block units via <c>/16f</c>) and <em>height levels</em> are now
+  /// read directly from the block's generated <c>FillStart</c>/<c>FillHeight</c> consts at the call
+  /// site, so there are no <c>ReadStartY</c>/<c>ReadHeightLevels</c> helpers anymore.
+  /// </para>
   /// </summary>
-  public static Cuboidf[] ReadBoxes(Block? block, string attr, Cuboidf fallback)
+  public static Cuboidf[] BoxesFrom(JsonObject? quadsNode, Cuboidf fallback)
   {
-    var quadDefs = block?.Attributes?[attr]?.AsObject<FillQuadDef[]>();
+    var quadDefs = quadsNode?.AsObject<FillQuadDef[]>();
     return quadDefs is { Length: > 0 }
       ? [.. quadDefs.Select(q => new Cuboidf(q.x1, 0f, q.z1, q.x2, 16f, q.z2))]
       : [fallback];
   }
-
-  /// <summary>The fill-surface base height in block units (the attribute is in pixels).</summary>
-  public static float ReadStartY(Block? block, string attr, float fallbackPx) =>
-    (block?.Attributes?[attr]?.AsFloat(fallbackPx) ?? fallbackPx) / 16f;
-
-  /// <summary>The fill-surface travel, in pixel levels.</summary>
-  public static float ReadHeightLevels(
-    Block? block,
-    string attr,
-    float fallback
-  ) => block?.Attributes?[attr]?.AsFloat(fallback) ?? fallback;
 }

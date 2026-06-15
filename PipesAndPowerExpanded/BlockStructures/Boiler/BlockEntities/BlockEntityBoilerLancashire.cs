@@ -6,7 +6,7 @@ namespace PipesAndPowerExpanded.BlockStructures.Boiler.BlockEntities;
 /// The Lancashire boiler - the steel, high-pressure tier (up to 15 atm). All behavior
 /// lives in <see cref="BlockEntityBoiler"/>; this only supplies the variant stats.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityBoilerLancashire : BlockEntityBoiler
 {
   protected override float Capacity => PpexValues.BoilerCapacity;

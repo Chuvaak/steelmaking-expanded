@@ -18,11 +18,12 @@ namespace PipesAndPowerExpanded.BlockStructures.ManualPump.Blocks;
 /// <see cref="BlockEntityManualFluidPump"/>; this block only exposes the connectors, manages the
 /// filler footprint, and forwards the crank interaction.
 /// </summary>
-[EntityRegister]
-public class BlockManualFluidPump
+[BlockRegister]
+public partial class BlockManualFluidPump
   : Block,
     INetworkConnector,
-    IFillerInteractionTarget
+    IFillerInteractionTarget,
+    IFillerHost
 {
   public string NetworkType => "pipe";
 

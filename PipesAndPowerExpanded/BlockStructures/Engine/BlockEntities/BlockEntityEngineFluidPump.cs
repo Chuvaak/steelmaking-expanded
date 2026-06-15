@@ -16,7 +16,7 @@ namespace PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 /// transfers the same volume into the left (water-line) network at a pressure proportional to the
 /// engine's inlet steam. With no intake it still runs but moves nothing.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityEngineFluidPump : BlockEntityEngineSubmachine
 {
   /// <summary>True while the pump has an active intake on its source line and is moving water;

@@ -15,8 +15,8 @@ namespace ExpandedLib.Blocks.Structures;
 /// <see cref="BlockEntityStructureFiller"/> - mirroring vanilla's
 /// <c>BlockMPMultiblockGear</c>.
 /// </summary>
-[EntityRegister]
-public class BlockStructureFiller : Block, INetworkConnector
+[BlockRegister]
+public partial class BlockStructureFiller : Block, INetworkConnector
 {
   // INetworkConnector: a plain filler is inert (type ""), but a principal can turn one cell into
   // a fixed port by setting PortFace/PortNetworkType on its BE (e.g. the boiler's steam outlet).

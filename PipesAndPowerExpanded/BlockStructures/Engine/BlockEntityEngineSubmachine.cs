@@ -144,11 +144,9 @@ public abstract class BlockEntityEngineSubmachine : BlockEntity
     // read from this block's own JSON so it stays in step with the engine's.
     int angle =
       (ExOrientation.AngleFromSide(Block.Variant["side"]) + 180) % 360;
-    Vec3i off = ExOrientation.ReadOffset(
-      Block,
-      "submachineOffset",
-      new Vec3i(0, 0, 2)
-    );
+    // The sub-machine's own JSON declares no submachineOffset (no generated member); it mirrors the
+    // engine's default cell so this inversion lines back up with the engine.
+    Vec3i off = new(0, 0, 2);
     Vec3i r = ExOrientation.RotateOffset(off, angle);
     BlockPos cand = Pos.AddCopy(-r.X, -r.Y, -r.Z);
     if (Api.World.BlockAccessor.GetBlockEntity(cand) is BlockEntityEngine)

@@ -16,7 +16,7 @@ namespace SteelmakingExpanded.BlockStructures.BlastFurnace.BlockEntities;
 /// from the iron/coke/flux in the hopper above into an internal magazine, then drops
 /// it into the furnace shaft below while dropping is enabled.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityHopperBell : BlockEntity
 {
   private long _tickId;

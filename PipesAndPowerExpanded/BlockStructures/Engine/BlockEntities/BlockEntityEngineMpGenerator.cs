@@ -15,7 +15,7 @@ namespace PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 /// (one revolution = one cycle), keeping the two locked at any speed and cycling while the
 /// flywheel coasts after the steam is cut.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityEngineMpGenerator
   : BlockEntityEngineSubmachine,
     IRenderer

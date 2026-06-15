@@ -10,8 +10,8 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 /// solid (non-air) block is not treated as a leak, so it seals against machine housings
 /// without any cooperation from those blocks.
 /// </summary>
-[EntityRegister]
-public class BlockPipePassthrough : BlockPipe
+[BlockRegister]
+public partial class BlockPipePassthrough : BlockPipe
 {
   /// <summary>Passthroughs never burst - they're embedded in walls/machine housings where a
   /// fracture would be unreachable, so they're exempt from over-pressure failure.</summary>

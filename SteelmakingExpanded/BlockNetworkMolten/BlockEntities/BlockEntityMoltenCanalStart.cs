@@ -12,7 +12,7 @@ namespace SteelmakingExpanded.BlockNetworkMolten.BlockEntities;
 /// crucible) enters this cell and then flows down the canal run. Per-cell state is
 /// persisted by the base <see cref="BlockEntityMoltenCanal"/>.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityMoltenCanalStart
   : BlockEntityMoltenCanal,
     ILiquidMetalSink

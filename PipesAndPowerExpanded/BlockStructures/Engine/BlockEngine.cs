@@ -72,9 +72,8 @@ public abstract class BlockEngine
   /// </summary>
   public BlockPos SubmachinePos(BlockPos enginePos) =>
     ExOrientation.WorldPosFromAttr(
-      this,
       enginePos,
-      "submachineOffset",
+      ((IEngineGeometry)this).SubmachineOffset,
       DefaultSubmachineOffset,
       BodyAngle
     );
@@ -133,9 +132,8 @@ public abstract class BlockEngine
   /// </summary>
   public BlockPos GearHousingPos(BlockPos enginePos) =>
     ExOrientation.WorldPosFromAttr(
-      this,
       enginePos,
-      "gearHousingOffset",
+      ((IEngineGeometry)this).GearHousingOffset,
       DefaultGearHousingOffset,
       BodyAngle
     );
@@ -158,8 +156,9 @@ public abstract class BlockEngine
     return new Vec3d(enginePos.X + x, enginePos.Y + off.Y, enginePos.Z + z);
   }
 
-  private Vec3d ReadVentOffset() =>
-    ExOrientation.ReadOffsetD(this, "cylinderVentOffset", DefaultCylinderVent);
+  // No engine JSON declares cylinderVentOffset (so there's no generated member); it's the coded
+  // default. CylinderVentPos still rotates the horizontal part by the body angle.
+  private Vec3d ReadVentOffset() => DefaultCylinderVent;
 
   public override bool CanPlaceBlock(
     IWorldAccessor world,
@@ -172,7 +171,7 @@ public abstract class BlockEngine
       return false;
 
     var cells = StructureFillers.FootprintCells(
-      this,
+      (IFillerHost)this,
       blockSel.Position,
       BodyAngle
     );
@@ -194,7 +193,7 @@ public abstract class BlockEngine
     StructureFillers.PlaceFillers(
       world,
       blockPos,
-      StructureFillers.FootprintCells(this, blockPos, BodyAngle)
+      StructureFillers.FootprintCells((IFillerHost)this, blockPos, BodyAngle)
     );
 
     // Snap an already-present sub-machine (built before the engine) to the matching facing.
@@ -233,7 +232,7 @@ public abstract class BlockEngine
     StructureFillers.RemoveFillers(
       world,
       pos,
-      StructureFillers.FootprintCells(this, pos, BodyAngle)
+      StructureFillers.FootprintCells((IFillerHost)this, pos, BodyAngle)
     );
     base.OnBlockBroken(world, pos, byPlayer, dropQuantityMultiplier);
   }

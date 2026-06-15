@@ -10,8 +10,10 @@ namespace SteelmakingExpanded.BlockStructures.Engine.Blocks;
 /// The air-blower sub-machine. Exposes a single pipe connector on its left face
 /// (rotated to the placed orientation) through which it pushes pressurised air.
 /// </summary>
-[EntityRegister]
-public class BlockEngineAirBlower : BlockEngineSubmachine, INetworkConnector
+[BlockRegister]
+public partial class BlockEngineAirBlower
+  : BlockEngineSubmachine,
+    INetworkConnector
 {
   public string NetworkType => "pipe";
 

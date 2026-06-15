@@ -17,8 +17,8 @@ namespace SteelmakingExpanded.BlockNetworkMolten.Blocks;
 /// straight/bend/junction canal variant and handles open-end connector updates,
 /// solidified-metal drops, and spill sounds on break.
 /// </summary>
-[EntityRegister]
-public class BlockMoltenCanal : BlockNetworkNode
+[BlockRegister]
+public partial class BlockMoltenCanal : BlockNetworkNode
 {
   public override string NetworkType => "molten";
 

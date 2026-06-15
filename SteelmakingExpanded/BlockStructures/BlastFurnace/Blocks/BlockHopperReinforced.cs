@@ -12,8 +12,8 @@ namespace SteelmakingExpanded.BlockStructures.BlastFurnace.Blocks;
 /// iron/coke/flux inventory; Ctrl + right-click toggles blast-mix dropping on the
 /// bell hopper below.
 /// </summary>
-[EntityRegister]
-public class BlockHopperReinforced : Block
+[BlockRegister]
+public partial class BlockHopperReinforced : Block
 {
   public override bool OnBlockInteractStart(
     IWorldAccessor world,

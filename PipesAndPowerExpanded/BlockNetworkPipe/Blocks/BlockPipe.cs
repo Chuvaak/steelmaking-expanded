@@ -8,8 +8,8 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 /// The base pipe block: a self-orienting node of the unified "pipe" network. Provides the
 /// orientation tables shared by every straight/bend/junction variant.
 /// </summary>
-[EntityRegister]
-public class BlockPipe : BlockNetworkNode
+[BlockRegister]
+public partial class BlockPipe : BlockNetworkNode
 {
   public override string NetworkType => "pipe";
 

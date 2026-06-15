@@ -13,7 +13,7 @@ namespace SteelmakingExpanded.BlockStructures.Converter.BlockEntities;
 /// the block's "side" variant. The transmission is a network endpoint - it only
 /// feeds the converter's control block, which reads the network speed.
 /// </summary>
-[EntityRegister]
+[BlockEntityBehaviorRegister]
 public class BEBehaviorMPConverterTransmission(BlockEntity blockentity)
   : BEBehaviorMPBase(blockentity)
 {

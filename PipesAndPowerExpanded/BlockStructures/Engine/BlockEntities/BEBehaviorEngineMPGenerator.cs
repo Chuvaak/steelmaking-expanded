@@ -16,7 +16,7 @@ namespace PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 /// network settles at <c>speed = budget / load</c>: the rated speed at the rated load, slower
 /// under heavier loads. In its natural (north) orientation the axle couples on the north/south faces.
 /// </summary>
-[EntityRegister]
+[BlockEntityBehaviorRegister]
 public class BEBehaviorEngineMPGenerator(BlockEntity blockentity)
   : BEBehaviorMPBase(blockentity)
 {

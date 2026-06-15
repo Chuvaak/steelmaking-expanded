@@ -20,7 +20,7 @@ namespace SteelmakingExpanded.BlockNetworkMolten.BlockEntities;
 /// per-tick cell-to-cell flow and cooling. A cell solidifies on its own when its
 /// metal drops below the melting point, blocking flow until chiselled or broken.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityMoltenCanal : BlockEntityNetworkNode
 {
   #region Network
@@ -478,20 +478,15 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
   /// <summary>Creates the molten-fill renderer from the block's fill-quad attributes. Override to customise the fill geometry.</summary>
   protected virtual void InitRenderer(ICoreClientAPI capi)
   {
-    if (Block is not BlockMoltenCanal)
+    if (Block is not BlockMoltenCanal canal)
       return;
 
-    Cuboidf[] boxes = FillQuads.ReadBoxes(
-      Block,
-      "fillQuadsByLevel",
+    Cuboidf[] boxes = FillQuads.BoxesFrom(
+      canal.FillQuadsByLevel,
       new Cuboidf(7f, 0f, 0f, 9f, 16f, 16f)
     );
-    float fillStartY = FillQuads.ReadStartY(Block, "fillStart", 2f);
-    float fillHeightLevels = FillQuads.ReadHeightLevels(
-      Block,
-      "fillHeight",
-      12f
-    );
+    float fillStartY = BlockMoltenCanal.FillStart / 16f;
+    float fillHeightLevels = BlockMoltenCanal.FillHeight;
     float rotY = (Block.Shape?.rotateY ?? 0f) * GameMath.DEG2RAD;
 
     _renderer = new MoltenRenderer(

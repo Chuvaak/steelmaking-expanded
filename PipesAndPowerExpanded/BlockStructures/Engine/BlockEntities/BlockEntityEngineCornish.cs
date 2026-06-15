@@ -14,7 +14,7 @@ namespace PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 /// (see the per-setting <see cref="EngagePressure"/>/<see cref="BreakPressure"/>), so it needs a
 /// hotter line to engage. The break itself lives in <see cref="BlockEntityEngine"/>.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityEngineCornish : BlockEntityEngine
 {
   // Control-rod setting: 0 = low, 1 = normal, 2 = high.

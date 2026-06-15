@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using ExpandedLib.Helpers;
 using ExpandedLib.Registries.Entities;
+using SteelmakingExpanded.BlockNetworkMolten.Blocks;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -15,7 +16,7 @@ namespace SteelmakingExpanded.BlockNetworkMolten.BlockEntities;
 /// Block entity for the mold pedestal: a canal node that holds one small tool mold
 /// and drains the network's liquid metal into it each tick until full or hardened.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
 {
   /// <summary>Whether a mold is currently placed on the pedestal.</summary>
@@ -215,18 +216,16 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
   {
     base.InitRenderer(capi);
 
-    Cuboidf[] boxes = FillQuads.ReadBoxes(
-      Block,
-      "moldFillQuadsByLevel",
+    if (Block is not BlockMoltenCanalMoldPedestal pedestal)
+      return;
+
+    Cuboidf[] boxes = FillQuads.BoxesFrom(
+      pedestal.MoldFillQuadsByLevel,
       new Cuboidf(7f, 0f, 0f, 9f, 16f, 5f)
     );
-    float fillStartY = FillQuads.ReadStartY(Block, "moldFillStart", 14f);
-    float fillHeightLevels = FillQuads.ReadHeightLevels(
-      Block,
-      "moldFillHeight",
-      1f
-    );
-    float rotY = (Block?.Shape?.rotateY ?? 0f) * GameMath.DEG2RAD;
+    float fillStartY = BlockMoltenCanalMoldPedestal.MoldFillStart / 16f;
+    float fillHeightLevels = BlockMoltenCanalMoldPedestal.MoldFillHeight;
+    float rotY = (pedestal.Shape?.rotateY ?? 0f) * GameMath.DEG2RAD;
 
     _moldRenderer = new MoltenRenderer(
       Pos,

@@ -25,7 +25,7 @@ namespace SteelmakingExpanded.BlockStructures.Converter.BlockEntities;
 /// reads its peripherals (input tap, gas intake, output start, transmission) by
 /// resolving their structure-local offsets through <see cref="GetGlobalPos"/>.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityConverterControl : BlockEntityMultiblockStructure
 {
   #region Structure-local peripheral offsets
@@ -646,7 +646,7 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
     // cell is free first.
     int fillerAngle = ExOrientation.AngleFromSide(converter.Variant["side"]);
     var fillerCells = StructureFillers.FootprintCells(
-      converter,
+      (IFillerHost)converter,
       pos,
       fillerAngle
     );

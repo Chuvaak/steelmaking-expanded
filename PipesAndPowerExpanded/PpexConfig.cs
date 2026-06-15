@@ -1,4 +1,4 @@
-using System;
+using ExpandedLib.Registries.Config;
 using Vintagestory.API.Common;
 
 namespace PipesAndPowerExpanded;
@@ -12,8 +12,27 @@ namespace PipesAndPowerExpanded;
 /// a dimensionless ratio (volume / capacity), expressed in atm.
 /// </para>
 /// </summary>
-public class PpexConfig
+[ExConfigRegister("ppex.json", "ppex")]
+public class PpexConfig : IExVersionedConfig
 {
+  /// <summary>Mod version that last wrote this file; drives the <see cref="Migrations"/> resets.
+  /// Managed by <see cref="ExConfigRegister{TConfig}"/> - do not set by hand.</summary>
+  public string? ConfigVersion { get; set; }
+
+  /// <summary>
+  /// Version-driven default resets. When a player upgrades across one of these versions the listed
+  /// values are forced back to the defaults above, discarding their saved tuning for just those keys
+  /// (everything else is preserved). Add an entry per release that rebalances values you want pushed
+  /// out to existing configs; use <c>nameof</c> for the field names. An entry with no
+  /// <c>ResetFields</c> resets the whole config.
+  /// </summary>
+  public static readonly ExConfigMigration[] Migrations =
+  [
+    // Example - delete or adapt per release:
+    // new() { FromVersion = "0.5.9", ToVersion = "0.6.0", ResetFields =
+    //   [nameof(IronPipeBurstPressure), nameof(SteelPipeBurstPressure)] },
+  ];
+
   #region Pipes
   /// <summary>Litres a single pipe holds at 1 atm (both the gas and water pools).</summary>
   public float LitresPerPipe { get; set; } = 30f;
@@ -239,190 +258,5 @@ public class PpexConfig
 
   /// <summary>Water (L/s) the condenser passes through its W↔E water line (the through-flow cap).</summary>
   public float CondenserWaterThroughput { get; set; } = 50f;
-  #endregion
-}
-
-/// <summary>
-/// Central, JSON-configurable access point for the mod's gameplay tunables. Call
-/// <see cref="Load"/> once during mod startup; until then (and if the config fails to load) the
-/// hard-coded defaults in <see cref="PpexConfig"/> apply. Use the members here everywhere in
-/// code - e.g. <c>PpexValues.BoilingPoint</c>.
-/// </summary>
-public static class PpexValues
-{
-  /// <summary>Config file name, written under the game's <c>ModConfig</c> folder.</summary>
-  public const string ConfigFileName = "ppex.json";
-
-  private static PpexConfig _config = new();
-  private static ICoreAPI? _api;
-
-  /// <summary>
-  /// Loads <see cref="ConfigFileName"/> from the ModConfig folder (falling back to defaults if
-  /// absent or invalid) and writes it back so the file is created on first run and gains any
-  /// newly added keys on update.
-  /// </summary>
-  public static void Load(ICoreAPI api)
-  {
-    _api = api;
-
-    try
-    {
-      _config =
-        api.LoadModConfig<PpexConfig>(ConfigFileName) ?? new PpexConfig();
-    }
-    catch (Exception e)
-    {
-      api.Logger.Error(
-        "[ppex] Failed to read {0}; using defaults. {1}",
-        ConfigFileName,
-        e
-      );
-      _config = new PpexConfig();
-    }
-
-    Save();
-  }
-
-  private static void Save()
-  {
-    try
-    {
-      _api?.StoreModConfig(_config, ConfigFileName);
-    }
-    catch (Exception e)
-    {
-      _api?.Logger.Warning(
-        "[ppex] Could not write {0}. {1}",
-        ConfigFileName,
-        e
-      );
-    }
-  }
-
-  #region Pipes
-  public static float LitresPerPipe => _config.LitresPerPipe;
-  public static float IronPipeBurstPressure => _config.IronPipeBurstPressure;
-  public static float SteelPipeBurstPressure => _config.SteelPipeBurstPressure;
-  public static float BoilingPoint => _config.BoilingPoint;
-  public static float ChimneyGasDrawRate => _config.ChimneyGasDrawRate;
-  public static float GasLeakRate => _config.GasLeakRate;
-  public static float PipeOverpressureSeconds =>
-    _config.PipeOverpressureSeconds;
-  public static float LiquidLeakRate => _config.LiquidLeakRate;
-  public static float EvaporationLitresPerDay =>
-    _config.EvaporationLitresPerDay;
-  #endregion
-
-  #region Steam
-  public static float SteamExpansionFactor => _config.SteamExpansionFactor;
-  public static float SteamTempLowWater => _config.SteamTempLowWater;
-  public static float SteamTempHighWater => _config.SteamTempHighWater;
-  #endregion
-
-  #region Boiler
-  public static float ExhaustMaxOutputPressure =>
-    _config.ExhaustMaxOutputPressure;
-  public static float BoilerMaxOutputPressure =>
-    _config.BoilerMaxOutputPressure;
-  public static float BoilerOverpressureSeconds =>
-    _config.BoilerOverpressureSeconds;
-  public static float BoilerHeatUpSeconds => _config.BoilerHeatUpSeconds;
-  public static float BoilerShutdownDelaySeconds =>
-    _config.BoilerShutdownDelaySeconds;
-  public static float BoilerShutdownCondenseRate =>
-    _config.BoilerShutdownCondenseRate;
-  public static float BoilerCapacity => _config.BoilerCapacity;
-  public static float BoilerMinBoilWater => _config.BoilerMinBoilWater;
-  public static float BoilerMaxBoilWater => _config.BoilerMaxBoilWater;
-  public static float BoilerWaterIntakeFillFraction =>
-    _config.BoilerWaterIntakeFillFraction;
-  public static float BoilerSteamPerSecond => _config.BoilerSteamPerSecond;
-  public static float BoilerExhaustPerSecond => _config.BoilerExhaustPerSecond;
-  public static float BoilerChokeExtinguishSeconds =>
-    _config.BoilerChokeExtinguishSeconds;
-  public static int BoilerExplosionRadius => _config.BoilerExplosionRadius;
-  public static float BoilerBlastResistanceThreshold =>
-    _config.BoilerBlastResistanceThreshold;
-  public static float BoilerExplosionDropRatio =>
-    _config.BoilerExplosionDropRatio;
-  public static float BoilerLidVentRate => _config.BoilerLidVentRate;
-  public static float BoilerSteamLeakRate => _config.BoilerSteamLeakRate;
-  public static float BoilerWaterSurfaceLowLevel =>
-    _config.BoilerWaterSurfaceLowLevel;
-  public static float BoilerWaterSurfaceHighLevel =>
-    _config.BoilerWaterSurfaceHighLevel;
-  public static float WaterPressureSteamBoost =>
-    _config.WaterPressureSteamBoost;
-  #endregion
-
-  #region Cornish boiler
-  public static float CornishBoilerCapacity => _config.CornishBoilerCapacity;
-  public static float CornishBoilerMinBoilWater =>
-    _config.CornishBoilerMinBoilWater;
-  public static float CornishBoilerMaxBoilWater =>
-    _config.CornishBoilerMaxBoilWater;
-  public static float CornishBoilerSteamPerSecond =>
-    _config.CornishBoilerSteamPerSecond;
-  public static float CornishBoilerMaxOutputPressure =>
-    _config.CornishBoilerMaxOutputPressure;
-  public static int CornishBoilerExplosionRadius =>
-    _config.CornishBoilerExplosionRadius;
-  #endregion
-
-  #region Engines + sub-machines
-  public static float WattEngineEngagePressure =>
-    _config.WattEngineEngagePressure;
-  public static float WattEngineBreakPressure =>
-    _config.WattEngineBreakPressure;
-  public static float WattEngineMaxPower => _config.WattEngineMaxPower;
-  public static float WattEngineSteamRate => _config.WattEngineSteamRate;
-  public static float CornishEngineEngagePressureLow =>
-    _config.CornishEngineEngagePressureLow;
-  public static float CornishEngineEngagePressureNormal =>
-    _config.CornishEngineEngagePressureNormal;
-  public static float CornishEngineEngagePressureHigh =>
-    _config.CornishEngineEngagePressureHigh;
-  public static float CornishEngineBreakPressureLow =>
-    _config.CornishEngineBreakPressureLow;
-  public static float CornishEngineBreakPressureNormal =>
-    _config.CornishEngineBreakPressureNormal;
-  public static float CornishEngineBreakPressureHigh =>
-    _config.CornishEngineBreakPressureHigh;
-  public static float CornishEngineMaxPower => _config.CornishEngineMaxPower;
-  public static float CornishEngineSteamLow => _config.CornishEngineSteamLow;
-  public static float CornishEngineSteamNormal =>
-    _config.CornishEngineSteamNormal;
-  public static float CornishEngineSteamHigh => _config.CornishEngineSteamHigh;
-  public static float CornishEnginePowerLow => _config.CornishEnginePowerLow;
-  public static float CornishEnginePowerNormal =>
-    _config.CornishEnginePowerNormal;
-  public static float CornishEnginePowerHigh => _config.CornishEnginePowerHigh;
-  public static float WattEngineWaterRate => _config.WattEngineWaterRate;
-  public static float CornishEngineWaterLow => _config.CornishEngineWaterLow;
-  public static float CornishEngineWaterNormal =>
-    _config.CornishEngineWaterNormal;
-  public static float CornishEngineWaterHigh => _config.CornishEngineWaterHigh;
-  public static float CornishEngineOverclockVolume =>
-    _config.CornishEngineOverclockVolume;
-  public static float CornishEngineOverclockPitch =>
-    _config.CornishEngineOverclockPitch;
-  public static float SteamEngineEfficiency => _config.SteamEngineEfficiency;
-  public static float EngineOverPressureSeconds =>
-    _config.EngineOverPressureSeconds;
-  public static float MpRatedSpeed => _config.MpRatedSpeed;
-  public static float MpLoadPerEnginePower => _config.MpLoadPerEnginePower;
-  public static float PumpWaterPerSecond => _config.PumpWaterPerSecond;
-  public static float ManualPumpWaterPerSecond =>
-    _config.ManualPumpWaterPerSecond;
-  public static int FluidIntakeWaterDepth => _config.FluidIntakeWaterDepth;
-  public static float FluidIntakeExclusionRange =>
-    _config.FluidIntakeExclusionRange;
-  #endregion
-
-  #region Steam condenser
-  public static float CondenserSteamPerSecond =>
-    _config.CondenserSteamPerSecond;
-  public static float CondenserWaterThroughput =>
-    _config.CondenserWaterThroughput;
   #endregion
 }

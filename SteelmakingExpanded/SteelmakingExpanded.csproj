@@ -51,6 +51,13 @@
     </Content>
   </ItemGroup>
 
+  <!-- Block/item type JSON fed to the attribute source generator (compile-time read of their
+       "attributes"), in addition to being copied as content above. -->
+  <ItemGroup>
+    <AdditionalFiles Include="assets\**\blocktypes\**\*.json" />
+    <AdditionalFiles Include="assets\**\itemtypes\**\*.json" />
+  </ItemGroup>
+
   <!--
     smex builds on the shared framework in exlib (network/structure base types, single
     BlockNetworkModSystem identity) and uses ppex's pipe network + pipe blocks directly.
@@ -64,5 +71,12 @@
     <ProjectReference Include="..\PipesAndPowerExpanded\PipesAndPowerExpanded.csproj">
       <Private>false</Private>
     </ProjectReference>
+    <!-- Source generator that emits the SmexValues accessor from the [ExConfig] SmexConfig POCO.
+         OutputItemType=Analyzer + ReferenceOutputAssembly=false: compile-time only, ships nothing. -->
+    <ProjectReference
+      Include="..\ExpandedLib.Generators\ExpandedLib.Generators.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false"
+    />
   </ItemGroup>
 </Project>

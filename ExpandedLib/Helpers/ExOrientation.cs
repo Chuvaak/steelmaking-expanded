@@ -1,4 +1,4 @@
-using Vintagestory.API.Common;
+using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 
 namespace ExpandedLib.Helpers;
@@ -64,12 +64,11 @@ public static class ExOrientation
   }
 
   /// <summary>
-  /// Reads a structure-local <c>{ x, y, z }</c> offset from a block's JSON attributes, falling
-  /// back to <paramref name="fallback"/> when absent.
+  /// Reads a structure-local <c>{ x, y, z }</c> offset from an already-resolved JSON node (e.g. a
+  /// block's generated offset accessor), falling back to <paramref name="fallback"/> when absent.
   /// </summary>
-  public static Vec3i ReadOffset(Block block, string attr, Vec3i fallback)
+  public static Vec3i ReadOffset(JsonObject? node, Vec3i fallback)
   {
-    var node = block.Attributes?[attr];
     if (node == null || !node.Exists)
       return fallback;
     return new Vec3i(
@@ -81,11 +80,10 @@ public static class ExOrientation
 
   /// <summary>
   /// The fractional (double) counterpart of <see cref="ReadOffset"/>, for continuous points
-  /// (particle anchors). Falls back to <paramref name="fallback"/> when the attribute is absent.
+  /// (particle anchors). Falls back to <paramref name="fallback"/> when the node is absent.
   /// </summary>
-  public static Vec3d ReadOffsetD(Block block, string attr, Vec3d fallback)
+  public static Vec3d ReadOffsetD(JsonObject? node, Vec3d fallback)
   {
-    var node = block.Attributes?[attr];
     if (node == null || !node.Exists)
       return fallback;
     return new Vec3d(
@@ -96,19 +94,18 @@ public static class ExOrientation
   }
 
   /// <summary>
-  /// Resolves an attribute-declared structure-local offset to a world cell:
-  /// <c>origin + RotateOffset(ReadOffset(attr), angle)</c>. The canonical way a machine turns a
-  /// JSON offset into a world position for its placed rotation.
+  /// Resolves an already-resolved structure-local offset node to a world cell:
+  /// <c>origin + RotateOffset(ReadOffset(node), angle)</c>. The canonical way a machine turns a
+  /// JSON offset (passed via its generated accessor) into a world position for its placed rotation.
   /// </summary>
   public static BlockPos WorldPosFromAttr(
-    Block block,
     BlockPos origin,
-    string attr,
+    JsonObject? node,
     Vec3i fallback,
     int angle
   )
   {
-    Vec3i off = ReadOffset(block, attr, fallback);
+    Vec3i off = ReadOffset(node, fallback);
     Vec3i r = RotateOffset(off, angle);
     return origin.AddCopy(r.X, r.Y, r.Z);
   }

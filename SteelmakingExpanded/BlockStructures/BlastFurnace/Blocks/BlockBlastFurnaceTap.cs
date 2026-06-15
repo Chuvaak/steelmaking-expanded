@@ -15,8 +15,8 @@ namespace SteelmakingExpanded.BlockStructures.BlastFurnace.Blocks;
 /// pouring; the lower tap drains iron and the upper drains slag into a canal start
 /// beneath the spout.
 /// </summary>
-[EntityRegister]
-public class BlockBlastFurnaceTap : Block
+[BlockRegister]
+public partial class BlockBlastFurnaceTap : Block
 {
   public override bool OnBlockInteractStart(
     IWorldAccessor world,

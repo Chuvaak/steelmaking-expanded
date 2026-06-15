@@ -78,9 +78,9 @@
   "boiler-info-choked": "Choked, exhaust backing up!",
 
   "engine-info-steam": "Draws steam {0}",
-  "engine-info-clock-over": "Overclocked",
+  "engine-info-clock-over": "Over-pressured!",
   "engine-info-clock-nominal": "Nominal",
-  "engine-info-clock-under": "Underclocked",
+  "engine-info-clock-under": "Not enough pressure",
   "engine-info-clock-idle": "Idle",
   "engine-info-throttle": "Throttled {0} (runs {1})",
   "engine-throttle-low": "Low",

@@ -13,7 +13,7 @@ namespace SteelmakingExpanded.BlockStructures.CowperStove.BlockEntities;
 /// Block entity for the cowper-stove heat sink. Holds the regenerator temperature
 /// pushed in by the stove and renders an incandescent glow above ~500 °C.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityHeatSink : BlockEntity
 {
   private float _temperature = 20f;

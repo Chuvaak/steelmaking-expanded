@@ -169,7 +169,7 @@ public class SteelmakingExpandedModSystem : ModSystem
     // The shared structure-filler block lives in exlib (a hard dependency); exlib points the
     // StructureFillers helper at exlib:structurefiller, which this mod's mega-blocks reuse.
 
-    // Auto-register every [EntityRegister] block / block entity / item / behavior
+    // Auto-register every [BlockRegister]/[ItemRegister]/[BlockEntityRegister]/etc. block / item / behavior
     // declared in this assembly.
     EntityRegistry.RegisterAll(api, Mod, GetType().Assembly);
 

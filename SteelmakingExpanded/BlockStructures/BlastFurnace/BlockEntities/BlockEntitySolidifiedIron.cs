@@ -10,7 +10,7 @@ namespace SteelmakingExpanded.BlockStructures.BlastFurnace.BlockEntities;
 /// Block entity for the solidified-iron block; tracks how many iron bits it
 /// will drop.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntitySolidifiedIron : BlockEntity
 {
   /// <summary>Number of iron bits stored, used to scale the break drop.</summary>

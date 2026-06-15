@@ -9,8 +9,8 @@ namespace SteelmakingExpanded.BlockStructures.BlastFurnace.Blocks;
 /// Solidified iron block left when a lit furnace is extinguished; drops iron
 /// bits scaled to its stored count.
 /// </summary>
-[EntityRegister]
-public class BlockSolidifiedIron : Block
+[BlockRegister]
+public partial class BlockSolidifiedIron : Block
 {
   public override ItemStack[] GetDrops(
     IWorldAccessor worldMap,

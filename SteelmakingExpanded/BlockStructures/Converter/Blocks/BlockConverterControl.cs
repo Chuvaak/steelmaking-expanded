@@ -12,8 +12,8 @@ namespace SteelmakingExpanded.BlockStructures.Converter.Blocks;
 /// inspecting the structure while building, and selecting the Normal/Filling/Pouring
 /// state once complete.
 /// </summary>
-[EntityRegister]
-public class BlockConverterControl : Block
+[BlockRegister]
+public partial class BlockConverterControl : Block
 {
   public override bool OnBlockInteractStart(
     IWorldAccessor world,

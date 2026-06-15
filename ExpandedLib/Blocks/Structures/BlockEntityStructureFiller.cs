@@ -12,7 +12,7 @@ namespace ExpandedLib.Blocks.Structures;
 /// The filler block forwards interaction and break to the principal; this entity only carries the
 /// link and HUD passthrough.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityStructureFiller : BlockEntity
 {
   /// <summary>The controller block this filler cell belongs to, or null if orphaned.</summary>

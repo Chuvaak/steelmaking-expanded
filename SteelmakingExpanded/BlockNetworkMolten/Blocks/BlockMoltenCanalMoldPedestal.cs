@@ -15,8 +15,8 @@ namespace SteelmakingExpanded.BlockNetworkMolten.Blocks;
 /// the network's liquid metal. Sneak + right-click places/removes the mold;
 /// Ctrl + right-click toggles pouring.
 /// </summary>
-[EntityRegister]
-public class BlockMoltenCanalMoldPedestal : BlockMoltenCanalTap
+[BlockRegister]
+public partial class BlockMoltenCanalMoldPedestal : BlockMoltenCanalTap
 {
   public override Dictionary<string, string[]> AllowedOrientations { get; } =
     new() { { "moldpedestal", ["n", "s", "w", "e"] } };

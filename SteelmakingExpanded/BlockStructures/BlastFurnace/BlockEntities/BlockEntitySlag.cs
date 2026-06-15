@@ -10,7 +10,7 @@ namespace SteelmakingExpanded.BlockStructures.BlastFurnace.BlockEntities;
 /// Block entity for the solidified-slag block; tracks how many slag units it
 /// will drop.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntitySlag : BlockEntity
 {
   /// <summary>Number of slag units stored, used to scale the break drop.</summary>

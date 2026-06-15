@@ -16,7 +16,7 @@ namespace ExpandedLib.Blocks.Structures;
 /// consumes right-click so its <see cref="EnumHandling.PreventSubsequent"/> wins.
 /// </para>
 /// </summary>
-[EntityRegister("MultiblockStructure", PrefixModId = false)]
+[BlockBehaviorRegister("MultiblockStructure", PrefixModId = false)]
 public class BlockBehaviorMultiblockStructure : BlockBehavior
 {
   public BlockBehaviorMultiblockStructure(Block block)

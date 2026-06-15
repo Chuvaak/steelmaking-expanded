@@ -16,7 +16,7 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 /// (<see cref="IsConnectionBroken"/>), splitting it in two. Toggling re-walks the graph. The
 /// state is shown by holding the shape's <c>open</c> animation pose.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityValve : BlockEntityPipe
 {
   private bool _open;

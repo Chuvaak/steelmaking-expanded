@@ -1,3 +1,4 @@
+using ExpandedLib.Blocks.Structures;
 using ExpandedLib.Helpers;
 using ExpandedLib.Registries.Entities;
 using PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
@@ -16,8 +17,8 @@ namespace PipesAndPowerExpanded.BlockStructures.Engine.Blocks;
 /// wrench's reverse-rotate would eat it first. The rods answer on the engine's cell and the filler
 /// above it; repairs require steel only. All other behavior lives in <see cref="BlockEngine"/>.
 /// </summary>
-[EntityRegister]
-public class BlockEngineCornish : BlockEngine
+[BlockRegister]
+public partial class BlockEngineCornish : BlockEngine, IFillerHost, IEngineGeometry
 {
   protected override RepairItem[] RepairItems =>
     [

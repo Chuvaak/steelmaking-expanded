@@ -6,8 +6,8 @@ using Vintagestory.API.MathTools;
 namespace SteelmakingExpanded.BlockStructures.BlastFurnace.Blocks;
 
 /// <summary>Solidified slag block left when blast mix finishes burning; drops slag items scaled to its stored count.</summary>
-[EntityRegister]
-public class BlockSlag : Block
+[BlockRegister]
+public partial class BlockSlag : Block
 {
   public override ItemStack[] GetDrops(
     IWorldAccessor worldMap,

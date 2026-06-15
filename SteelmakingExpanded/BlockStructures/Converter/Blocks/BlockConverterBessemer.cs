@@ -13,8 +13,8 @@ namespace SteelmakingExpanded.BlockStructures.Converter.Blocks;
 /// RightClickConstructable block-entity behavior; this block scatters any
 /// solidified charge when broken with a steel-tier pickaxe.
 /// </summary>
-[EntityRegister]
-public class BlockConverterBessemer : Block
+[BlockRegister]
+public partial class BlockConverterBessemer : Block, IFillerHost
 {
   // RMB construction and its build prompts are routed to the
   // RightClickConstructable block-entity behaviour by the "BlockEntityInteract"

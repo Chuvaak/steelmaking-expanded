@@ -1,4 +1,4 @@
-using System;
+using ExpandedLib.Registries.Config;
 using Vintagestory.API.Common;
 
 namespace SteelmakingExpanded;
@@ -10,8 +10,27 @@ namespace SteelmakingExpanded;
 /// used when the file is missing or a key is absent. Accessed through
 /// <see cref="SmexValues"/>, not directly.
 /// </summary>
-public class SmexConfig
+[ExConfigRegister("smex.json", "smex")]
+public class SmexConfig : IExVersionedConfig
 {
+  /// <summary>Mod version that last wrote this file; drives the <see cref="Migrations"/> resets.
+  /// Managed by <see cref="ExConfigRegister{TConfig}"/> - do not set by hand.</summary>
+  public string? ConfigVersion { get; set; }
+
+  /// <summary>
+  /// Version-driven default resets. When a player upgrades across one of these versions the listed
+  /// values are forced back to the defaults above, discarding their saved tuning for just those keys
+  /// (everything else is preserved). Add an entry per release that rebalances values you want pushed
+  /// out to existing configs; use <c>nameof</c> for the field names. An entry with no
+  /// <c>ResetFields</c> resets the whole config.
+  /// </summary>
+  public static readonly ExConfigMigration[] Migrations =
+  [
+    // Example - delete or adapt per release:
+    // new() { FromVersion = "0.9.1", ToVersion = "0.9.2", ResetFields =
+    //   [nameof(MoltenFlowRate), nameof(MoltenCooldownSpeed)] },
+  ];
+
   #region Molten system
   /// <summary>Temperature cooldown speed applied to molten-metal stacks held by the molten system (canal cells, taps, barrels, molds, the bessemer charge).</summary>
   public float MoltenCooldownSpeed { get; set; } = 24f;
@@ -179,145 +198,5 @@ public class SmexConfig
   #region Smoke stack
   /// <summary>Exhaust gas (L/s) the smoke stack vents from the network.</summary>
   public float SmokestackGasIntakeVolume { get; set; } = 48.0f;
-  #endregion
-}
-
-/// <summary>
-/// Central, JSON-configurable access point for the mod's gameplay tunables. Call
-/// <see cref="Load"/> once during mod startup; until then (and if the config
-/// fails to load) the hard-coded defaults in <see cref="SmexConfig"/> apply.
-/// Use the members here everywhere in code - e.g. <c>SmexValues.MoltenCooldownSpeed</c>.
-/// </summary>
-public static class SmexValues
-{
-  /// <summary>Config file name, written under the game's <c>ModConfig</c> folder.</summary>
-  public const string ConfigFileName = "smex.json";
-
-  private static SmexConfig _config = new();
-
-  /// <summary>
-  /// Loads <see cref="ConfigFileName"/> from the ModConfig folder (falling back to
-  /// defaults if absent or invalid) and writes it back so the file is created on
-  /// first run and gains any newly added keys on update. Safe to call on either
-  /// side; each side reads its own local copy.
-  /// </summary>
-  public static void Load(ICoreAPI api)
-  {
-    try
-    {
-      _config =
-        api.LoadModConfig<SmexConfig>(ConfigFileName) ?? new SmexConfig();
-    }
-    catch (Exception e)
-    {
-      api.Logger.Error(
-        "[smex] Failed to read {0}; using defaults. {1}",
-        ConfigFileName,
-        e
-      );
-      _config = new SmexConfig();
-    }
-
-    // Persist defaults / fill in keys added since the file was authored.
-    try
-    {
-      api.StoreModConfig(_config, ConfigFileName);
-    }
-    catch (Exception e)
-    {
-      api.Logger.Warning("[smex] Could not write {0}. {1}", ConfigFileName, e);
-    }
-  }
-
-  #region Molten system
-  public static float MoltenCooldownSpeed => _config.MoltenCooldownSpeed;
-  public static int MoltenFlowRate => _config.MoltenFlowRate;
-  public static int MoltenMinFlowAmount => _config.MoltenMinFlowAmount;
-  public static int CanalDefaultUnitCapacity =>
-    _config.CanalDefaultUnitCapacity;
-  public static float CanalDefaultDrainSpeed => _config.CanalDefaultDrainSpeed;
-  public static int MoldDefaultUnits => _config.MoldDefaultUnits;
-  public static int BarrelDefaultMaxUnits => _config.BarrelDefaultMaxUnits;
-  public static int CanalSealClayCost => _config.CanalSealClayCost;
-  public static int CanalUnsealClayRefund => _config.CanalUnsealClayRefund;
-  #endregion
-
-  #region Blast furnace / fuel
-  public static int BlastMixRequiredToFire => _config.BlastMixRequiredToFire;
-  public static int BlastmixBurnTime => _config.BlastmixBurnTime;
-  #endregion
-
-  #region Bessemer converter
-  public static float BessemerPourHoldSeconds =>
-    _config.BessemerPourHoldSeconds;
-  public static int BessemerRequiredGears => _config.BessemerRequiredGears;
-  public static int BessemerRequiredRods => _config.BessemerRequiredRods;
-  #endregion
-
-  #region Air blower / blast
-  public static float BlastPressureThreshold => _config.BlastPressureThreshold;
-  public static float AirBlowerOutputPerSecond =>
-    _config.AirBlowerOutputPerSecond;
-  #endregion
-
-  #region Player safety
-  public static float MoldBurnMinTemperature => _config.MoldBurnMinTemperature;
-  #endregion
-
-  #region Cowper stove
-  public static float CowperMaxTemperature => _config.CowperMaxTemperature;
-  public static float CowperHeatingSpeedAnthracite =>
-    _config.CowperHeatingSpeedAnthracite;
-  public static float CowperHeatingSpeedOtherCoal =>
-    _config.CowperHeatingSpeedOtherCoal;
-  public static float CowperHeatingSpeedDefault =>
-    _config.CowperHeatingSpeedDefault;
-  public static float CowperCoolingSpeedExhaust =>
-    _config.CowperCoolingSpeedExhaust;
-  public static float CowperCoolingSpeedAir => _config.CowperCoolingSpeedAir;
-  public static float CowperIntakeVolume => _config.CowperIntakeVolume;
-  #endregion
-
-  #region Blast furnace
-  public static float BfNaturalMaxTemp => _config.BfNaturalMaxTemp;
-  public static float BfBoostedMaxTemp => _config.BfBoostedMaxTemp;
-  public static float BfBlastBoostThreshold => _config.BfBlastBoostThreshold;
-  public static float BfIronMeltingPoint => _config.BfIronMeltingPoint;
-  public static float BfMaxMoltenIron => _config.BfMaxMoltenIron;
-  public static float BfMaxMoltenSlag => _config.BfMaxMoltenSlag;
-  public static int BfMaxFuelBurnTime => _config.BfMaxFuelBurnTime;
-  public static float BfMeltStartDelay => _config.BfMeltStartDelay;
-  public static float BfMeltIntervalSec => _config.BfMeltIntervalSec;
-  public static float BfIronPerMeltCycle => _config.BfIronPerMeltCycle;
-  public static float BfSlagPerMeltCycle => _config.BfSlagPerMeltCycle;
-  public static int BfBlastMixPerMeltCycle => _config.BfBlastMixPerMeltCycle;
-  public static float TuyereIntakeVolume => _config.TuyereIntakeVolume;
-  #endregion
-
-  #region Bessemer converter
-  public static int BessemerConverterCapacity =>
-    _config.BessemerConverterCapacity;
-  public static float BessemerBlastPerSecond => _config.BessemerBlastPerSecond;
-  public static float BessemerProcessDuration =>
-    _config.BessemerProcessDuration;
-  public static float BessemerProcessTemperature =>
-    _config.BessemerProcessTemperature;
-  public static float BessemerPowerSpeedThreshold =>
-    _config.BessemerPowerSpeedThreshold;
-  #endregion
-
-  #region Hopper bell (blast-mix maker)
-  public static int HopperMaxMagazineCapacity =>
-    _config.HopperMaxMagazineCapacity;
-  public static int HopperIronOreRequired => _config.HopperIronOreRequired;
-  public static int HopperCokeRequired => _config.HopperCokeRequired;
-  public static int HopperLimeRequired => _config.HopperLimeRequired;
-  public static int HopperBlastmixProduced => _config.HopperBlastmixProduced;
-  public static int HopperDropAmount => _config.HopperDropAmount;
-  #endregion
-
-  #region Smoke stack
-  public static float SmokestackGasIntakeVolume =>
-    _config.SmokestackGasIntakeVolume;
   #endregion
 }

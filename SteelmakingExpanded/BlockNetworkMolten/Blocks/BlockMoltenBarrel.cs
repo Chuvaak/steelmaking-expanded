@@ -17,8 +17,8 @@ namespace SteelmakingExpanded.BlockNetworkMolten.Blocks;
 /// crucible), it renders a glowing fill level; once full and hardened the metal can
 /// be chiselled out. Ctrl + right-click picks the barrel up with its contents.
 /// </summary>
-[EntityRegister]
-public class BlockMoltenBarrel : Block
+[BlockRegister]
+public partial class BlockMoltenBarrel : Block
 {
   private MeshData? _barrelBaseMesh;
 
@@ -100,9 +100,7 @@ public class BlockMoltenBarrel : Block
     if (units <= 0 || metal?.Collectible == null)
       return;
 
-    int maxUnits =
-      Attributes?["maxUnits"].AsInt(SmexValues.BarrelDefaultMaxUnits)
-      ?? SmexValues.BarrelDefaultMaxUnits;
+    int maxUnits = MaxUnits; // generated const, baked from the block JSON's "maxUnits" attribute.
     float fillRatio =
       maxUnits > 0 ? GameMath.Clamp((float)units / maxUnits, 0f, 1f) : 0f;
     float temp = metal.Collectible.GetTemperature(capi.World, metal);
@@ -144,14 +142,12 @@ public class BlockMoltenBarrel : Block
     _barrelBaseMesh ??= TesselateBaseMesh(capi);
     MeshData combined = _barrelBaseMesh.Clone();
 
-    Cuboidf[] boxes = FillQuads.ReadBoxes(
-      this,
-      "fillQuadsByLevel",
+    // FillQuadsByLevel / FillStart / FillHeight are the generated attribute members (no string reads).
+    Cuboidf[] boxes = FillQuads.BoxesFrom(
+      FillQuadsByLevel,
       new Cuboidf(4f, 0f, 4f, 12f, 16f, 12f)
     );
-    float fillStartY = FillQuads.ReadStartY(this, "fillStart", 2f);
-    float fillHeightLevels = FillQuads.ReadHeightLevels(this, "fillHeight", 8f);
-    float yLevel = fillStartY + fillRatio * fillHeightLevels / 16f;
+    float yLevel = FillStart / 16f + fillRatio * FillHeight / 16f;
 
     var tex = metal.Item?.FirstTexture ?? metal.Block?.FirstTextureInventory;
     if (tex == null)
@@ -327,9 +323,7 @@ public class BlockMoltenBarrel : Block
       MoltenContents.BarrelUnitsKey,
       world
     );
-    int maxUnits =
-      Attributes?["maxUnits"].AsInt(SmexValues.BarrelDefaultMaxUnits)
-      ?? SmexValues.BarrelDefaultMaxUnits;
+    int maxUnits = MaxUnits; // generated const, baked from the block JSON's "maxUnits" attribute.
 
     if (currentUnits <= 0)
     {

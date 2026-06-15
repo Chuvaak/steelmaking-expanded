@@ -11,8 +11,8 @@ namespace SteelmakingExpanded.BlockNetworkMolten.Blocks;
 /// sink that liquid metal is poured into - from a furnace/converter tap above, or
 /// directly from a smelted crucible held by the player.
 /// </summary>
-[EntityRegister]
-public class BlockMoltenCanalStart : BlockMoltenCanal
+[BlockRegister]
+public partial class BlockMoltenCanalStart : BlockMoltenCanal
 {
   // Smelted crucibles cached once on load, used only for the pour interaction help.
   private ItemStack[] _smeltedCrucibles = [];

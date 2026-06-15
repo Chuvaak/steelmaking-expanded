@@ -13,8 +13,8 @@ namespace SteelmakingExpanded.BlockStructures.Converter.Blocks;
 /// reads/consumes blast from the network on the other side of it. Horizontally
 /// orientable so it can be aligned with the control block.
 /// </summary>
-[EntityRegister]
-public class BlockConverterIntake : Block, INetworkConnector
+[BlockRegister]
+public partial class BlockConverterIntake : Block, INetworkConnector
 {
   public string NetworkType => "pipe";
 

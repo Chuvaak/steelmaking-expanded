@@ -15,7 +15,7 @@ namespace SteelmakingExpanded.BlockStructures.BlastFurnace.BlockEntities;
 /// shape's open animation pose) and accepts molten metal pushed from the furnace to
 /// hand down into the canal start beneath it.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityBlastFurnaceTap : BlockEntity
 {
   /// <summary>Whether the tap is currently open and pouring.</summary>

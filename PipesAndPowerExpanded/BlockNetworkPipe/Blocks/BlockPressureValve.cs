@@ -14,8 +14,8 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 /// Right-click raises the gate, sneak+right-click lowers it (see
 /// <see cref="BlockEntityPressureValve.GatePressureStep"/>), bounded by the valve's material rating.
 /// </summary>
-[EntityRegister]
-public class BlockPressureValve : BlockValve
+[BlockRegister]
+public partial class BlockPressureValve : BlockValve
 {
   public override Dictionary<string, string[]> AllowedOrientations { get; } =
     new() { { "pressurevalve", ["ns", "we", "ud", "sn", "ew", "du"] } };

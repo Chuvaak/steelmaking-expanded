@@ -12,8 +12,8 @@ namespace PipesAndPowerExpanded;
 
 /// <summary>
 /// Main mod system for Pipes and Power Expanded. Loads the gameplay tunables, patches the vanilla
-/// chimney look-at info, auto-registers every <see cref="EntityRegisterAttribute"/>-decorated
-/// class, adds the creative tab, and registers the unified "pipe" network type (gases + liquids).
+/// chimney look-at info, auto-registers every <c>[BlockRegister]</c>/<c>[ItemRegister]</c>/etc.
+/// decorated class, adds the creative tab, and registers the unified "pipe" network type (gases + liquids).
 /// </summary>
 public class PipesAndPowerExpandedModSystem : ModSystem
 {

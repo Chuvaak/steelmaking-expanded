@@ -20,7 +20,7 @@ namespace PipesAndPowerExpanded.BlockStructures.ManualPump.BlockEntities;
 /// <see cref="BlockEntityFluidIntake"/> on the input network is the generator, and each tick the
 /// standing input water is moved out first, then the intake refills it.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityManualFluidPump : BlockEntity
 {
   private BlockNetworkModSystem? _netSystem;

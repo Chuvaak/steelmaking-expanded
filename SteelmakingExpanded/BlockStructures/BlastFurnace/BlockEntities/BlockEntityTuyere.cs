@@ -7,5 +7,5 @@ namespace SteelmakingExpanded.BlockStructures.BlastFurnace.BlockEntities;
 /// Block entity for the tuyere; a gas-pipe node that the furnace draws
 /// air/blast from as a consumer.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityTuyere : BlockEntityPipe { }

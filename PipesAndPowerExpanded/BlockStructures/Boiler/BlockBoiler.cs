@@ -4,6 +4,7 @@ using ExpandedLib.Blocks.Structures;
 using ExpandedLib.Helpers;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 
@@ -32,30 +33,33 @@ public abstract class BlockBoiler
 
   public bool HasConnectorAt(BlockFacing face) => face == BlockFacing.DOWN;
 
+  /// <summary>The concrete boiler's generated offset accessors (Lancashire/Cornish implement it).</summary>
+  private IBoilerGeometry Geo => (IBoilerGeometry)this;
+
   private BlockPos OffsetWorldPos(
     BlockPos boilerPos,
-    string attr,
+    JsonObject? offsetNode,
     Vec3i fallback
-  ) => ExOrientation.WorldPosFromAttr(this, boilerPos, attr, fallback, Angle);
+  ) => ExOrientation.WorldPosFromAttr(boilerPos, offsetNode, fallback, Angle);
 
   /// <summary>World cell of the firebox slot.</summary>
   public BlockPos FuelWorldPos(BlockPos boilerPos) =>
-    OffsetWorldPos(boilerPos, "fuelOffset", new Vec3i(0, 0, -1));
+    OffsetWorldPos(boilerPos, Geo.FuelOffset, new Vec3i(0, 0, -1));
 
   /// <summary>World cell of the exhaust gas outlet.</summary>
   public BlockPos ExhaustOutletWorldPos(BlockPos boilerPos) =>
-    OffsetWorldPos(boilerPos, "exhaustOutletOffset", new Vec3i(0, 1, 4));
+    OffsetWorldPos(boilerPos, Geo.ExhaustOutletOffset, new Vec3i(0, 1, 4));
 
   /// <summary>World cell of the filler that carries the access lid.</summary>
   public BlockPos LidWorldPos(BlockPos boilerPos) =>
-    OffsetWorldPos(boilerPos, "lidOffset", new Vec3i(0, 1, 0));
+    OffsetWorldPos(boilerPos, Geo.LidOffset, new Vec3i(0, 1, 0));
 
   /// <summary>
   /// World cell of the steam connector (the port filler atop the body); the steam pipe attaches
   /// in the cell directly above it.
   /// </summary>
   public BlockPos SteamPipeWorldPos(BlockPos boilerPos) =>
-    OffsetWorldPos(boilerPos, "steamConnectorOffset", new Vec3i(0, 1, 2));
+    OffsetWorldPos(boilerPos, Geo.SteamConnectorOffset, new Vec3i(0, 1, 2));
 
   /// <summary>
   /// World cell the animated vessel mesh is lit from. Vanilla lights the whole footprint from
@@ -63,21 +67,21 @@ public abstract class BlockBoiler
   /// sample at a body cell instead. Read from <c>lightSampleOffset</c>, rotated by angle.
   /// </summary>
   public BlockPos LightSampleWorldPos(BlockPos boilerPos) =>
-    OffsetWorldPos(boilerPos, "lightSampleOffset", new Vec3i(0, 1, 2));
+    OffsetWorldPos(boilerPos, Geo.LightSampleOffset, new Vec3i(0, 1, 2));
 
   /// <summary>
   /// World cell at the footprint centre, where the burst explosion is centred so it goes off
   /// inside the boiler. Read from <c>explosionCenterOffset</c>, rotated by angle.
   /// </summary>
   public BlockPos ExplosionCenterPos(BlockPos boilerPos) =>
-    OffsetWorldPos(boilerPos, "explosionCenterOffset", new Vec3i(0, 1, 1));
+    OffsetWorldPos(boilerPos, Geo.ExplosionCenterOffset, new Vec3i(0, 1, 1));
 
   /// <summary>Removes the boiler's reserved filler footprint (used by the explosion path).</summary>
   public void RemoveStructure(IWorldAccessor world, BlockPos pos) =>
     StructureFillers.RemoveFillers(
       world,
       pos,
-      StructureFillers.FootprintCells(this, pos, Angle)
+      StructureFillers.FootprintCells((IFillerHost)this, pos, Angle)
     );
 
   public override bool CanPlaceBlock(
@@ -91,7 +95,11 @@ public abstract class BlockBoiler
       return false;
 
     // Refuse placement unless the whole volume is clear, else the fillers fail to spawn.
-    var cells = StructureFillers.FootprintCells(this, blockSel.Position, Angle);
+    var cells = StructureFillers.FootprintCells(
+      (IFillerHost)this,
+      blockSel.Position,
+      Angle
+    );
     if (!StructureFillers.CanPlace(world, cells))
     {
       failureCode = "notenoughspace";
@@ -110,7 +118,7 @@ public abstract class BlockBoiler
     StructureFillers.PlaceFillers(
       world,
       blockPos,
-      StructureFillers.FootprintCells(this, blockPos, Angle)
+      StructureFillers.FootprintCells((IFillerHost)this, blockPos, Angle)
     );
     MarkSteamPort(world, blockPos);
   }
@@ -146,7 +154,7 @@ public abstract class BlockBoiler
     StructureFillers.RemoveFillers(
       world,
       pos,
-      StructureFillers.FootprintCells(this, pos, Angle)
+      StructureFillers.FootprintCells((IFillerHost)this, pos, Angle)
     );
 
     base.OnBlockBroken(world, pos, byPlayer, dropQuantityMultiplier);

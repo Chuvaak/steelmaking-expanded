@@ -14,7 +14,7 @@ namespace SteelmakingExpanded.BlockStructures.BlastFurnace.BlockEntities;
 /// coke and flux that the bell hopper below consumes to craft blast mix. Right-click
 /// opens its dialog; Ctrl + right-click toggles the bell hopper's dropping.
 /// </summary>
-[EntityRegister]
+[BlockEntityRegister]
 public class BlockEntityHopperReinforced : BlockEntityContainer
 {
   private InventoryGeneric _inventory;

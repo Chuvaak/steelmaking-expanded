@@ -806,7 +806,7 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
   {
     get
     {
-      var node = Block.Attributes?["waterRendererBox"];
+      var node = (Block as IBoilerGeometry)?.WaterRendererBox;
       if (node == null || !node.Exists)
         return [new Cuboidf(-16f, 0f, 0f, 16f, 16f, 48f)];
 

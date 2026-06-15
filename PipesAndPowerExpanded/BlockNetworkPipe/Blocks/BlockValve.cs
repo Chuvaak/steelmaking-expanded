@@ -13,8 +13,8 @@ namespace PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 /// through; closed, it severs the run at its cell (see
 /// <see cref="BlockEntityValve.IsConnectionBroken"/>). Empty-hand right-click toggles it.
 /// </summary>
-[EntityRegister]
-public class BlockValve : BlockPipe
+[BlockRegister]
+public partial class BlockValve : BlockPipe
 {
   // Cached once - consulted on every placement/neighbour recalc, so it must not allocate per read.
   public override Dictionary<string, string[]> AllowedOrientations { get; } =
