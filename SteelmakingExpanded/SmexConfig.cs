@@ -26,8 +26,24 @@ public class SmexConfig : IExVersionedConfig
   /// </summary>
   public static readonly ExConfigMigration[] Migrations =
   [
+    // 0.9.0: the bessemer blast draw (1 -> 8 L/s) and smoke-stack vent rate (4 -> 48 L/s)
+    // were retuned during the gas-volume rebalance - push the new defaults to pre-0.9.0
+    // configs (e.g. players coming from 0.8.6). FromVersion null so even unversioned
+    // files are caught; 0.9.0+ already carry these values.
+    new()
+    {
+      ToVersion = "0.9.0",
+      ResetFields =
+      [
+        nameof(BessemerBlastPerSecond),
+        nameof(SmokestackGasIntakeVolume),
+      ],
+    },
+
     // 0.9.2: the converter vessel now costs a single smithable large gear (8 rods)
-    // instead of 4 rusty gears (12 rods) - push the rebalanced counts to existing configs.
+    // instead of 4 rusty gears (12 rods), and the air blower now scales off absolute
+    // engine power so its base output was retuned (16 -> 48 L/s) - push the rebalanced
+    // defaults to existing configs.
     new()
     {
       ToVersion = "0.9.2",
@@ -35,6 +51,7 @@ public class SmexConfig : IExVersionedConfig
       [
         nameof(BessemerRequiredGears),
         nameof(BessemerRequiredRods),
+        nameof(AirBlowerOutputPerSecond),
       ],
     },
   ];
