@@ -10,8 +10,8 @@
   "refractory-tier2": "Refractory Tier 2",
   "refractory-tier3": "Refractory Tier 3",
 
-  "command-exmod-desc": "Fallenstar's Expanded mods settings",
-  "command-exmod-help": "Fallenstar's Expanded mods settings. Use a sub-command (see /help exmod); available options depend on which Expanded mods are installed.",
+  "command-exmod-desc": "Exlib base command, it has only network highlight functionality on it's own. Other mods can extend this command with their functionality.",
+  "command-exmod-help": "Use a sub-command (see /help exmod). Available options depend on which mods are installed and what subcommands those add.",
   "command-pref-current": "{0}: {1}",
   "command-pref-set": "{0} set to {1}.",
   "command-pref-invalid": "Unknown value '{0}' for {1}. Options: {2}.",
