@@ -1,6 +1,9 @@
+using System.Text;
 using ExpandedLib.Helpers;
 using ExpandedLib.Registries.Entities;
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
+using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 
@@ -24,8 +27,32 @@ public class BlockEntityMoltenCanalStart
   // Throttle for the molten-pour sound as metal enters here.
   private long _lastPourSoundMs;
 
-  // The start is a source fitting that keeps accepting/passing metal, so it never clogs.
-  protected override bool SolidifiesWhenCold => false;
+  // Running tally of metal accepted here, shown in the block info while pouring is active. Cleared
+  // once no new metal has arrived for PourTallyTimeoutMs (server tracks the timestamp; the count is
+  // synced to clients for display).
+  private const long PourTallyTimeoutMs = 5000;
+  private int _pourTally;
+  private long _lastPourMs;
+
+  public override void Initialize(ICoreAPI api)
+  {
+    base.Initialize(api);
+    // Server clears the pour tally once it goes idle; clients only render the synced count.
+    if (api.Side == EnumAppSide.Server)
+      RegisterGameTickListener(OnPourTallyTick, 1000);
+  }
+
+  private void OnPourTallyTick(float dt)
+  {
+    if (
+      _pourTally > 0
+      && Api.World.ElapsedMilliseconds - _lastPourMs > PourTallyTimeoutMs
+    )
+    {
+      _pourTally = 0;
+      MarkDirty();
+    }
+  }
 
   #region ILiquidMetalSink
 
@@ -81,6 +108,13 @@ public class BlockEntityMoltenCanalStart
     // Unaccepted overflow still bathes the cell in hot metal - soak that heat so it never plugs.
     bool soaked = amount > 0 && SoakHeat(Api.World, temperature);
 
+    if (accepted > 0)
+    {
+      _pourTally += accepted;
+      _lastPourMs = Api.World.ElapsedMilliseconds;
+      MarkDirty();
+    }
+
     if (accepted > 0 || soaked)
       ExSounds.PlayThrottled(
         Api,
@@ -93,4 +127,28 @@ public class BlockEntityMoltenCanalStart
   }
 
   #endregion
+
+  public override void ToTreeAttributes(ITreeAttribute tree)
+  {
+    base.ToTreeAttributes(tree);
+    tree.SetInt("pourTally", _pourTally);
+  }
+
+  public override void FromTreeAttributes(
+    ITreeAttribute tree,
+    IWorldAccessor worldForResolving
+  )
+  {
+    base.FromTreeAttributes(tree, worldForResolving);
+    _pourTally = tree.GetInt("pourTally");
+  }
+
+  public override void GetBlockInfo(IPlayer forPlayer, StringBuilder dsc)
+  {
+    base.GetBlockInfo(forPlayer, dsc);
+
+    // Live feedback while metal is flowing in; the tally self-clears after a few idle seconds.
+    if (_pourTally > 0)
+      dsc.AppendLine(Lang.Get("smex:canalstart-pouredtally", _pourTally));
+  }
 }

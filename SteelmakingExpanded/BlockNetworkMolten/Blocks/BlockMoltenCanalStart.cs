@@ -44,14 +44,24 @@ public partial class BlockMoltenCanalStart : BlockMoltenCanal
     _smeltedCrucibles = crucibles.ToArray();
   }
 
-  // Return false so the held item's interaction runs instead of being swallowed.
-  // The block entity implements ILiquidMetalSink, so vanilla BlockSmeltedContainer
-  // (a smelted crucible) pours its molten metal into the canal network from here.
+  // A solidified start clogs like any canal - hand it to the base chisel-clear interaction so the
+  // player can chip it out for the next pour. Otherwise return false so the held item's interaction
+  // runs instead of being swallowed: the block entity implements ILiquidMetalSink, so vanilla
+  // BlockSmeltedContainer (a smelted crucible) pours its molten metal into the canal network here.
   public override bool OnBlockInteractStart(
     IWorldAccessor world,
     IPlayer byPlayer,
     BlockSelection blockSel
-  ) => false;
+  )
+  {
+    if (
+      world.BlockAccessor.GetBlockEntity(blockSel.Position)
+      is BlockEntityMoltenCanal { Solidified: true }
+    )
+      return base.OnBlockInteractStart(world, byPlayer, blockSel);
+
+    return false;
+  }
 
   protected override void GetRotations(
     string orientation,
