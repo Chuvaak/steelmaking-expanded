@@ -71,27 +71,42 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
   /// <summary>Whether this cell currently holds liquid (not solidified) metal.</summary>
   public bool HasMoltenMetal => !Solidified && CellAmount > 0f;
 
+  /// <summary>Whether this cell holds no metal at all (neither liquid nor solidified).</summary>
+  public bool IsCellEmpty => CellAmount <= 0;
+
   /// <summary>
-  /// Whether this cell's metal has cooled enough to be chiselled out (below the hardened
-  /// threshold × melting point). A just-solidified cell blocks flow but is too hot to chip out
-  /// until then. Works on both sides (melting point resolves from the synced <see cref="CellMetalType"/>).
+  /// Thermal state of this cell's metal (liquid / cooling / hardened), classified against the
+  /// melting point - independent of the <see cref="Solidified"/> latch, so fittings that never clog
+  /// (start, tap, pedestal) still report when their metal has cooled. Works on both sides
+  /// (melting point resolves from the synced <see cref="CellMetalType"/>); empty cells read liquid.
   /// </summary>
-  public bool IsHardened
+  public MoltenState CellState
   {
     get
     {
       if (Api?.World == null || CellAmount <= 0 || CellMetalType.Length == 0)
-        return false;
+        return MoltenState.Liquid;
       Item? item = Api.World.GetItem(new AssetLocation(CellMetalType));
       if (item == null)
-        return false;
+        return MoltenState.Liquid;
       float meltPoint = MoltenMetal.MeltingPointOf(
         Api.World,
         new ItemStack(item)
       );
-      return _cellTemperature < MoltenMetal.HardenedThreshold * meltPoint;
+      if (_cellTemperature < MoltenMetal.HardenedThreshold * meltPoint)
+        return MoltenState.Hardened;
+      if (_cellTemperature < MoltenMetal.LiquidThreshold * meltPoint)
+        return MoltenState.Cooling;
+      return MoltenState.Liquid;
     }
   }
+
+  /// <summary>
+  /// Whether this cell's metal has cooled enough to be chiselled out (below the hardened
+  /// threshold × melting point). A just-solidified cell blocks flow but is too hot to chip out
+  /// until then.
+  /// </summary>
+  public bool IsHardened => CellState == MoltenState.Hardened;
 
   #region Incandescent block light
   /// <summary>
@@ -629,12 +644,21 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     else
     {
       string metalName = MoltenMetal.DisplayName(CellMetalType);
+      string state = Lang.Get(
+        CellState switch
+        {
+          MoltenState.Liquid => "smex:metalstate-liquid",
+          MoltenState.Hardened => "smex:metalstate-hardened",
+          _ => "smex:metalstate-cooling",
+        }
+      );
       dsc.AppendLine(
         Lang.Get(
           "smex:canal-content2",
           CellAmount,
           MaxUnitCapacity,
           metalName,
+          state,
           ExMeasure.Temperature(_cellTemperature)
         )
       );

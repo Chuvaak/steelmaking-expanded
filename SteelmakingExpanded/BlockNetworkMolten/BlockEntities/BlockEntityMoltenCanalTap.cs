@@ -251,10 +251,16 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     out float fillHeightLevels
   )
   {
-    fillStartY = BlockMoltenCanal.FillStart / 16f;
-    fillHeightLevels = BlockMoltenCanal.FillHeight;
-    var quads = block is BlockMoltenCanal canal ? canal.FillQuadsByLevel : null;
-    return FillQuads.BoxesFrom(quads, new Cuboidf(4f, 0f, 4f, 12f, 16f, 12f));
+    // The parked content varies (a barrel or any large mold), so the surface must follow the CONTENT
+    // block's own fill geometry - NOT the tap's generated FillStart/FillHeight consts, which would
+    // pin a parked barrel's metal at the tap's spout height. Molds aren't [BlockRegister] partials
+    // and have no generated consts, so this reads the live block attributes for every content type.
+    fillStartY = (block.Attributes?["fillStart"].AsFloat(1f) ?? 1f) / 16f;
+    fillHeightLevels = block.Attributes?["fillHeight"].AsFloat(8f) ?? 8f;
+    return FillQuads.BoxesFrom(
+      block.Attributes?["fillQuadsByLevel"],
+      new Cuboidf(4f, 0f, 4f, 12f, 16f, 12f)
+    );
   }
 
   #endregion

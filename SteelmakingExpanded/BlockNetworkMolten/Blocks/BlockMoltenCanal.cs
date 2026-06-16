@@ -257,8 +257,9 @@ public partial class BlockMoltenCanal : BlockNetworkNode
       if (!IsFireClay(held) || held!.StackSize < SmexValues.CanalSealClayCost)
         return base.OnBlockInteractStart(world, byPlayer, blockSel);
 
-      // Don't seal a line that still has liquid metal or has solidified (chip it clear first).
-      if (be.HasMoltenMetal || be.Solidified)
+      // Only seal a fully drained section: this cell AND its connector-face neighbours must be
+      // empty, so a seal never traps metal against itself.
+      if (!CanSeal(world, blockSel.Position, be))
       {
         if (world.Side == EnumAppSide.Server)
           (byPlayer as IServerPlayer)?.SendIngameError("smex-canalnotempty");
@@ -304,6 +305,34 @@ public partial class BlockMoltenCanal : BlockNetworkNode
     return true;
   }
 
+  /// <summary>
+  /// Whether this straight canal may be sealed: the cell itself holds no metal and neither does any
+  /// of its connector-face canal neighbours. Sealing only severs an already-drained section.
+  /// </summary>
+  private bool CanSeal(
+    IWorldAccessor world,
+    BlockPos pos,
+    BlockEntityMoltenCanal be
+  )
+  {
+    if (!be.IsCellEmpty)
+      return false;
+    if (Orientation == null)
+      return true;
+
+    foreach (char c in Orientation)
+    {
+      BlockPos nPos = pos.AddCopy(BlockFacing.FromFirstLetter(c));
+      if (
+        world.BlockAccessor.GetBlockEntity(nPos)
+          is BlockEntityMoltenCanal nbe
+        && !nbe.IsCellEmpty
+      )
+        return false;
+    }
+    return true;
+  }
+
   private static bool IsFireClay(ItemStack? stack) =>
     stack?.Collectible?.Code is { } code
     && code.Domain == FireClayCode.Domain
@@ -328,8 +357,9 @@ public partial class BlockMoltenCanal : BlockNetworkNode
       world.BlockAccessor.GetBlockEntity(selection.Position)
       as BlockEntityMoltenCanal;
 
-    // The chip-clear hint only shows once the metal has fully hardened.
-    if (be?.IsHardened == true)
+    // The chip-clear hint only shows on a clogged (solidified) cell once it has fully hardened -
+    // not on fittings that never latch Solidified, which can't be chiselled.
+    if (be is { Solidified: true, IsHardened: true })
       return
       [
         .. baseHelp,
@@ -349,31 +379,42 @@ public partial class BlockMoltenCanal : BlockNetworkNode
     if (Type != "straight")
       return baseHelp;
 
-    bool isSealed = be is { Sealed: true };
+    // A sealed canal can always be unsealed.
+    if (be is { Sealed: true })
+      return
+      [
+        .. baseHelp,
+        new WorldInteraction
+        {
+          ActionLangCode = "smex:blockhelp-canal-unseal",
+          MouseButton = EnumMouseButton.Right,
+          Itemstacks = _chiselStacks ??=
+            [
+              .. world
+                .SearchItems(new AssetLocation("chisel-*"))
+                .Select(i => new ItemStack(i)),
+            ],
+        },
+      ];
 
-    WorldInteraction extra = isSealed
-      ? new WorldInteraction
-      {
-        ActionLangCode = "smex:blockhelp-canal-unseal",
-        MouseButton = EnumMouseButton.Right,
-        Itemstacks = _chiselStacks ??=
-          [
-            .. world
-              .SearchItems(new AssetLocation("chisel-*"))
-              .Select(i => new ItemStack(i)),
-          ],
-      }
-      : new WorldInteraction
-      {
-        ActionLangCode = "smex:blockhelp-canal-seal",
-        MouseButton = EnumMouseButton.Right,
-        Itemstacks =
-          (_fireClayStacks ??= ResolveFireClayStacks(world)).Length > 0
-            ? _fireClayStacks
-            : null,
-      };
+    // The seal hint only shows when sealing is actually possible: this cell and its neighbours
+    // are empty. A cell holding (or sitting next to) metal - liquid or solidified - won't advertise it.
+    if (be != null && CanSeal(world, selection.Position, be))
+      return
+      [
+        .. baseHelp,
+        new WorldInteraction
+        {
+          ActionLangCode = "smex:blockhelp-canal-seal",
+          MouseButton = EnumMouseButton.Right,
+          Itemstacks =
+            (_fireClayStacks ??= ResolveFireClayStacks(world)).Length > 0
+              ? _fireClayStacks
+              : null,
+        },
+      ];
 
-    return [.. baseHelp, extra];
+    return baseHelp;
   }
 
   private static ItemStack[] ResolveFireClayStacks(IWorldAccessor world)

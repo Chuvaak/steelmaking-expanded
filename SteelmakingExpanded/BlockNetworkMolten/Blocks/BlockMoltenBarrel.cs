@@ -15,7 +15,7 @@ namespace SteelmakingExpanded.BlockNetworkMolten.Blocks;
 /// <summary>
 /// A portable barrel that stores liquid metal. Poured into from a canal tap (or a
 /// crucible), it renders a glowing fill level; once full and hardened the metal can
-/// be chiselled out. Ctrl + right-click picks the barrel up with its contents.
+/// be chiselled out. Sneak + right-click picks the barrel up with its contents.
 /// </summary>
 [BlockRegister]
 public partial class BlockMoltenBarrel : Block
@@ -255,7 +255,7 @@ public partial class BlockMoltenBarrel : Block
       return be.TryChiselOut(byPlayer);
     }
 
-    if (byPlayer.Entity.Controls.CtrlKey)
+    if (byPlayer.Entity.Controls.ShiftKey)
     {
       if (world.Side == EnumAppSide.Client)
         return true;
@@ -383,7 +383,7 @@ public partial class BlockMoltenBarrel : Block
       {
         ActionLangCode = "smex:blockhelp-barrel-pickup",
         MouseButton = EnumMouseButton.Right,
-        HotKeyCode = "ctrl",
+        HotKeyCode = "sneak",
       },
     };
 
