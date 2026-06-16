@@ -30,11 +30,7 @@ public class PpexConfig : IExVersionedConfig
   [
     // 0.6.0: the engine fluid pump now scales off absolute engine power, so its base
     // throughput was retuned (5 -> 16.67 L/s) - push the new default to existing configs.
-    new()
-    {
-      ToVersion = "0.6.0",
-      ResetFields = [nameof(PumpWaterPerSecond)],
-    },
+    new() { ToVersion = "0.6.0", ResetFields = [nameof(PumpWaterPerSecond)] },
   ];
 
   #region Pipes

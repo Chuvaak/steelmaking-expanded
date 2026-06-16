@@ -444,6 +444,10 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
   private string? _cachedMetalType;
   private ItemStack? _cachedMetalStack;
 
+  // Orientation the molten-surface renderer was last built for, so OnExchanged only rebuilds it on a
+  // real orientation change.
+  private string? _rendererOrientation;
+
   public override void Initialize(ICoreAPI api)
   {
     base.Initialize(api);
@@ -453,6 +457,30 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     if (api.Side == EnumAppSide.Client)
     {
       InitRenderer((ICoreClientAPI)api);
+      UpdateRenderer();
+    }
+  }
+
+  /// <summary>
+  /// A wrench rotates the canal via <c>ExchangeBlock</c>, which keeps this BE alive so
+  /// <see cref="Initialize"/> never re-runs and the molten-surface renderer stays bound to the
+  /// original orientation's <c>rotateY</c> - the metal then renders in the pre-rotation direction.
+  /// Rebuild the renderer (and refresh the capped open faces) against the new block's shape.
+  /// </summary>
+  public override void OnExchanged(Block block)
+  {
+    base.OnExchanged(block);
+
+    RefreshOpenConnectorFaces();
+
+    if (
+      Api is ICoreClientAPI capi
+      && block.Variant["orientation"] != _rendererOrientation
+    )
+    {
+      _renderer?.Dispose();
+      _renderer = null;
+      InitRenderer(capi);
       UpdateRenderer();
     }
   }
@@ -512,6 +540,7 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
       fillStartY,
       fillHeightLevels
     );
+    _rendererOrientation = Block.Variant["orientation"];
     capi.Event.RegisterRenderer(_renderer, EnumRenderStage.Opaque);
   }
 

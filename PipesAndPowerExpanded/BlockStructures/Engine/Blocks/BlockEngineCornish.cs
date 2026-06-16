@@ -18,7 +18,10 @@ namespace PipesAndPowerExpanded.BlockStructures.Engine.Blocks;
 /// above it; repairs require steel only. All other behavior lives in <see cref="BlockEngine"/>.
 /// </summary>
 [BlockRegister]
-public partial class BlockEngineCornish : BlockEngine, IFillerHost, IEngineGeometry
+public partial class BlockEngineCornish
+  : BlockEngine,
+    IFillerHost,
+    IEngineGeometry
 {
   protected override RepairItem[] RepairItems =>
     [

@@ -39,7 +39,6 @@ public class SmexConfig : IExVersionedConfig
         nameof(SmokestackGasIntakeVolume),
       ],
     },
-
     // 0.9.2: the converter vessel now costs a single smithable large gear (8 rods)
     // instead of 4 rusty gears (12 rods), and the air blower now scales off absolute
     // engine power so its base output was retuned (16 -> 48 L/s) - push the rebalanced

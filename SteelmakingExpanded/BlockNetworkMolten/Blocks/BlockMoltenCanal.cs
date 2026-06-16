@@ -324,8 +324,7 @@ public partial class BlockMoltenCanal : BlockNetworkNode
     {
       BlockPos nPos = pos.AddCopy(BlockFacing.FromFirstLetter(c));
       if (
-        world.BlockAccessor.GetBlockEntity(nPos)
-          is BlockEntityMoltenCanal nbe
+        world.BlockAccessor.GetBlockEntity(nPos) is BlockEntityMoltenCanal nbe
         && !nbe.IsCellEmpty
       )
         return false;

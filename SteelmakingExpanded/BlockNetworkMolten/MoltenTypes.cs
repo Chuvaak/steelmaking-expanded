@@ -17,7 +17,6 @@ public struct FillQuadDef
     z2;
 }
 
-
 /// <summary>
 /// Reads the molten-surface fill geometry attributes (<c>fillQuadsByLevel</c>,
 /// <c>fillStart</c>, <c>fillHeight</c> - or a prefixed variant like the pedestal's
