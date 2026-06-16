@@ -174,6 +174,14 @@ public static class ToolMoldPatches
     quad.TextureIndices = [0];
     quad.TextureIndicesCount = 1;
 
+    // Make the surface double-sided. Vanilla's placed ToolMoldRenderer draws this single quad with
+    // culling disabled; here it's baked into the mold's block mesh and drawn by the standard held-item
+    // renderer with CullFaces on, so the back-facing winding gets culled. That hides the surface
+    // whenever the hold pose tilts the quad away from the camera - e.g. the off-hand-occupied pose.
+    // Appending the reversed winding (same 4 verts) keeps it visible from either side.
+    quad.Indices = [0, 1, 2, 0, 2, 3, 0, 2, 1, 0, 3, 2];
+    quad.IndicesCount = 12;
+
     mesh.AddMeshData(quad);
     return capi.Render.UploadMultiTextureMesh(mesh);
   }
