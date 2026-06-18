@@ -224,6 +224,14 @@ public abstract class BlockBoiler
       return true;
     }
 
+    // An empty liquid container while the lid is open → bail water out into it.
+    if (be.LidOpen && IsEmptyLiquidContainer(slot?.Itemstack))
+    {
+      if (world.Side == EnumAppSide.Server && slot != null)
+        be.TryManualDrain(byPlayer, slot);
+      return true;
+    }
+
     // Empty hands → begin the lid hold; the toggle happens in the step loop past the threshold.
     if (slot?.Empty != false)
     {
@@ -338,6 +346,14 @@ public abstract class BlockBoiler
     return content?.Collectible?.Code?.Path?.Contains("water") == true;
   }
 
+  /// <summary>An empty liquid container (e.g. an empty bucket) - the tool used to bail water out.</summary>
+  private static bool IsEmptyLiquidContainer(ItemStack? stack)
+  {
+    if (stack?.Collectible is not BlockLiquidContainerBase cont)
+      return false;
+    return cont.GetContent(stack) == null;
+  }
+
   public override WorldInteraction[] GetPlacedBlockInteractionHelp(
     IWorldAccessor world,
     BlockSelection selection,
@@ -382,8 +398,9 @@ public abstract class BlockBoiler
       }
     );
 
-    // The manual water fill only works while the lid is open, so only advertise it then.
+    // The manual water fill/drain only work while the lid is open, so only advertise them then.
     if (be.LidOpen)
+    {
       help.Add(
         new WorldInteraction
         {
@@ -392,6 +409,15 @@ public abstract class BlockBoiler
           Itemstacks = WaterContainerStacks(world),
         }
       );
+      help.Add(
+        new WorldInteraction
+        {
+          ActionLangCode = "ppex:blockhelp-boiler-drain",
+          MouseButton = EnumMouseButton.Right,
+          Itemstacks = EmptyContainerStacks(world),
+        }
+      );
+    }
 
     return help.ToArray();
   }
@@ -425,6 +451,29 @@ public abstract class BlockBoiler
       list.Add(waterStack);
 
     return _waterContainerStacks = list.ToArray();
+  }
+
+  /// <summary>Empty liquid containers shown on the manual-drain interaction hint, resolved once.</summary>
+  private static ItemStack[]? _emptyContainerStacks;
+
+  private static ItemStack[] EmptyContainerStacks(IWorldAccessor world)
+  {
+    if (_emptyContainerStacks != null)
+      return _emptyContainerStacks;
+
+    var list = new List<ItemStack>();
+    foreach (var block in world.Blocks)
+    {
+      if (
+        block?.Code == null
+        || block is not BlockLiquidContainerBase
+        || !block.Code.Path.Contains("woodbucket")
+      )
+        continue;
+      list.Add(new ItemStack(block));
+    }
+
+    return _emptyContainerStacks = list.ToArray();
   }
 
   #endregion

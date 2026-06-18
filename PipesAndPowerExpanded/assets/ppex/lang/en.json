@@ -11,6 +11,15 @@
   "pref-measure-metric": "Metric (L, atm, °C)",
   "pref-measure-imperial": "Imperial (gal, psi, °F)",
 
+  "unit-litres": "L",
+  "unit-gallons": "gal",
+  "unit-litres-per-second": "L/s",
+  "unit-gallons-per-second": "gal/s",
+  "unit-atm": "atm",
+  "unit-psi": "psi",
+  "unit-celsius": "°C",
+  "unit-fahrenheit": "°F",
+
   "block-pipe-straight*": "Piping (Straight)",
   "block-pipe-bend*": "Piping (Bend)",
   "block-pipe-tjunction*": "Piping (T-Junction)",
@@ -55,7 +64,7 @@
   "blockdesc-boilercornish-*": "Normal single-flue boiler for low steam production.\n",
   "blockdesc-boilerlancashire-*": "Larger twin-flue boiler for high steam production.\n",
   "blockdesc-enginecornish-*": "High-pressure more effective beam engine that's steam intake can be throttled up or down. Drives one attached sub-machine.\n",
-  "blockdesc-enginewatt-*": "Low-pressure beam engine - the first step into steam power. Drives one attached sub-machine. Operates at 2-4 atm steam pressure.\n",
+  "blockdesc-enginewatt-*": "Low-pressure beam engine - the first step into steam power. Drives one attached sub-machine.\n",
   "blockdesc-enginefluidpump-*": "Engine-driven pump. Transfers water from intake line to pressurised output line.",
   "blockdesc-enginempgenerator-*": "Engine-driven crank that turns axles, supplying mechanical power to machines.",
   "blockdesc-manualfluidpump-*": "Hand-cranked pump. Hold right-click to draw water from an intake.",
@@ -88,6 +97,7 @@
   "engine-info-clock-under": "Not enough pressure",
   "engine-info-clock-idle": "Idle",
   "engine-info-throttle": "Throttled {0} (runs {1})",
+  "engine-info-band": "Operating band {0}",
   "engine-throttle-low": "Low",
   "engine-throttle-normal": "Normal",
   "engine-throttle-high": "High",
@@ -136,6 +146,7 @@
 
   "blockhelp-boiler-lid": "Hold to open or close the lid",
   "blockhelp-boiler-fill": "Pour in water",
+  "blockhelp-boiler-drain": "Bail out water",
   "blockhelp-manualfluidpump-crank": "Hold to crank the pump",
 
   "handbook-steampower-title": "Steam Power: Pipes",

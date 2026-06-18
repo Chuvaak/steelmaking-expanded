@@ -382,10 +382,13 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
     if (waterNet != null && _waterVolume < MaxWaterIntakeFill)
     {
       float feedPressure = waterNet.State?.Pressure ?? 0f;
-      float drawn = waterNet.TryConsumeLiquid(
+      // Cap the draw at the intake rate so a piped supply trickles in (≤10 L/s) instead of
+      // gulping the whole remaining headroom in a single tick.
+      float request = Math.Min(
         MaxWaterIntakeFill - _waterVolume,
-        ba
+        PpexValues.BoilerWaterIntakeRate * dt
       );
+      float drawn = waterNet.TryConsumeLiquid(request, ba);
       _waterVolume += drawn;
 
       if (drawn > 0f && feedPressure > 1f && _state == BoilerState.Boiling)
@@ -393,15 +396,16 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
           drawn * (feedPressure - 1f) * PpexValues.WaterPressureSteamBoost;
     }
 
-    bool waterInRange =
-      _waterVolume >= MinBoilWater && _waterVolume <= MaxBoilWater;
+    // Only a lower water bound gates boiling - there's no "too full" cutoff, since the fill
+    // paths (auto intake, manual pour, condensation) already cap water at MaxBoilWater.
+    bool enoughWater = _waterVolume >= MinBoilWater;
     float grace = PpexValues.BoilerShutdownDelaySeconds;
 
     switch (_state)
     {
       case BoilerState.Idle:
         CondenseInternal(dt);
-        if (burning && waterInRange)
+        if (burning && enoughWater)
         {
           _state = BoilerState.Heating;
           _heatingSeconds = 0f;
@@ -410,7 +414,7 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
         break;
 
       case BoilerState.Heating:
-        if (!burning || !waterInRange)
+        if (!burning || !enoughWater)
         {
           _shutdownSeconds += dt;
           if (_shutdownSeconds >= grace)
@@ -426,7 +430,7 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
         break;
 
       case BoilerState.Boiling:
-        if (burning && waterInRange)
+        if (burning && enoughWater)
           _shutdownSeconds = 0f;
         else
         {
@@ -439,7 +443,7 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
         }
 
         if (
-          waterInRange
+          enoughWater
           && (burning || _shutdownSeconds < grace)
           && InternalPressure < MaxOutputPressure
         )
@@ -503,16 +507,17 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
     _steamVolume += waterUse * PpexValues.SteamExpansionFactor;
   }
 
-  /// <summary>Steam temperature (°C) - hotter at low water, cooler near the fill ceiling.</summary>
+  /// <summary>
+  /// Saturated-steam temperature (°C), derived from the internal pressure the way real steam
+  /// works: T = boiling point × absolutePressure^exponent. Higher pressure means hotter steam.
+  /// The boiler/pipe pressure is gauge (0 atm = atmospheric), so add the 1 atm atmosphere to get
+  /// the absolute pressure - at 0 atm gauge the steam reads exactly the boiling point.
+  /// </summary>
   private float SteamTemperature()
   {
-    float span = Math.Max(1f, MaxBoilWater - MinBoilWater);
-    float frac = GameMath.Clamp((_waterVolume - MinBoilWater) / span, 0f, 1f);
-    return GameMath.Lerp(
-      PpexValues.SteamTempLowWater,
-      PpexValues.SteamTempHighWater,
-      frac
-    );
+    float absPressure = Math.Max(0f, InternalPressure) + 1f;
+    return PpexValues.BoilingPoint
+      * (float)Math.Pow(absPressure, PpexValues.SteamSaturationExponent);
   }
 
   /// <summary>
@@ -581,36 +586,50 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
   }
 
   /// <summary>
-  /// Bleeds steam above 1 atm out through the open lid at
-  /// <see cref="PpexValues.BoilerLidVentRate"/>, so a high-pressure vessel blows off
-  /// gradually. Boiling keeps adding steam underneath.
+  /// Bleeds steam out through the open lid at <see cref="PpexValues.BoilerLidVentRate"/>, so a
+  /// pressurised vessel blows off gradually. While running it stops at atmospheric (1 atm) since
+  /// boiling keeps adding steam underneath; once idle it empties the trapped pocket completely
+  /// (down to 0 atm), so an open lid fully drains a shut-down boiler.
   /// </summary>
   private void VentExcessSteam(float dt)
   {
-    float oneAtmSteam = Math.Max(0f, Capacity - _waterVolume);
-    if (_steamVolume <= oneAtmSteam)
+    float floor =
+      _state == BoilerState.Idle ? 0f : Math.Max(0f, Capacity - _waterVolume);
+    if (_steamVolume <= floor)
       return;
     float vent = Math.Min(
-      _steamVolume - oneAtmSteam,
+      _steamVolume - floor,
       PpexValues.BoilerLidVentRate * dt
     );
-    _steamVolume = Math.Max(oneAtmSteam, _steamVolume - vent);
+    _steamVolume = Math.Max(floor, _steamVolume - vent);
   }
 
-  /// <summary>Condenses leftover internal steam back into water (after a shutdown).</summary>
+  /// <summary>
+  /// Condenses leftover internal steam back into water (after a shutdown), but only while the
+  /// resulting water stays below the boil-water ceiling (<see cref="MaxBoilWater"/>). Once the
+  /// vessel is that full, the remaining steam is trapped and stops condensing - the player vents
+  /// it through the lid. The leftover headspace above the water keeps the steam pocket finite.
+  /// </summary>
   private void CondenseInternal(float dt)
   {
     if (_steamVolume <= 0f)
       return;
+    // Condensing steam removes 16 L of steam but only frees ~1 L of headspace (the water it
+    // becomes), so in a nearly-full, high-pressure vessel each step concentrates the leftover
+    // steam and RAISES pressure instead of lowering it - the crossover is exactly at the
+    // expansion factor. Above it, refuse to condense: the trapped steam must be bled off
+    // through the lid first, so condensation can never run the pressure up toward a burst.
+    if (InternalPressure >= PpexValues.SteamExpansionFactor)
+      return;
+    float waterRoom = MaxBoilWater - _waterVolume;
+    if (waterRoom <= 0f)
+      return;
     float cond = Math.Min(
-      _steamVolume,
-      PpexValues.BoilerShutdownCondenseRate * dt
+      Math.Min(_steamVolume, PpexValues.BoilerShutdownCondenseRate * dt),
+      waterRoom * PpexValues.SteamExpansionFactor
     );
     _steamVolume -= cond;
-    _waterVolume = Math.Min(
-      Capacity,
-      _waterVolume + cond / PpexValues.SteamExpansionFactor
-    );
+    _waterVolume += cond / PpexValues.SteamExpansionFactor;
   }
 
   /// <summary>Shuts the boiler down: back to Idle, reset timers (leftover steam condenses in Idle).</summary>
@@ -782,6 +801,59 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
 
     BlockPos pourPos = BoilerBlock?.LidWorldPos(Pos) ?? Pos;
     ExSounds.PlayAt(Api.World, pourPos, ExSounds.WaterPour, null, range: 16f);
+
+    MarkDirty(true);
+    return true;
+  }
+
+  /// <summary>
+  /// Bails water out of the boiler into a held liquid container (RMB with an empty/water-holding
+  /// bucket while the lid is open). Only water above <see cref="MinBoilWater"/> is reachable - the
+  /// boiler's operating floor is too deep for a bucket - so manual draining stops there. Metered
+  /// in litres on both sides via the litre delta, so transfer-size rounding can't desync them.
+  /// </summary>
+  public bool TryManualDrain(IPlayer byPlayer, ItemSlot slot)
+  {
+    if (slot.Itemstack?.Collectible is not BlockLiquidContainerBase cont)
+      return false;
+
+    // Empty, or already holding water (don't mix into milk/other liquids).
+    ItemStack? content = cont.GetContent(slot.Itemstack);
+    if (
+      content != null
+      && content.Collectible?.Code?.Path?.Contains("water") != true
+    )
+      return false;
+
+    // Only water above the operating floor can be bailed out with a bucket.
+    float reachable = _waterVolume - MinBoilWater;
+    if (reachable < 0.01f)
+      return false;
+
+    float before = cont.GetCurrentLitres(slot.Itemstack);
+    float space = cont.CapacityLitres - before;
+    if (space < 0.01f)
+      return false;
+
+    float want = Math.Min(reachable, space);
+    var waterStack = new ItemStack(
+      Api.World.GetItem(new AssetLocation("game:waterportion"))
+    );
+    // TryPutLiquid also caps the transfer at the liquid stack's item count, and a fresh portion
+    // stack is one item (0.01 L). Make the source effectively unlimited so the bucket fills right
+    // up to its free space (a full 10 L bucket each time) - the transfer is then bounded only by
+    // `want` (the bucket's free space, capped by the reachable boiler water).
+    waterStack.StackSize = int.MaxValue;
+    cont.TryPutLiquid(slot.Itemstack, waterStack, want);
+    float added = cont.GetCurrentLitres(slot.Itemstack) - before;
+    if (added <= 0f)
+      return false;
+    slot.MarkDirty();
+
+    _waterVolume -= added;
+
+    BlockPos drainPos = BoilerBlock?.LidWorldPos(Pos) ?? Pos;
+    ExSounds.PlayAt(Api.World, drainPos, ExSounds.WaterPour, null, range: 16f);
 
     MarkDirty(true);
     return true;

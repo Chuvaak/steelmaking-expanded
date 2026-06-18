@@ -1,4 +1,7 @@
 using ExpandedLib.Registries.Entities;
+using PipesAndPowerExpanded.Helpers;
+using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 
 namespace PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 
@@ -18,4 +21,23 @@ public class BlockEntityEngineWatt : BlockEntityEngine
   protected override float RunSteamRate => PpexValues.WattEngineSteamRate;
   protected override float RunPower => PpexValues.WattEngineMaxPower;
   protected override float RunWaterOutput => PpexValues.WattEngineWaterRate;
+
+  public override void GetBlockInfo(
+    IPlayer forPlayer,
+    System.Text.StringBuilder dsc
+  )
+  {
+    base.GetBlockInfo(forPlayer, dsc);
+    if (!IsConstructed || IsBroken)
+      return;
+
+    // Show the fixed operating band through ExMeasure (like the Cornish engine), so it converts
+    // with the player's measurement preference instead of reading a hardcoded "2-4 atm".
+    dsc.AppendLine(
+      Lang.Get(
+        "ppex:engine-info-band",
+        ExMeasure.PressureRange(EngagePressure, BreakPressure)
+      )
+    );
+  }
 }

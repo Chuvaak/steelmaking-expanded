@@ -67,11 +67,11 @@ public class PpexConfig : IExVersionedConfig
   /// <summary>Litres of steam produced by boiling one litre of water (and the reverse ratio steam condenses back at).</summary>
   public float SteamExpansionFactor { get; set; } = 16f;
 
-  /// <summary>Steam temperature (°C) produced when the boiler is at its minimum operating water level (hottest).</summary>
-  public float SteamTempLowWater { get; set; } = 220f;
-
-  /// <summary>Steam temperature (°C) produced when the boiler is at its maximum operating water level (coolest).</summary>
-  public float SteamTempHighWater { get; set; } = 160f;
+  /// <summary>Exponent of the saturated-steam temperature curve: steam temperature (°C) =
+  /// <see cref="BoilingPoint"/> × (gaugePressure + 1)^exponent (absolute pressure in atm). 0.25
+  /// closely tracks the real water saturation curve (e.g. ~150°C at 4 atm gauge, ~186°C at 11 atm
+  /// gauge; 100°C at 0 atm gauge).</summary>
+  public float SteamSaturationExponent { get; set; } = 0.25f;
   #endregion
 
   #region Boiler (base values used for the Lancashire variant)
@@ -105,6 +105,10 @@ public class PpexConfig : IExVersionedConfig
   /// <summary>Fraction of the vessel capacity the automatic pump intake fills to - keeps a piped
   /// supply from overfilling the boiler (manual pouring can still go up to the boil-water ceiling).</summary>
   public float BoilerWaterIntakeFillFraction { get; set; } = 0.5f;
+
+  /// <summary>Maximum rate (L/s) the boiler draws water from its feed network through the automatic
+  /// intake - the supply trickles in rather than slurping the whole headroom in one tick.</summary>
+  public float BoilerWaterIntakeRate { get; set; } = 10f;
 
   /// <summary>Steam (L/s) produced while boiling at full tilt (consumes this / <see cref="SteamExpansionFactor"/> litres of water).</summary>
   public float BoilerSteamPerSecond { get; set; } = 48f;

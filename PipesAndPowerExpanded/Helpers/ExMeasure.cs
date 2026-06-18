@@ -1,6 +1,8 @@
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
+using Vintagestory.API.Config;
 
 namespace PipesAndPowerExpanded.Helpers;
 
@@ -116,67 +118,118 @@ public static class ExMeasure
 
   #region Handbook prose conversion
 
-  // Plain metric unit mentions in prose: a single value, a "a-b" range or an "a / b / c" list,
-  // followed by a metric unit. The unit alternation lists "L/s" before "L" so the longer match
-  // wins; the trailing negative look-ahead stops "L"/"atm" from matching inside a word. The whole
-  // number (incl. decimals) is captured, so "2.5 atm" converts cleanly without partial matches.
-  private static readonly Regex MetricLiteralRegex = new(
-    @"((?:\d+(?:\.\d+)?\s*[-/]\s*)*\d+(?:\.\d+)?)\s*(L/s|L|atm|°C)(?![A-Za-z])",
-    RegexOptions.Compiled
+  /// <summary>One metric→imperial unit conversion, keyed by the <em>localized</em> metric symbol
+  /// so handbook prose authored in any locale's units converts: how to turn a metric value
+  /// imperial, the number format to print it with, and the localized imperial symbol.</summary>
+  private readonly record struct UnitConversion(
+    string MetricSymbol,
+    string ImperialSymbol,
+    Func<float, float> ToImperial,
+    string Format
   );
+
+  // The metric-literal regex and conversion table are derived from the localized unit symbols, so
+  // they're rebuilt whenever the active language changes those symbols (keyed by _conversionSig).
+  private static string? _conversionSig;
+  private static Regex? _metricRegex;
+  private static UnitConversion[]? _conversions;
+
+  private static void EnsureConversions()
+  {
+    var conversions = new[]
+    {
+      new UnitConversion(
+        Unit("litres-per-second"),
+        Unit("gallons-per-second"),
+        v => v * LitresToImperialGallons,
+        "0.##"
+      ),
+      new UnitConversion(
+        Unit("litres"),
+        Unit("gallons"),
+        v => v * LitresToImperialGallons,
+        "0.##"
+      ),
+      new UnitConversion(
+        Unit("atm"),
+        Unit("psi"),
+        v => v * AtmToPsi,
+        "0.##"
+      ),
+      new UnitConversion(
+        Unit("celsius"),
+        Unit("fahrenheit"),
+        v => v * 9f / 5f + 32f,
+        "0"
+      ),
+    };
+
+    string sig = string.Join("", conversions.Select(c => c.MetricSymbol));
+    if (sig == _conversionSig && _metricRegex != null)
+      return;
+
+    // Longest metric symbol first so a compound symbol wins over its prefix (e.g. "L/s" over "L");
+    // each symbol is regex-escaped since a locale may use characters with regex meaning. The whole
+    // number expression - a value, an "a-b" range or an "a / b / c" list - is captured, and the
+    // trailing negative look-ahead stops a symbol from matching inside a Latin word.
+    string alternation = string.Join(
+      "|",
+      conversions
+        .OrderByDescending(c => c.MetricSymbol.Length)
+        .Select(c => Regex.Escape(c.MetricSymbol))
+    );
+    _metricRegex = new Regex(
+      @"((?:\d+(?:\.\d+)?\s*[-/]\s*)*\d+(?:\.\d+)?)\s*("
+        + alternation
+        + @")(?![A-Za-z])",
+      RegexOptions.Compiled
+    );
+    _conversions = conversions;
+    _conversionSig = sig;
+  }
 
   /// <summary>
   /// Converts plain metric unit mentions in free prose (e.g. handbook text) to the active
   /// <see cref="System"/>: "30 L" → "6.6 gal", "2-4 atm" → "29.39-58.78 psi", "160-220 °C" →
-  /// "320-428 °F", "8 / 16 / 32 L/s" → "1.76 / 3.52 / 7.04 gal/s". Returns the text unchanged in
-  /// metric mode (the prose is authored in metric) and for any text without a recognised unit.
+  /// "320-428 °F", "8 / 16 / 32 L/s" → "1.76 / 3.52 / 7.04 gal/s". The metric symbols matched and
+  /// the imperial symbols printed are the localized <c>unit-*</c> labels, so a translated handbook
+  /// converts too (author the prose with the same metric symbols the lang file defines). Returns
+  /// the text unchanged in metric mode and for any text without a recognised unit.
   /// </summary>
   public static string ConvertMetricText(string text)
   {
     if (!Imperial || string.IsNullOrEmpty(text))
       return text;
 
-    return MetricLiteralRegex.Replace(
+    EnsureConversions();
+
+    return _metricRegex!.Replace(
       text,
       m =>
       {
         string numbers = m.Groups[1].Value;
-        string unit = m.Groups[2].Value;
+        string symbol = m.Groups[2].Value;
+        UnitConversion conv = Array.Find(
+          _conversions!,
+          c => c.MetricSymbol == symbol
+        );
         // Convert each number in the (possibly multi-value) expression, keeping the
         // original "-" / "/" separators and spacing between them.
         string converted = Regex.Replace(
           numbers,
           @"\d+(?:\.\d+)?",
           nm =>
-            ConvertNumber(
-              unit,
-              float.Parse(nm.Value, CultureInfo.InvariantCulture)
+            Num(
+              conv.ToImperial(
+                float.Parse(nm.Value, CultureInfo.InvariantCulture)
+              ),
+              conv.Format
             )
         );
-        return converted + " " + ImperialUnit(unit);
+        return converted + " " + conv.ImperialSymbol;
       }
     );
   }
-
-  private static string ConvertNumber(string metricUnit, float value) =>
-    metricUnit switch
-    {
-      "L/s" => Num(value * LitresToImperialGallons, "0.##"),
-      "L" => Num(value * LitresToImperialGallons, "0.##"),
-      "atm" => Num(value * AtmToPsi, "0.##"),
-      "°C" => Num(value * 9f / 5f + 32f, "0"),
-      _ => Num(value, "0.##"),
-    };
-
-  private static string ImperialUnit(string metricUnit) =>
-    metricUnit switch
-    {
-      "L/s" => "gal/s",
-      "L" => "gal",
-      "atm" => "psi",
-      "°C" => "°F",
-      _ => metricUnit,
-    };
 
   #endregion
 
@@ -184,24 +237,32 @@ public static class ExMeasure
 
   private static (string num, string unit) Vol(float litres, string format) =>
     Imperial
-      ? (Num(litres * LitresToImperialGallons, format), "gal")
-      : (Num(litres, format), "L");
+      ? (Num(litres * LitresToImperialGallons, format), Unit("gallons"))
+      : (Num(litres, format), Unit("litres"));
 
   private static (string num, string unit) Flow(
     float litresPerSecond,
     string format
   ) =>
     Imperial
-      ? (Num(litresPerSecond * LitresToImperialGallons, format), "gal/s")
-      : (Num(litresPerSecond, format), "L/s");
+      ? (
+        Num(litresPerSecond * LitresToImperialGallons, format),
+        Unit("gallons-per-second")
+      )
+      : (Num(litresPerSecond, format), Unit("litres-per-second"));
 
   private static (string num, string unit) Pres(float atm, string format) =>
-    Imperial ? (Num(atm * AtmToPsi, format), "psi") : (Num(atm, format), "atm");
+    Imperial
+      ? (Num(atm * AtmToPsi, format), Unit("psi"))
+      : (Num(atm, format), Unit("atm"));
 
   private static (string num, string unit) Temp(float celsius, string format) =>
     Imperial
-      ? (Num(celsius * 9f / 5f + 32f, format), "°F")
-      : (Num(celsius, format), "°C");
+      ? (Num(celsius * 9f / 5f + 32f, format), Unit("fahrenheit"))
+      : (Num(celsius, format), Unit("celsius"));
+
+  /// <summary>Localized symbol for a unit, e.g. <c>Unit("litres")</c> → "L" / "л".</summary>
+  private static string Unit(string key) => Lang.Get("ppex:unit-" + key);
 
   // Formats with the invariant culture so the decimal separator stays a dot regardless of
   // the player's locale (matching how the rest of the HUD numbers read).
