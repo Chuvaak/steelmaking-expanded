@@ -5,14 +5,15 @@ namespace PipesAndPowerExpanded;
 
 /// <summary>
 /// JSON-serializable gameplay tunables for Pipes and Power Expanded. Loaded from (and written
-/// to) <c>ModConfig/ppex.json</c>; the property defaults below apply when the file is missing or
-/// a key is absent. Accessed through <see cref="PpexValues"/>, not directly.
+/// to) <c>ModConfig/ppex_values.json</c>; the property defaults below apply when the file is missing
+/// or a key is absent (and any NaN/infinite/negative value is reset to its default on load). Accessed
+/// through <see cref="PpexValues"/>, not directly.
 /// <para>
 /// All gas/liquid volumes are in <b>litres</b> (matching vanilla liquid containers). Pressure is
 /// a dimensionless ratio (volume / capacity), expressed in atm.
 /// </para>
 /// </summary>
-[ExConfigRegister("ppex.json", "ppex")]
+[ExConfigRegister("ppex_values.json", "ppex")]
 public class PpexConfig : IExVersionedConfig
 {
   /// <summary>Mod version that last wrote this file; drives the <see cref="Migrations"/> resets.
@@ -262,5 +263,12 @@ public class PpexConfig : IExVersionedConfig
 
   /// <summary>Water (L/s) the condenser passes through its W↔E water line (the through-flow cap).</summary>
   public float CondenserWaterThroughput { get; set; } = 50f;
+  #endregion
+
+  #region Recipe balance
+  /// <summary>Active steam-machine recipe cost level - <c>"normal"</c> or <c>"cheap"</c>. Toggled
+  /// in-game by <c>/exmod steam &lt;level&gt;</c>; the per-recipe numbers live in the separate
+  /// <c>ppex_recipes.json</c> catalogue. Applied on the next world reload.</summary>
+  public string RecipeLevel { get; set; } = "normal";
   #endregion
 }

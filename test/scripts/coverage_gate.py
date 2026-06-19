@@ -17,7 +17,7 @@ import xml.etree.ElementTree as ET
 
 # assembly name in the report -> (display, min line %)
 FLOORS = {
-    "exlib": ("ExpandedLib", 31.0),
+    "exlib": ("ExpandedLib", 33.0),
     "PipesAndPowerExpanded": ("ppex", 39.0),
     "SteelmakingExpanded": ("smex", 34.0),
 }

@@ -1,6 +1,8 @@
 using ExpandedLib.Blocks.Networks;
 using ExpandedLib.Helpers;
+using ExpandedLib.Registries.Commands;
 using ExpandedLib.Registries.Entities;
+using ExpandedLib.Registries.Recipes;
 using HarmonyLib;
 using SteelmakingExpanded.BlockNetworkMolten;
 using SteelmakingExpanded.BlockNetworkMolten.Blocks;
@@ -44,6 +46,8 @@ public class SteelmakingExpandedModSystem : ModSystem
     // Enforce any config-disabled molds on the client too, so they vanish from the creative
     // inventory and handbook (recipes have resolved by StartClientSide).
     MoldGating.ApplyDisables(api);
+    ApplyRecipeLevel(api); // mirror the recipe cost level for the handbook/crafting grid
+    CommandRegistry.RegisterAll(api, Mod, GetType().Assembly); // client-side sub-commands (none yet)
   }
   #endregion
 
@@ -56,6 +60,27 @@ public class SteelmakingExpandedModSystem : ModSystem
 
     // Strip the clay-forming recipes of any config-disabled molds (recipes have resolved by now).
     MoldGating.ApplyDisables(api);
+    // Apply the active steelmaking recipe cost level to the live grid/RCC recipes.
+    ApplyRecipeLevel(api);
+    // Server-side sub-commands: /exmod molds and /exmod steel.
+    CommandRegistry.RegisterAll(api, Mod, GetType().Assembly);
+  }
+
+  // Fills any auto-derived catalogue levels (persisting them), then applies the active level.
+  private static void ApplyRecipeLevel(ICoreAPI api)
+  {
+    var catalogue = SmexRecipeValues.Recipes;
+    // Repair any wrong edit / deletion against the code defaults before using the catalogue.
+    bool changed = ExRecipeCosts.Reconcile(
+      catalogue,
+      SmexRecipeConfig.DefaultCatalogue()
+    );
+    changed |= ExRecipeCosts.EnsureNormalExtracted(api, catalogue);
+    changed |= ExRecipeCosts.EnsureScaledLevel(catalogue, "cheap", 0.4);
+    if (changed)
+      SmexRecipeValues.Save();
+
+    ExRecipeCosts.Apply(api, catalogue, SmexValues.RecipeLevel);
   }
 
   private static void OnMoldServerTick(ICoreServerAPI api)
@@ -160,9 +185,11 @@ public class SteelmakingExpandedModSystem : ModSystem
   #region Registration
   public override void Start(ICoreAPI api)
   {
-    // Load gameplay tunables from ModConfig/smex.json (writes defaults on first
+    // Load gameplay tunables from ModConfig/smex_values.json (writes defaults on first
     // run). Done before any block entity is constructed so the values apply.
     SmexValues.Load(api);
+    // The steelmaking recipe cost catalogue (smex_recipes.json).
+    SmexRecipeValues.Load(api);
 
     // Register other mod's iron ore types.
     IronOreCompat.Init(api);

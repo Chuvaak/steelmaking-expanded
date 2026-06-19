@@ -243,7 +243,7 @@ public static class ToolMoldPatches
     // Shattered molds drop only shards (no casting), so leave those untouched.
     if (
       world.BlockAccessor.GetBlockEntity(pos)
-        is not BlockEntityToolMold { Shattered: false }
+      is not BlockEntityToolMold { Shattered: false }
     )
       return;
 

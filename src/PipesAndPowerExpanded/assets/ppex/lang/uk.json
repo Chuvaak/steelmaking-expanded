@@ -7,6 +7,11 @@
   "item-largegear-steel": "Велика сталева шестерня",
 
   "command-measure-desc": "Показати або задати систему відображення одиниць (метрична/імперська)",
+  "command-steam-desc": "Показати або задати рівень вартості рецептів парових машин (normal/cheap). Конкретні числа - у ppex_recipes.json; застосовується після перезавантаження світу.",
+  "command-steam-status": "Вартість парових рецептів: {0}.",
+  "command-steam-set": "Вартість парових рецептів задано: {0}. Перезавантажте світ для застосування.",
+  "recipe-level-normal": "звичайна",
+  "recipe-level-cheap": "дешева",
   "pref-measure-label": "Одиниці відображення",
   "pref-measure-metric": "Метрична (л, атм, °C)",
   "pref-measure-imperial": "Імперська (гал, psi, °F)",

@@ -11,6 +11,8 @@ internal sealed class FakeConfig : IExVersionedConfig
   public string? ConfigVersion { get; set; }
   public int ValueA { get; set; } = 100;
   public int ValueB { get; set; } = 200;
+  public float Rate { get; set; } = 1.5f;
+  public string Label { get; set; } = "ok";
 }
 
 /// <summary>
@@ -59,6 +61,30 @@ public class ConfigMigrationTests
   private static ExConfigRegister<FakeConfig> Store(
     params ExConfigMigration[] m
   ) => new(FileName, ModId, m);
+
+  [Fact]
+  public void Load_resets_invalid_values_to_defaults_but_keeps_valid_ones()
+  {
+    // A player has hand-edited the file into gameplay-breaking values.
+    var stored = new FakeConfig
+    {
+      ConfigVersion = "1.0.0",
+      ValueA = -3, // negative int
+      ValueB = 7, // valid - keep
+      Rate = float.NaN, // not-a-number
+      Label = null!, // missing/null string
+    };
+    var (api, saved) = FakeApi(stored, runningVersion: "1.0.0");
+    var store = Store();
+
+    store.Load(api);
+
+    Assert.Equal(100, store.Config.ValueA); // reset to default
+    Assert.Equal(7, store.Config.ValueB); // valid value kept
+    Assert.Equal(1.5f, store.Config.Rate, 3); // reset to default
+    Assert.Equal("ok", store.Config.Label); // reset to default
+    Assert.Equal(100, saved()!.ValueA); // repaired config written back to disk
+  }
 
   [Fact]
   public void Missing_file_loads_coded_defaults_and_stamps_version()

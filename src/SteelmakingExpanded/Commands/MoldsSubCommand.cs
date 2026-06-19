@@ -44,8 +44,7 @@ public sealed class MoldsSubCommand : IExSubCommand
     string type = ((string)args[0]).ToLowerInvariant();
     string? state = (args[1] as string)?.ToLowerInvariant();
 
-    string[] keys =
-      type == "all" ? MoldGating.Keys.ToArray() : [type];
+    string[] keys = type == "all" ? MoldGating.Keys.ToArray() : [type];
 
     // No state argument: report the current availability of the requested mold(s).
     if (state == null)

@@ -73,10 +73,62 @@ public sealed class ExConfigRegister<TConfig>
     string current =
       api.ModLoader.GetMod(_modId)?.Info?.Version ?? string.Empty;
     ApplyMigrations(config, current, api.Logger);
+    Sanitize(config, api.Logger);
     config.ConfigVersion = current;
 
     Config = config;
     Save();
+  }
+
+  /// <summary>
+  /// Repairs values a player edited into something that would break the sim: every numeric tunable
+  /// that is NaN, infinite or negative - and any string set to null - is reset to its coded default
+  /// (a missing key already falls back to the default, and a type-mangled file already fell back to
+  /// full defaults in <see cref="Load"/>). The repaired config is written back, so the file is fixed
+  /// on disk too. Complex/collection properties (e.g. a recipe catalogue) carry their own repair.
+  /// </summary>
+  private void Sanitize(TConfig config, ILogger logger)
+  {
+    var defaults = new TConfig();
+    var reset = new List<string>();
+
+    foreach (
+      var p in typeof(TConfig).GetProperties(
+        BindingFlags.Public | BindingFlags.Instance
+      )
+    )
+    {
+      if (
+        !p.CanRead
+        || !p.CanWrite
+        || p.Name == nameof(IExVersionedConfig.ConfigVersion)
+      )
+        continue;
+
+      bool bad = p.GetValue(config) switch
+      {
+        float f => float.IsNaN(f) || float.IsInfinity(f) || f < 0f,
+        double d => double.IsNaN(d) || double.IsInfinity(d) || d < 0d,
+        int i => i < 0,
+        long l => l < 0,
+        null when p.PropertyType == typeof(string) => true,
+        _ => false,
+      };
+
+      if (bad)
+      {
+        p.SetValue(config, p.GetValue(defaults));
+        reset.Add(p.Name);
+      }
+    }
+
+    if (reset.Count > 0)
+      logger.Warning(
+        "[{0}] Config {1}: reset invalid value(s) to defaults: {2}.",
+        _modId,
+        _fileName,
+        string.Join(", ", reset)
+      );
   }
 
   /// <summary>Resets the fields named by every migration whose <see cref="ExConfigMigration.ToVersion"/>

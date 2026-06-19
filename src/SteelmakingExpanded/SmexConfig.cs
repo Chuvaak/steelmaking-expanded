@@ -6,11 +6,11 @@ namespace SteelmakingExpanded;
 /// <summary>
 /// JSON-serializable gameplay tunables for Steelmaking Expanded - the "magic
 /// numbers" that balance the machines and the molten/gas systems. Loaded from
-/// (and written to) <c>ModConfig/smex.json</c>; the property defaults below are
-/// used when the file is missing or a key is absent. Accessed through
-/// <see cref="SmexValues"/>, not directly.
+/// (and written to) <c>ModConfig/smex_values.json</c>; the property defaults below
+/// are used when the file is missing or a key is absent (and any NaN/infinite/negative
+/// value is reset to its default on load). Accessed through <see cref="SmexValues"/>, not directly.
 /// </summary>
-[ExConfigRegister("smex.json", "smex")]
+[ExConfigRegister("smex_values.json", "smex")]
 public class SmexConfig : IExVersionedConfig
 {
   /// <summary>Mod version that last wrote this file; drives the <see cref="Migrations"/> resets.
@@ -228,7 +228,7 @@ public class SmexConfig : IExVersionedConfig
   // Availability of the mod's added casting molds. Disabling one removes its clay-forming recipe
   // and hides it from creative/the handbook on the next world load, and stops any already-placed
   // mold of that type from yielding a casting immediately. Toggled in-game by a server admin via
-  // /exmod molds <plate|ingot|rod|all> <on|off>; persisted to smex.json.
+  // /exmod molds <plate|ingot|rod|all> <on|off>; persisted to smex_values.json.
 
   /// <summary>Whether the plate mold (casts metal plates) is available.</summary>
   public bool EnablePlateMold { get; set; } = true;
@@ -238,5 +238,12 @@ public class SmexConfig : IExVersionedConfig
 
   /// <summary>Whether the quad-rod mold (casts 4 rods) is available.</summary>
   public bool EnableRodMold { get; set; } = true;
+  #endregion
+
+  #region Recipe balance
+  /// <summary>Active steelmaking recipe cost level - <c>"normal"</c> or <c>"cheap"</c>. Toggled
+  /// in-game by <c>/exmod steel &lt;level&gt;</c>; the per-recipe numbers live in the separate
+  /// <c>smex_recipes.json</c> catalogue. Applied on the next world reload.</summary>
+  public string RecipeLevel { get; set; } = "normal";
   #endregion
 }
