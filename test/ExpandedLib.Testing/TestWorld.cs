@@ -25,6 +25,9 @@ public sealed class TestWorld
   private readonly Dictionary<BlockPos, BlockEntity> _blockEntities = new();
   private readonly Dictionary<int, Block> _blocksById = new();
   private readonly Dictionary<string, Block> _blocksByCode = new();
+  private readonly Dictionary<string, Item> _itemsByCode = new();
+  private readonly Dictionary<int, Item> _itemsById = new();
+  private int _nextItemId = 1;
 
   private double _totalDays;
 
@@ -136,6 +139,36 @@ public sealed class TestWorld
     return this;
   }
 
+  /// <summary>
+  /// Registers a resolvable <see cref="Item"/> under <paramref name="code"/> so
+  /// <c>World.GetItem(code)</c> returns it - the molten-metal API resolves its temperature carrier
+  /// this way. <paramref name="meltingPoint"/> (°C, 0 = none) is exposed through the item's
+  /// <see cref="CombustibleProperties"/> so that melt-point classification (liquid/cooling/hardened)
+  /// works headlessly. Returns the created item.
+  /// </summary>
+  public Item RegisterItem(string code, float meltingPoint = 0f)
+  {
+    // A unique non-zero id so ItemStack.ResolveBlockOrItem (which re-resolves a cloned/loaded stack
+    // by id) finds the item instead of nulling out its Collectible.
+    var item = new Item { Code = new AssetLocation(code), ItemId = _nextItemId++ };
+    if (meltingPoint > 0f)
+      item.CombustibleProps = new CombustibleProperties
+      {
+        MeltingPoint = (int)meltingPoint,
+      };
+    _itemsByCode[code] = item;
+    _itemsById[item.ItemId] = item;
+    return item;
+  }
+
+  public Item? GetItem(AssetLocation? code) =>
+    code != null && _itemsByCode.TryGetValue(code.ToString(), out var i)
+      ? i
+      : null;
+
+  public Item? GetItem(int id) =>
+    _itemsById.TryGetValue(id, out var i) ? i : null;
+
   #endregion
 
   #region Store access
@@ -200,6 +233,10 @@ public sealed class TestWorld
     var a = Substitute.For<IBlockAccessor>();
 
     a.GetBlock(Arg.Any<BlockPos>()).Returns(ci => GetBlock(ci.Arg<BlockPos>()));
+    // The fluid/solid-layer overload (BlockLayersAccess) reads the same store - tests that need a
+    // distinct fluid layer place a block whose LiquidCode is set.
+    a.GetBlock(Arg.Any<BlockPos>(), Arg.Any<int>())
+      .Returns(ci => GetBlock(ci.Arg<BlockPos>()));
     a.GetBlockEntity(Arg.Any<BlockPos>())
       .Returns(ci => GetBlockEntity(ci.Arg<BlockPos>()));
 
@@ -213,7 +250,43 @@ public sealed class TestWorld
       )
       .Do(ci => DoBreak(ci.ArgAt<BlockPos>(0)));
 
+    // WalkBlocks over an inclusive box, reading the store cell by cell (empties read as Air). Used by
+    // region scans such as the blast furnace's hearth-pile walk.
+    a.When(x =>
+        x.WalkBlocks(
+          Arg.Any<BlockPos>(),
+          Arg.Any<BlockPos>(),
+          Arg.Any<System.Action<Block, int, int, int>>(),
+          Arg.Any<bool>()
+        )
+      )
+      .Do(ci =>
+        DoWalkBlocks(
+          ci.ArgAt<BlockPos>(0),
+          ci.ArgAt<BlockPos>(1),
+          ci.ArgAt<System.Action<Block, int, int, int>>(2)
+        )
+      );
+
     return a;
+  }
+
+  private void DoWalkBlocks(
+    BlockPos min,
+    BlockPos max,
+    System.Action<Block, int, int, int> onBlock
+  )
+  {
+    int x0 = System.Math.Min(min.X, max.X),
+      x1 = System.Math.Max(min.X, max.X);
+    int y0 = System.Math.Min(min.Y, max.Y),
+      y1 = System.Math.Max(min.Y, max.Y);
+    int z0 = System.Math.Min(min.Z, max.Z),
+      z1 = System.Math.Max(min.Z, max.Z);
+    for (int x = x0; x <= x1; x++)
+      for (int y = y0; y <= y1; y++)
+        for (int z = z0; z <= z1; z++)
+          onBlock(GetBlock(new BlockPos(x, y, z, min.dimension)), x, y, z);
   }
 
   private IServerWorldAccessor BuildWorld()
@@ -229,6 +302,9 @@ public sealed class TestWorld
       .Returns(ci =>
         _blocksById.TryGetValue(ci.Arg<int>(), out var b) ? b : Air
       );
+    w.GetItem(Arg.Any<AssetLocation>())
+      .Returns(ci => GetItem(ci.Arg<AssetLocation>()));
+    w.GetItem(Arg.Any<int>()).Returns(ci => GetItem(ci.Arg<int>()));
     w.When(x =>
         x.SpawnItemEntity(
           Arg.Any<ItemStack>(),

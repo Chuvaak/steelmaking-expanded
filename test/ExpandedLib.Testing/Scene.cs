@@ -73,6 +73,26 @@ public sealed class Scene
     return this;
   }
 
+  /// <summary>
+  /// Fills the inclusive box between <paramref name="a"/> and <paramref name="b"/> (in any order)
+  /// with a plain block - terrain, a water pond, or a solid shell around a multi-cell structure.
+  /// Spans all three axes, so a 3D setup's scaffolding is one call rather than a triple loop in the test.
+  /// </summary>
+  public Scene Fill(BlockPos a, BlockPos b, Block block)
+  {
+    int x0 = Math.Min(a.X, b.X),
+      x1 = Math.Max(a.X, b.X);
+    int y0 = Math.Min(a.Y, b.Y),
+      y1 = Math.Max(a.Y, b.Y);
+    int z0 = Math.Min(a.Z, b.Z),
+      z1 = Math.Max(a.Z, b.Z);
+    for (int x = x0; x <= x1; x++)
+      for (int y = y0; y <= y1; y++)
+        for (int z = z0; z <= z1; z++)
+          World.Place(new BlockPos(x, y, z), block);
+    return this;
+  }
+
   /// <summary>Adds every queued node to the graph (merging adjacent runs). Call once after placement.</summary>
   public Scene Build()
   {

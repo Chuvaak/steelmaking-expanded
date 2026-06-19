@@ -17,11 +17,11 @@ import xml.etree.ElementTree as ET
 
 # assembly name in the report -> (display, min line %)
 FLOORS = {
-    "exlib": ("ExpandedLib", 26.0),
-    "PipesAndPowerExpanded": ("ppex", 24.0),
-    "SteelmakingExpanded": ("smex", 7.0),
+    "exlib": ("ExpandedLib", 30.0),
+    "PipesAndPowerExpanded": ("ppex", 38.0),
+    "SteelmakingExpanded": ("smex", 33.0),
 }
-TOTAL_FLOOR = 18.0
+TOTAL_FLOOR = 34.0
 
 
 def line_coverage(pkg):

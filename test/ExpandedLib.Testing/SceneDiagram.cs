@@ -56,4 +56,34 @@ public sealed class SceneDiagram
     }
     return this;
   }
+
+  /// <summary>
+  /// Stacks several horizontal layers along the Y axis in one call - the natural way to lay out a
+  /// structure or manifold that spans height (a riser, a multi-floor furnace, a 3D pipe junction).
+  /// <paramref name="layers"/>[0] sits at <paramref name="baseY"/>, [1] at <c>baseY + 1</c>, and so on
+  /// (bottom-to-top); each entry is itself a multi-line X/Z plane in the same format as
+  /// <see cref="Layer"/>. All layers share the (<paramref name="originX"/>, <paramref name="originZ"/>)
+  /// origin so the columns line up vertically.
+  /// <code>
+  ///   diagram.Stack(baseY: 0,
+  ///     "#I#",   // y=0  (bottom)
+  ///     " I ",   // y=1
+  ///     "=I=");  // y=2  (top) - a vertical riser meeting a west-east main
+  /// </code>
+  /// </summary>
+  public SceneDiagram Stack(
+    int baseY,
+    int originX,
+    int originZ,
+    params string[] layers
+  )
+  {
+    for (int i = 0; i < layers.Length; i++)
+      Layer(layers[i], baseY + i, originX, originZ);
+    return this;
+  }
+
+  /// <summary>Stacks layers from <paramref name="baseY"/> upward at origin (0,0); see the fuller overload.</summary>
+  public SceneDiagram Stack(int baseY, params string[] layers) =>
+    Stack(baseY, 0, 0, layers);
 }
