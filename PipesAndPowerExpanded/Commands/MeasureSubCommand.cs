@@ -1,6 +1,7 @@
 using System.Linq;
 using ExpandedLib.Registries.Commands;
 using ExpandedLib.Registries.Preferences;
+using PipesAndPowerExpanded.Patches;
 using PipesAndPowerExpanded.Preferences;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
@@ -70,7 +71,14 @@ public sealed class MeasureSubCommand : IExSubCommand
         )
       );
 
+    string previous = ExPreferences.GetForPlayer(uid, pref.Key);
     ExPreferences.SetForPlayer(uid, pref.Key, word);
+
+    // Handbook prose is unit-converted only when its pages are built, so a mid-session switch needs
+    // the pages rebuilt to re-read the now-active system (the look-at HUD already updates live).
+    if (previous != word)
+      HandbookUnitPatch.Rebuild(api);
+
     return TextCommandResult.Success(
       Lang.Get("exlib:command-pref-set", label, ValueLabel(domain, pref, word))
     );
