@@ -98,7 +98,8 @@ public abstract class BlockEntityProductionMachine : BlockEntity
 
   /// <summary>The <typeparamref name="TNet"/> across <paramref name="face"/>, or <c>null</c> if not plumbed in.</summary>
   protected TNet? ConnectedNetwork<TNet>(BlockFacing face)
-    where TNet : BlockNetwork => MachinePorts.ConnectedNetwork<TNet>(this, face);
+    where TNet : BlockNetwork =>
+    MachinePorts.ConnectedNetwork<TNet>(this, face);
 
   /// <summary>The <typeparamref name="TNet"/> owning <paramref name="pos"/>, or <c>null</c>.</summary>
   protected TNet? NetworkAt<TNet>(BlockPos pos)

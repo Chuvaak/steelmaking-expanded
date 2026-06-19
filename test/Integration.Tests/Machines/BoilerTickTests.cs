@@ -43,7 +43,10 @@ public class BoilerTickTests
   [Fact]
   public void Idle_stays_idle_when_the_fire_is_out()
   {
-    var rig = new BoilerRig().SetState(BoilerState.Idle).SetWater(200f).ExtinguishFire();
+    var rig = new BoilerRig()
+      .SetState(BoilerState.Idle)
+      .SetWater(200f)
+      .ExtinguishFire();
 
     rig.Tick();
 

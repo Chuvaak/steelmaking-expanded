@@ -58,7 +58,12 @@ internal sealed class BoilerFixture
   public readonly BlockEntityBoilerCornish Be;
   public readonly BlockBoilerCornish Block;
 
-  public BoilerFixture(Scene scene, BlockPos pos, int blockId = 10, int coalId = 11)
+  public BoilerFixture(
+    Scene scene,
+    BlockPos pos,
+    int blockId = 10,
+    int coalId = 11
+  )
   {
     Block = TestBlocks.Configure(
       new BlockBoilerCornish(),
@@ -90,8 +95,10 @@ internal sealed class BoilerFixture
     return this;
   }
 
-  public float SteamVolume => (float)ReflectionHelpers.GetField(Be, "_steamVolume")!;
+  public float SteamVolume =>
+    (float)ReflectionHelpers.GetField(Be, "_steamVolume")!;
 
   /// <summary>World cell of the steam pipe that attaches above the outlet connector.</summary>
-  public BlockPos SteamPipeAttachPos => Block.SteamPipeWorldPos(Be.Pos).UpCopy();
+  public BlockPos SteamPipeAttachPos =>
+    Block.SteamPipeWorldPos(Be.Pos).UpCopy();
 }

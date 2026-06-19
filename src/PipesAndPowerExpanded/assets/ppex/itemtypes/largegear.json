@@ -1,8 +1,6 @@
 {
   "code": "largegear",
-  "variantgroups": [
-    { "code": "metal", "states": ["iron", "steel"] }
-  ],
+  "variantgroups": [{ "code": "metal", "states": ["iron", "steel"] }],
   "shape": { "base": "game:block/machine/jonas/steamengine/gear24" },
   "textures": {
     "rusty-iron": { "base": "game:block/metal/ingot/{metal}" },

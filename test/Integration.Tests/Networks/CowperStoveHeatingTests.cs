@@ -32,13 +32,41 @@ public class CowperStoveHeatingTests
     world.Attach(be);
     ReflectionHelpers.Invoke(be, "UpdateStructureRotation");
     // Prime the config-cached tunables Initialize would set (we don't run the full Initialize).
-    ReflectionHelpers.SetField(be, "_intakeVolume", SmexValues.CowperIntakeVolume);
-    ReflectionHelpers.SetField(be, "_factorDefault", SmexValues.CowperHeatingSpeedDefault);
-    ReflectionHelpers.SetField(be, "_factorOtherCoal", SmexValues.CowperHeatingSpeedOtherCoal);
-    ReflectionHelpers.SetField(be, "_factorAnthracite", SmexValues.CowperHeatingSpeedAnthracite);
-    ReflectionHelpers.SetField(be, "_coolingSpeedExhaust", SmexValues.CowperCoolingSpeedExhaust);
-    ReflectionHelpers.SetField(be, "_coolingSpeedAir", SmexValues.CowperCoolingSpeedAir);
-    ReflectionHelpers.SetField(be, "_maxTemperature", SmexValues.CowperMaxTemperature);
+    ReflectionHelpers.SetField(
+      be,
+      "_intakeVolume",
+      SmexValues.CowperIntakeVolume
+    );
+    ReflectionHelpers.SetField(
+      be,
+      "_factorDefault",
+      SmexValues.CowperHeatingSpeedDefault
+    );
+    ReflectionHelpers.SetField(
+      be,
+      "_factorOtherCoal",
+      SmexValues.CowperHeatingSpeedOtherCoal
+    );
+    ReflectionHelpers.SetField(
+      be,
+      "_factorAnthracite",
+      SmexValues.CowperHeatingSpeedAnthracite
+    );
+    ReflectionHelpers.SetField(
+      be,
+      "_coolingSpeedExhaust",
+      SmexValues.CowperCoolingSpeedExhaust
+    );
+    ReflectionHelpers.SetField(
+      be,
+      "_coolingSpeedAir",
+      SmexValues.CowperCoolingSpeedAir
+    );
+    ReflectionHelpers.SetField(
+      be,
+      "_maxTemperature",
+      SmexValues.CowperMaxTemperature
+    );
     ReflectionHelpers.SetProperty(be, "StructureComplete", true);
     // Connector sits on the stove's local-south face; default is SOUTH, set explicitly for clarity.
     ReflectionHelpers.SetField(be, "_connectorFace", BlockFacing.SOUTH);
@@ -71,14 +99,24 @@ public class CowperStoveHeatingTests
     var pos = new BlockPos(0, 4, 0);
     var stove = Stove(world, pos);
     var net = ExhaustRunSouthOf(world, pos);
-    net.TryProduceGas(60f, 900f, "Exhaust", world.Accessor, maxOutputPressure: 10f);
+    net.TryProduceGas(
+      60f,
+      900f,
+      "Exhaust",
+      world.Accessor,
+      maxOutputPressure: 10f
+    );
     float before = net.State!.Volume;
 
     ReflectionHelpers.Invoke(stove, "OnProductionTick", 1f);
 
-    float core = (float)ReflectionHelpers.GetField(stove, "_internalTemperature")!;
+    float core = (float)
+      ReflectionHelpers.GetField(stove, "_internalTemperature")!;
     Assert.True(core > 20f, $"core should have heated, was {core}");
-    Assert.True(net.State!.Volume < before, "exhaust should have been consumed");
+    Assert.True(
+      net.State!.Volume < before,
+      "exhaust should have been consumed"
+    );
   }
 
   [Fact]
@@ -92,6 +130,10 @@ public class CowperStoveHeatingTests
 
     ReflectionHelpers.Invoke(stove, "OnProductionTick", 1f);
 
-    Assert.Equal(20f, (float)ReflectionHelpers.GetField(stove, "_internalTemperature")!, 1);
+    Assert.Equal(
+      20f,
+      (float)ReflectionHelpers.GetField(stove, "_internalTemperature")!,
+      1
+    );
   }
 }

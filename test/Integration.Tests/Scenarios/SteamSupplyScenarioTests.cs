@@ -20,17 +20,30 @@ public class SteamSupplyScenarioTests
   public void A_relief_valve_bleeds_an_over_pressured_main_so_the_engine_runs_in_band()
   {
     var scene = new Scene().Network("pipe", s => new PipeNetwork(s));
-    var plant = new RegulatedEnginePlant(scene, new BlockPos(0, 8, 0), gateAtm: 2.5f);
+    var plant = new RegulatedEnginePlant(
+      scene,
+      new BlockPos(0, 8, 0),
+      gateAtm: 2.5f
+    );
     scene.Build();
 
     // The boiler holds the main at 5 atm; the relief valve bleeds the excess above the 2.5 atm gate
     // into the drain each tick, so the gated line never runs away from the engine.
     plant.RunCharged(5f, 4);
 
-    Assert.True(plant.DrainVolume > 0f, "the valve should have bled overflow into the drain");
-    Assert.True(plant.MainPressure < 5f, "the relieved main should sit below the boiler's charge");
+    Assert.True(
+      plant.DrainVolume > 0f,
+      "the valve should have bled overflow into the drain"
+    );
+    Assert.True(
+      plant.MainPressure < 5f,
+      "the relieved main should sit below the boiler's charge"
+    );
     Assert.False(plant.Engine.IsBroken, "the engine should not have burst");
-    Assert.True(plant.Engine.IsRunning, "the engine should be driven by the gated main");
+    Assert.True(
+      plant.Engine.IsRunning,
+      "the engine should be driven by the gated main"
+    );
   }
 
   [Fact]
@@ -38,7 +51,11 @@ public class SteamSupplyScenarioTests
   {
     var scene = new Scene().Network("pipe", s => new PipeNetwork(s));
     // Gate raised to the steel rating: 5 atm of charge is below it, so nothing is relieved.
-    var plant = new RegulatedEnginePlant(scene, new BlockPos(0, 8, 0), gateAtm: 10f);
+    var plant = new RegulatedEnginePlant(
+      scene,
+      new BlockPos(0, 8, 0),
+      gateAtm: 10f
+    );
     scene.Build();
 
     plant.RunCharged(5f, 4);
@@ -62,7 +79,10 @@ public class SteamSupplyScenarioTests
     plant.Crank(3); // player holds right-click for three ticks
 
     Assert.True(plant.OutputIsWater, "the output main should carry water");
-    Assert.True(plant.OutputVolume > 0f, "cranking should lift water into the output main");
+    Assert.True(
+      plant.OutputVolume > 0f,
+      "cranking should lift water into the output main"
+    );
   }
 
   [Fact]
@@ -93,10 +113,22 @@ public class SteamSupplyScenarioTests
     float steamBefore = plant.SteamVolume;
     scene.Step(4);
 
-    Assert.True(plant.Condensing, "the condenser should report condensing with steam on the line");
-    Assert.True(plant.SteamVolume < steamBefore, "spent steam should be drawn off the line");
-    Assert.True(plant.RecoveredIsWater, "the recovered line should carry water");
-    Assert.True(plant.RecoveredVolume > 0f, "recovered water should reach the line back to the boiler");
+    Assert.True(
+      plant.Condensing,
+      "the condenser should report condensing with steam on the line"
+    );
+    Assert.True(
+      plant.SteamVolume < steamBefore,
+      "spent steam should be drawn off the line"
+    );
+    Assert.True(
+      plant.RecoveredIsWater,
+      "the recovered line should carry water"
+    );
+    Assert.True(
+      plant.RecoveredVolume > 0f,
+      "recovered water should reach the line back to the boiler"
+    );
   }
 
   [Fact]

@@ -150,12 +150,7 @@ public static class ExMeasure
         v => v * LitresToImperialGallons,
         "0.##"
       ),
-      new UnitConversion(
-        Unit("atm"),
-        Unit("psi"),
-        v => v * AtmToPsi,
-        "0.##"
-      ),
+      new UnitConversion(Unit("atm"), Unit("psi"), v => v * AtmToPsi, "0.##"),
       new UnitConversion(
         Unit("celsius"),
         Unit("fahrenheit"),

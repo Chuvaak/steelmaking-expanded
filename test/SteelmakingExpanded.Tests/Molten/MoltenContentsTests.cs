@@ -27,7 +27,12 @@ public class MoltenContentsTests
   public void Write_is_a_noop_when_units_are_non_positive()
   {
     var stack = new ItemStack();
-    MoltenContents.Write(stack, MoltenContents.BarrelUnitsKey, new ItemStack(), 0);
+    MoltenContents.Write(
+      stack,
+      MoltenContents.BarrelUnitsKey,
+      new ItemStack(),
+      0
+    );
     Assert.Null(BeData(stack));
   }
 
@@ -35,7 +40,12 @@ public class MoltenContentsTests
   public void Write_stores_content_and_units_under_the_given_key()
   {
     var stack = new ItemStack();
-    MoltenContents.Write(stack, MoltenContents.BarrelUnitsKey, new ItemStack(), 42);
+    MoltenContents.Write(
+      stack,
+      MoltenContents.BarrelUnitsKey,
+      new ItemStack(),
+      42
+    );
 
     var tree = BeData(stack);
     Assert.NotNull(tree);
@@ -54,7 +64,12 @@ public class MoltenContentsTests
 
     // The barrel key must NOT inject the mold-only keys.
     var barrel = new ItemStack();
-    MoltenContents.Write(barrel, MoltenContents.BarrelUnitsKey, new ItemStack(), 3);
+    MoltenContents.Write(
+      barrel,
+      MoltenContents.BarrelUnitsKey,
+      new ItemStack(),
+      3
+    );
     Assert.False(BeData(barrel)!.HasAttribute("meshAngle"));
   }
 

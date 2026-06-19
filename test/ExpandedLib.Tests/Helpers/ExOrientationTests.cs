@@ -94,7 +94,10 @@ public class ExOrientationTests
   [Fact]
   public void RotateFacing_leaves_vertical_faces_alone()
   {
-    Assert.Equal(BlockFacing.UP, ExOrientation.RotateFacing(BlockFacing.UP, 90));
+    Assert.Equal(
+      BlockFacing.UP,
+      ExOrientation.RotateFacing(BlockFacing.UP, 90)
+    );
     Assert.Equal(
       BlockFacing.DOWN,
       ExOrientation.RotateFacing(BlockFacing.DOWN, 270)
@@ -134,7 +137,12 @@ public class ExOrientationTests
   {
     var origin = new BlockPos(0, 0, 0);
     // node absent -> fallback (0,0,2); at 180 deg -> (0,0,-2)
-    var p = ExOrientation.WorldPosFromAttr(origin, null, new Vec3i(0, 0, 2), 180);
+    var p = ExOrientation.WorldPosFromAttr(
+      origin,
+      null,
+      new Vec3i(0, 0, 2),
+      180
+    );
     Assert.Equal(new BlockPos(0, 0, -2), p);
   }
 

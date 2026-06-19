@@ -36,7 +36,10 @@ public class SmokeStackTests
   }
 
   /// <summary>Wires the stack's <c>_system</c> back-reference and marks the multiblock complete.</summary>
-  private static void Commission(BlockEntitySmokeStack be, BlockNetworkModSystem system)
+  private static void Commission(
+    BlockEntitySmokeStack be,
+    BlockNetworkModSystem system
+  )
   {
     ReflectionHelpers.SetField(be, "_system", system);
     ReflectionHelpers.SetProperty(be, "StructureComplete", true);
@@ -71,13 +74,10 @@ public class SmokeStackTests
   )
   {
     var world = new TestWorld();
-    var be = Stack(world, new BlockPos(0, 0, 0)) ;
+    var be = Stack(world, new BlockPos(0, 0, 0));
     be.Orientation = orientation;
 
-    Assert.Equal(
-      expected,
-      be.HasConnectorAt(BlockFacing.FromCode(face))
-    );
+    Assert.Equal(expected, be.HasConnectorAt(BlockFacing.FromCode(face)));
   }
 
   #endregion
@@ -89,7 +89,13 @@ public class SmokeStackTests
   {
     // A sealed pipe run charged with exhaust; the stack shares the run's first cell.
     var (world, net) = PipeTestWorld.Run(4, capEnds: true);
-    net.TryProduceGas(200f, 400f, "Exhaust", world.Accessor, maxOutputPressure: 10f);
+    net.TryProduceGas(
+      200f,
+      400f,
+      "Exhaust",
+      world.Accessor,
+      maxOutputPressure: 10f
+    );
     float before = net.State!.Volume;
 
     var be = Stack(world, new BlockPos(0, 0, 0));
@@ -105,7 +111,13 @@ public class SmokeStackTests
   public void An_incomplete_stack_draws_nothing()
   {
     var (world, net) = PipeTestWorld.Run(4, capEnds: true);
-    net.TryProduceGas(200f, 400f, "Exhaust", world.Accessor, maxOutputPressure: 10f);
+    net.TryProduceGas(
+      200f,
+      400f,
+      "Exhaust",
+      world.Accessor,
+      maxOutputPressure: 10f
+    );
     float before = net.State!.Volume;
 
     var be = Stack(world, new BlockPos(0, 0, 0));
@@ -122,7 +134,13 @@ public class SmokeStackTests
   {
     var (world, net) = PipeTestWorld.Run(4, capEnds: true);
     // Less than one intake's worth in the run.
-    net.TryProduceGas(20f, 400f, "Exhaust", world.Accessor, maxOutputPressure: 10f);
+    net.TryProduceGas(
+      20f,
+      400f,
+      "Exhaust",
+      world.Accessor,
+      maxOutputPressure: 10f
+    );
 
     var be = Stack(world, new BlockPos(0, 0, 0));
     Commission(be, world.Networks);

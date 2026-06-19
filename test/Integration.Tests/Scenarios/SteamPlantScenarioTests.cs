@@ -32,8 +32,14 @@ public class SteamPlantScenarioTests
     plant.FillPond(30f); // pond stocked
     plant.RunWithSteam(3f, 3); // hold the inlet in the Watt band for three ticks
 
-    Assert.True(plant.Engine.IsRunning, "the engine should engage on band steam");
-    Assert.True(plant.OutputVolume > 0f, "the pump should lift water into the output main");
+    Assert.True(
+      plant.Engine.IsRunning,
+      "the engine should engage on band steam"
+    );
+    Assert.True(
+      plant.OutputVolume > 0f,
+      "the pump should lift water into the output main"
+    );
   }
 
   [Fact]
@@ -78,7 +84,10 @@ public class SteamPlantScenarioTests
     plant.RunWithSteam(7f, 2); // above the Cornish engine's normal-throttle engage pressure
 
     Assert.True(plant.Engine.IsRunning, "the cornish engine should engage");
-    Assert.True(plant.MpPowerBudget > 0f, "the MP generator should deliver a power budget");
+    Assert.True(
+      plant.MpPowerBudget > 0f,
+      "the MP generator should deliver a power budget"
+    );
   }
 
   [Fact]
@@ -150,7 +159,12 @@ public class SteamPlantScenarioTests
 
     // Watt engine one cell north of the junction, so its south inlet face lands on it. Build its
     // pump + pond + output main exactly as the water plant does, but inlet-fed by the boiler.
-    var engine = BuildEnginePump(scene, attach.AddCopy(0, 0, -1), out var output, out var pond);
+    var engine = BuildEnginePump(
+      scene,
+      attach.AddCopy(0, 0, -1),
+      out var output,
+      out var pond
+    );
 
     scene.Build();
     // Water near the top of the 800 L vessel + a hot steam charge => internal pressure
@@ -161,8 +175,14 @@ public class SteamPlantScenarioTests
 
     var steamMain = scene.NetworkAt<PipeNetwork>(attach)!;
     Assert.Equal("Steam", steamMain.State!.MediumType); // boiler charged the main
-    Assert.True(engine.InletPressure > 0f, "the engine should read the boiler's steam");
-    Assert.True(engine.IsRunning, "the boiler's steam should engage the engine");
+    Assert.True(
+      engine.InletPressure > 0f,
+      "the engine should read the boiler's steam"
+    );
+    Assert.True(
+      engine.IsRunning,
+      "the boiler's steam should engage the engine"
+    );
     Assert.True(output() > 0f, "the boiler-driven pump should produce water");
   }
 
@@ -184,7 +204,11 @@ public class SteamPlantScenarioTests
       60,
       ("side", "north")
     );
-    var engine = new BlockEntityEngineWatt { Pos = enginePos.Copy(), Block = engineBlock };
+    var engine = new BlockEntityEngineWatt
+    {
+      Pos = enginePos.Copy(),
+      Block = engineBlock,
+    };
     scene.Machine(enginePos, engineBlock, engine);
     RccFake.Complete(engine);
 
@@ -195,7 +219,11 @@ public class SteamPlantScenarioTests
       61,
       ("side", "east")
     );
-    var pump = new BlockEntityEngineFluidPump { Pos = subPos.Copy(), Block = pumpBlock };
+    var pump = new BlockEntityEngineFluidPump
+    {
+      Pos = subPos.Copy(),
+      Block = pumpBlock,
+    };
     scene.Machine(subPos, pumpBlock, pump);
 
     // Pond intake below the pump.
@@ -207,10 +235,18 @@ public class SteamPlantScenarioTests
       ("orientation", "u")
     );
     ReflectionHelpers.SetProperty(intakeBlock, "Orientation", "u");
-    var intake = new BlockEntityFluidIntake { Pos = pondPos.Copy(), Block = intakeBlock };
+    var intake = new BlockEntityFluidIntake
+    {
+      Pos = pondPos.Copy(),
+      Block = intakeBlock,
+    };
     scene.Node(pondPos, intakeBlock, intake, "pipe");
     ReflectionHelpers.SetProperty(intake, nameof(intake.HasWater), true);
-    ReflectionHelpers.SetProperty(intake, nameof(intake.NetworkSystem), scene.World.Networks);
+    ReflectionHelpers.SetProperty(
+      intake,
+      nameof(intake.NetworkSystem),
+      scene.World.Networks
+    );
 
     // Output main on the pump's left face (rotated with the pump's "east" placement), oriented along
     // that face's axis so it actually connects.
@@ -240,7 +276,8 @@ public class SteamPlantScenarioTests
     }
 
     public void Prime(float litres) =>
-      _scene.NetworkAt<PipeNetwork>(_pos)!
+      _scene
+        .NetworkAt<PipeNetwork>(_pos)!
         .TryProduceLiquid(litres, 12f, 1f, _scene.World.Accessor);
   }
 
@@ -259,7 +296,8 @@ public class SteamPlantScenarioTests
     var we = PipeTestWorld.MakePipe(orientation: "we", id: 71);
     var elbow = PipeTestWorld.MakePipe(orientation: "de", id: 72); // down + east connectors
     var cap = PpexScenes.Cap(73);
-    BlockEntityPipe Be(BlockPos p, BlockPipe b) => new() { Pos = p.Copy(), Block = b };
+    BlockEntityPipe Be(BlockPos p, BlockPipe b) =>
+      new() { Pos = p.Copy(), Block = b };
 
     new SceneDiagram()
       .On('I', p => scene.Node(p, ud, Be(p, ud), "pipe"))
@@ -277,10 +315,20 @@ public class SteamPlantScenarioTests
     var foot = new BlockPos(0, 0, 0);
     var armEnd = new BlockPos(2, 2, 0);
     // The riser + elbow + arm resolve to a single network spanning X and Y.
-    Assert.Same(scene.NetworkAt<PipeNetwork>(foot), scene.NetworkAt<PipeNetwork>(armEnd));
+    Assert.Same(
+      scene.NetworkAt<PipeNetwork>(foot),
+      scene.NetworkAt<PipeNetwork>(armEnd)
+    );
 
-    scene.NetworkAt<PipeNetwork>(foot)!
-      .TryProduceGas(150f, 150f, "Steam", scene.World.Accessor, maxOutputPressure: 10f);
+    scene
+      .NetworkAt<PipeNetwork>(foot)!
+      .TryProduceGas(
+        150f,
+        150f,
+        "Steam",
+        scene.World.Accessor,
+        maxOutputPressure: 10f
+      );
     scene.Step();
 
     Assert.True(

@@ -56,14 +56,21 @@ public class MoltenCanalMetalApiTests
   // SoakHeat / UpdateThermal / EnsureMetalStack are internal (driven by MoltenNetwork.OnTick in
   // production). Reach them through the harness's reflection shim - the repo convention rather than
   // opening up internals on the shipped assembly.
-  private static bool SoakHeat(BlockEntityMoltenCanal be, TestWorld world, float temp) =>
-    (bool)ReflectionHelpers.Invoke(be, "SoakHeat", world.World, temp)!;
+  private static bool SoakHeat(
+    BlockEntityMoltenCanal be,
+    TestWorld world,
+    float temp
+  ) => (bool)ReflectionHelpers.Invoke(be, "SoakHeat", world.World, temp)!;
 
-  private static void UpdateThermal(BlockEntityMoltenCanal be, TestWorld world) =>
-    ReflectionHelpers.Invoke(be, "UpdateThermal", world.World);
+  private static void UpdateThermal(
+    BlockEntityMoltenCanal be,
+    TestWorld world
+  ) => ReflectionHelpers.Invoke(be, "UpdateThermal", world.World);
 
-  private static void EnsureMetalStack(BlockEntityMoltenCanal be, TestWorld world) =>
-    ReflectionHelpers.Invoke(be, "EnsureMetalStack", world.World);
+  private static void EnsureMetalStack(
+    BlockEntityMoltenCanal be,
+    TestWorld world
+  ) => ReflectionHelpers.Invoke(be, "EnsureMetalStack", world.World);
 
   #region PushMetal
 
@@ -88,7 +95,11 @@ public class MoltenCanalMetalApiTests
     var be = Canal(world);
     int cap = be.MaxUnitCapacity;
 
-    int accepted = be.PushMetal(cap + 50, Metal(world, Iron, 1400f), world.World);
+    int accepted = be.PushMetal(
+      cap + 50,
+      Metal(world, Iron, 1400f),
+      world.World
+    );
 
     Assert.Equal(cap, accepted);
     Assert.Equal(cap, be.CellAmount);

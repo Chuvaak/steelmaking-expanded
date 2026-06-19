@@ -76,8 +76,14 @@ public class BlastFurnaceScenarioTests
 
     rig.Tick(1);
 
-    Assert.True(rig.CanalIron > 0, "the open tap should pour iron into the canal start");
-    Assert.True(rig.MoltenIron < 100f, "the furnace should give up the tapped iron");
+    Assert.True(
+      rig.CanalIron > 0,
+      "the open tap should pour iron into the canal start"
+    );
+    Assert.True(
+      rig.MoltenIron < 100f,
+      "the furnace should give up the tapped iron"
+    );
   }
 
   #endregion

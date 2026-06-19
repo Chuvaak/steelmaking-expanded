@@ -131,7 +131,11 @@ public class MoltenCanalStartTests
     be.PushMetal(10, Metal(world, Iron, 1400f), world.World);
 
     int amount = 20;
-    be.ReceiveLiquidMetal(Metal(world, "game:ingot-copper", 1200f), ref amount, 1200f);
+    be.ReceiveLiquidMetal(
+      Metal(world, "game:ingot-copper", 1200f),
+      ref amount,
+      1200f
+    );
 
     Assert.Equal(20, amount); // nothing taken
     Assert.Equal(10, be.CellAmount);

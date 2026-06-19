@@ -102,8 +102,16 @@ public class ManualPumpBeTests
       60,
       ("orientation", inFace.Opposite.Code[..1])
     );
-    ReflectionHelpers.SetProperty(intakeBlock, "Orientation", inFace.Opposite.Code[..1]);
-    var intake = new BlockEntityFluidIntake { Pos = intakePos, Block = intakeBlock };
+    ReflectionHelpers.SetProperty(
+      intakeBlock,
+      "Orientation",
+      inFace.Opposite.Code[..1]
+    );
+    var intake = new BlockEntityFluidIntake
+    {
+      Pos = intakePos,
+      Block = intakeBlock,
+    };
     world.Place(intakePos, intakeBlock, intake);
     world.Attach(intake);
     ReflectionHelpers.SetProperty(intake, nameof(intake.HasWater), true);

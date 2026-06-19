@@ -150,7 +150,11 @@ public sealed class TestWorld
   {
     // A unique non-zero id so ItemStack.ResolveBlockOrItem (which re-resolves a cloned/loaded stack
     // by id) finds the item instead of nulling out its Collectible.
-    var item = new Item { Code = new AssetLocation(code), ItemId = _nextItemId++ };
+    var item = new Item
+    {
+      Code = new AssetLocation(code),
+      ItemId = _nextItemId++,
+    };
     if (meltingPoint > 0f)
       item.CombustibleProps = new CombustibleProperties
       {
@@ -284,9 +288,9 @@ public sealed class TestWorld
     int z0 = System.Math.Min(min.Z, max.Z),
       z1 = System.Math.Max(min.Z, max.Z);
     for (int x = x0; x <= x1; x++)
-      for (int y = y0; y <= y1; y++)
-        for (int z = z0; z <= z1; z++)
-          onBlock(GetBlock(new BlockPos(x, y, z, min.dimension)), x, y, z);
+    for (int y = y0; y <= y1; y++)
+    for (int z = z0; z <= z1; z++)
+      onBlock(GetBlock(new BlockPos(x, y, z, min.dimension)), x, y, z);
   }
 
   private IServerWorldAccessor BuildWorld()

@@ -31,7 +31,12 @@ internal sealed class CastingLine
   /// (when <paramref name="endsInPedestal"/>) or a canal tap draining a barrel; the rest are straights.
   /// The head (origin) cell stands in for the furnace tap that pours metal into the run.
   /// </summary>
-  public CastingLine(Scene scene, BlockPos origin, int length, bool endsInPedestal)
+  public CastingLine(
+    Scene scene,
+    BlockPos origin,
+    int length,
+    bool endsInPedestal
+  )
   {
     _scene = scene;
     scene.World.RegisterItem(Iron, 1500f);
@@ -45,7 +50,11 @@ internal sealed class CastingLine
 
       if (last && endsInPedestal)
       {
-        Pedestal = new BlockEntityMoltenCanalMoldPedestal { Pos = pos.Copy(), Block = block };
+        Pedestal = new BlockEntityMoltenCanalMoldPedestal
+        {
+          Pos = pos.Copy(),
+          Block = block,
+        };
         scene.Node(pos, block, Pedestal, "molten");
         _cells[i] = Pedestal;
       }
@@ -58,7 +67,11 @@ internal sealed class CastingLine
       }
       else
       {
-        _cells[i] = new BlockEntityMoltenCanal { Pos = pos.Copy(), Block = block };
+        _cells[i] = new BlockEntityMoltenCanal
+        {
+          Pos = pos.Copy(),
+          Block = block,
+        };
         scene.Node(pos, block, _cells[i], "molten");
       }
     }

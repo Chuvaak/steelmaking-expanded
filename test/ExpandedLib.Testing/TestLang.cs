@@ -27,7 +27,8 @@ public static class TestLang
 
     var svc = Substitute.For<ITranslationService>();
     svc.LanguageCode.Returns("en");
-    svc.Get(Arg.Any<string>(), Arg.Any<object[]>()).Returns(ci => ci.Arg<string>());
+    svc.Get(Arg.Any<string>(), Arg.Any<object[]>())
+      .Returns(ci => ci.Arg<string>());
     svc.GetIfExists(Arg.Any<string>(), Arg.Any<object[]>())
       .Returns(ci => ci.Arg<string>());
     svc.GetUnformatted(Arg.Any<string>()).Returns(ci => ci.Arg<string>());

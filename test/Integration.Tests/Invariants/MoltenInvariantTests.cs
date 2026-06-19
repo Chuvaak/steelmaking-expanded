@@ -81,7 +81,10 @@ public class MoltenInvariantTests
       foreach (var c in cells)
       {
         Assert.True(c.CellAmount >= 0, $"negative cell amount (seed {seed})");
-        Assert.True(c.CellAmount <= Capacity, $"cell over capacity (seed {seed})");
+        Assert.True(
+          c.CellAmount <= Capacity,
+          $"cell over capacity (seed {seed})"
+        );
       }
     }
   }

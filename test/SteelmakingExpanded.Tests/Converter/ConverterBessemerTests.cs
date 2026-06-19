@@ -16,7 +16,10 @@ namespace SteelmakingExpanded.Tests;
 /// </summary>
 public class ConverterBessemerTests
 {
-  private static BlockEntityConverterBessemer Vessel(TestWorld world, BlockPos pos)
+  private static BlockEntityConverterBessemer Vessel(
+    TestWorld world,
+    BlockPos pos
+  )
   {
     var be = new BlockEntityConverterBessemer
     {
@@ -33,7 +36,10 @@ public class ConverterBessemerTests
     return be;
   }
 
-  private static BlockEntityConverterControl Control(TestWorld world, BlockPos pos)
+  private static BlockEntityConverterControl Control(
+    TestWorld world,
+    BlockPos pos
+  )
   {
     var be = new BlockEntityConverterControl
     {
@@ -65,7 +71,11 @@ public class ConverterBessemerTests
   {
     var be = Vessel(new TestWorld(), new BlockPos(0, 8, 0));
 
-    be.UpdateMirror(solidified: true, chargeUnits: 200, ConverterOpState.Pouring);
+    be.UpdateMirror(
+      solidified: true,
+      chargeUnits: 200,
+      ConverterOpState.Pouring
+    );
 
     Assert.True(be.IsSolidified);
     Assert.Equal(200, (int)ReflectionHelpers.GetField(be, "_chargeUnits")!);
@@ -117,7 +127,11 @@ public class ConverterBessemerTests
     var world = new TestWorld();
     var src = Vessel(world, new BlockPos(0, 8, 0));
     src.LinkControl(new BlockPos(3, 7, 4));
-    src.UpdateMirror(solidified: true, chargeUnits: 150, ConverterOpState.Filling);
+    src.UpdateMirror(
+      solidified: true,
+      chargeUnits: 150,
+      ConverterOpState.Filling
+    );
 
     var tree = new TreeAttribute();
     src.ToTreeAttributes(tree);

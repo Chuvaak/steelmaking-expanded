@@ -27,7 +27,10 @@ public class BellHopperTests
     return be;
   }
 
-  private static BlockEntityHopperReinforced HopperAbove(TestWorld world, BlockPos bellPos)
+  private static BlockEntityHopperReinforced HopperAbove(
+    TestWorld world,
+    BlockPos bellPos
+  )
   {
     var be = new BlockEntityHopperReinforced
     {
@@ -131,8 +134,18 @@ public class BellHopperTests
     var hopper = HopperAbove(world, bellPos);
 
     // Exactly one recipe's worth of feed: 12 iron + 3 coke + 1 lime -> 16 blastmix.
-    Put(hopper.Inventory, 0, "game:crushed-iron", SmexValues.HopperIronOreRequired);
-    Put(hopper.Inventory, 2, "game:crushed-coke", SmexValues.HopperCokeRequired);
+    Put(
+      hopper.Inventory,
+      0,
+      "game:crushed-iron",
+      SmexValues.HopperIronOreRequired
+    );
+    Put(
+      hopper.Inventory,
+      2,
+      "game:crushed-coke",
+      SmexValues.HopperCokeRequired
+    );
     Put(hopper.Inventory, 3, "game:lime", SmexValues.HopperLimeRequired);
 
     ReflectionHelpers.Invoke(bell, "OnServerTick", 1f);
@@ -152,8 +165,18 @@ public class BellHopperTests
     var hopper = HopperAbove(world, bellPos);
 
     // Iron + coke but no flux -> recipe can't complete.
-    Put(hopper.Inventory, 0, "game:crushed-iron", SmexValues.HopperIronOreRequired);
-    Put(hopper.Inventory, 2, "game:crushed-coke", SmexValues.HopperCokeRequired);
+    Put(
+      hopper.Inventory,
+      0,
+      "game:crushed-iron",
+      SmexValues.HopperIronOreRequired
+    );
+    Put(
+      hopper.Inventory,
+      2,
+      "game:crushed-coke",
+      SmexValues.HopperCokeRequired
+    );
 
     ReflectionHelpers.Invoke(bell, "OnServerTick", 1f);
 

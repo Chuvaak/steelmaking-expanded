@@ -28,7 +28,13 @@ public class IntegrationScenarioTests
     var tail = new BlockPos(5, 0, 0);
     scene
       .NetworkAt<PipeNetwork>(head)!
-      .TryProduceGas(450f, 150f, "Steam", scene.World.Accessor, maxOutputPressure: 10f);
+      .TryProduceGas(
+        450f,
+        150f,
+        "Steam",
+        scene.World.Accessor,
+        maxOutputPressure: 10f
+      );
     scene.Step();
 
     // One network spans the whole run, and the far pipe sees the same pressure via broadcast.
@@ -58,7 +64,13 @@ public class IntegrationScenarioTests
 
     scene
       .NetworkAt<PipeNetwork>(left)!
-      .TryProduceGas(300f, 150f, "Steam", scene.World.Accessor, maxOutputPressure: 10f);
+      .TryProduceGas(
+        300f,
+        150f,
+        "Steam",
+        scene.World.Accessor,
+        maxOutputPressure: 10f
+      );
     scene.Step();
 
     // The right-hand main never saw the steam.

@@ -23,7 +23,11 @@ internal static class MechPower
   /// Binds <paramref name="network"/> onto <paramref name="behavior"/>'s private <c>network</c> field
   /// and attaches the behavior to <paramref name="be"/> so the BE's <c>GetBehavior</c> resolves it.
   /// </summary>
-  public static T Attach<T>(BlockEntity be, T behavior, MechanicalNetwork? network)
+  public static T Attach<T>(
+    BlockEntity be,
+    T behavior,
+    MechanicalNetwork? network
+  )
     where T : BEBehaviorMPBase
   {
     if (network != null)

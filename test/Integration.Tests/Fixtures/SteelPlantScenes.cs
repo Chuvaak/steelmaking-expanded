@@ -78,7 +78,11 @@ internal sealed class ConverterRig
     BlockFacing connFace = ((BlockConverterIntake)intakeBlock).ConnectorFace;
     BlockPos blastPos = intakePos.AddCopy(connFace);
     var blastPipe = PipeTestWorld.MakePipe(orientation: "ns", id: 12);
-    var blastBe = new BlockEntityPipe { Pos = blastPos.Copy(), Block = blastPipe };
+    var blastBe = new BlockEntityPipe
+    {
+      Pos = blastPos.Copy(),
+      Block = blastPipe,
+    };
     World.Place(blastPos, blastPipe, blastBe);
     World.Attach(blastBe);
     World.AddNode(blastPos, "pipe");
@@ -92,7 +96,11 @@ internal sealed class ConverterRig
       13,
       ("side", "north")
     );
-    Transmission = new BlockEntityConverterTransmission { Pos = transPos.Copy(), Block = transBlock };
+    Transmission = new BlockEntityConverterTransmission
+    {
+      Pos = transPos.Copy(),
+      Block = transBlock,
+    };
     World.Place(transPos, transBlock, Transmission);
     World.Attach(Transmission);
   }
@@ -134,8 +142,11 @@ internal sealed class ConverterRig
     return cell;
   }
 
-  private static ItemStack MetalStack(TestWorld world, string code, float temp) =>
-    MoltenMetal.CreateStack(world.World, code, temp)!;
+  private static ItemStack MetalStack(
+    TestWorld world,
+    string code,
+    float temp
+  ) => MoltenMetal.CreateStack(world.World, code, temp)!;
 
   /// <summary>Pours molten iron into the input canal cell (the furnace tap feeding the converter).</summary>
   public ConverterRig PourIronToInput(int units, float temp = 1700f)
@@ -147,7 +158,13 @@ internal sealed class ConverterRig
   /// <summary>Charges the intake's gas network with blast (Air at <paramref name="atm"/> ≥ 2.5 atm).</summary>
   public ConverterRig ChargeBlast(float atm = 3f)
   {
-    _blast.TryProduceGas(atm * 30f, 20f, "Air", World.Accessor, maxOutputPressure: atm);
+    _blast.TryProduceGas(
+      atm * 30f,
+      20f,
+      "Air",
+      World.Accessor,
+      maxOutputPressure: atm
+    );
     return this;
   }
 
@@ -175,8 +192,10 @@ internal sealed class ConverterRig
     return this;
   }
 
-  public int ContentUnits => (int)ReflectionHelpers.GetField(Control, "_contentUnits")!;
-  public float ProcessSeconds => (float)ReflectionHelpers.GetField(Control, "_processSeconds")!;
+  public int ContentUnits =>
+    (int)ReflectionHelpers.GetField(Control, "_contentUnits")!;
+  public float ProcessSeconds =>
+    (float)ReflectionHelpers.GetField(Control, "_processSeconds")!;
   public float BlastVolume => _blast.State?.Volume ?? 0f;
 
   public string ContentCode =>
@@ -211,18 +230,51 @@ internal sealed class CowperRig
     Stove = new BlockEntityCowperStove
     {
       Pos = pos,
-      Block = TestBlocks.Configure(new Block(), "smex:cowperstove-north", 1, ("side", "north")),
+      Block = TestBlocks.Configure(
+        new Block(),
+        "smex:cowperstove-north",
+        1,
+        ("side", "north")
+      ),
     };
     World.Attach(Stove);
     ReflectionHelpers.Invoke(Stove, "UpdateStructureRotation");
     // Prime the config-cached tunables Initialize would set (Initialize isn't run headlessly).
-    ReflectionHelpers.SetField(Stove, "_intakeVolume", SmexValues.CowperIntakeVolume);
-    ReflectionHelpers.SetField(Stove, "_factorDefault", SmexValues.CowperHeatingSpeedDefault);
-    ReflectionHelpers.SetField(Stove, "_factorOtherCoal", SmexValues.CowperHeatingSpeedOtherCoal);
-    ReflectionHelpers.SetField(Stove, "_factorAnthracite", SmexValues.CowperHeatingSpeedAnthracite);
-    ReflectionHelpers.SetField(Stove, "_coolingSpeedExhaust", SmexValues.CowperCoolingSpeedExhaust);
-    ReflectionHelpers.SetField(Stove, "_coolingSpeedAir", SmexValues.CowperCoolingSpeedAir);
-    ReflectionHelpers.SetField(Stove, "_maxTemperature", SmexValues.CowperMaxTemperature);
+    ReflectionHelpers.SetField(
+      Stove,
+      "_intakeVolume",
+      SmexValues.CowperIntakeVolume
+    );
+    ReflectionHelpers.SetField(
+      Stove,
+      "_factorDefault",
+      SmexValues.CowperHeatingSpeedDefault
+    );
+    ReflectionHelpers.SetField(
+      Stove,
+      "_factorOtherCoal",
+      SmexValues.CowperHeatingSpeedOtherCoal
+    );
+    ReflectionHelpers.SetField(
+      Stove,
+      "_factorAnthracite",
+      SmexValues.CowperHeatingSpeedAnthracite
+    );
+    ReflectionHelpers.SetField(
+      Stove,
+      "_coolingSpeedExhaust",
+      SmexValues.CowperCoolingSpeedExhaust
+    );
+    ReflectionHelpers.SetField(
+      Stove,
+      "_coolingSpeedAir",
+      SmexValues.CowperCoolingSpeedAir
+    );
+    ReflectionHelpers.SetField(
+      Stove,
+      "_maxTemperature",
+      SmexValues.CowperMaxTemperature
+    );
     ReflectionHelpers.SetProperty(Stove, "StructureComplete", true);
     ReflectionHelpers.SetField(Stove, "_connectorFace", BlockFacing.SOUTH);
 
@@ -233,21 +285,37 @@ internal sealed class CowperRig
     // pipe at the hot-blast cell - both resolved from the stove's structure-local offsets.
     BlockPos airInPos = GlobalPos(0, 1, 2);
     var ptBlock = PipeTestWorld.MakePipe(orientation: "ns", id: 20);
-    _airIn = new BlockEntityPipePassthrough { Pos = airInPos.Copy(), Block = ptBlock };
+    _airIn = new BlockEntityPipePassthrough
+    {
+      Pos = airInPos.Copy(),
+      Block = ptBlock,
+    };
     World.Place(airInPos, ptBlock, _airIn);
     World.Attach(_airIn);
     World.AddNode(airInPos, "pipe");
-    ReflectionHelpers.SetProperty(_airIn, nameof(_airIn.NetworkSystem), World.Networks);
+    ReflectionHelpers.SetProperty(
+      _airIn,
+      nameof(_airIn.NetworkSystem),
+      World.Networks
+    );
     _airInNet = (PipeNetwork)World.NetworkAt(airInPos)!;
 
     BlockPos hotOutPos = GlobalPos(0, 1, 0);
     var outBlock = PipeTestWorld.MakePipe(orientation: "ns", id: 21);
-    var outBe = new BlockEntityPipe { Pos = hotOutPos.Copy(), Block = outBlock };
+    var outBe = new BlockEntityPipe
+    {
+      Pos = hotOutPos.Copy(),
+      Block = outBlock,
+    };
     World.Place(hotOutPos, outBlock, outBe);
     World.Attach(outBe);
     World.AddNode(hotOutPos, "pipe");
     // Attach (not Initialize) leaves NetworkSystem unset; the outlet needs it to produce into its net.
-    ReflectionHelpers.SetProperty(outBe, nameof(outBe.NetworkSystem), World.Networks);
+    ReflectionHelpers.SetProperty(
+      outBe,
+      nameof(outBe.NetworkSystem),
+      World.Networks
+    );
     _hotOut = (PipeNetwork)World.NetworkAt(hotOutPos)!;
   }
 
@@ -262,7 +330,10 @@ internal sealed class CowperRig
     BlockPos p2 = p1.AddCopy(face);
     World.Place(p1, pipe);
     World.Place(p2, pipe);
-    World.Place(p2.AddCopy(face), TestBlocks.Configure(new Block(), "game:rock", 98)); // far cap
+    World.Place(
+      p2.AddCopy(face),
+      TestBlocks.Configure(new Block(), "game:rock", 98)
+    ); // far cap
     World.Place(at, TestBlocks.Configure(new Block(), "game:rock", 99)); // near cap (stove cell)
     World.AddNode(p1, "pipe");
     World.AddNode(p2, "pipe");
@@ -272,7 +343,13 @@ internal sealed class CowperRig
   /// <summary>Charges the exhaust intake with hot furnace exhaust, then runs one production tick.</summary>
   public CowperRig ChargeFromExhaust(float exhaustTemp, float litres = 60f)
   {
-    _exhaust.TryProduceGas(litres, exhaustTemp, "Exhaust", World.Accessor, maxOutputPressure: 10f);
+    _exhaust.TryProduceGas(
+      litres,
+      exhaustTemp,
+      "Exhaust",
+      World.Accessor,
+      maxOutputPressure: 10f
+    );
     Tick();
     return this;
   }
@@ -285,7 +362,13 @@ internal sealed class CowperRig
   public CowperRig DischargeAir(float airTemp = 20f, float litres = 60f)
   {
     _exhaust.TryConsumeGas(float.MaxValue, World.Accessor); // valve the exhaust off
-    _airInNet.TryProduceGas(litres, airTemp, "Air", World.Accessor, maxOutputPressure: 3f);
+    _airInNet.TryProduceGas(
+      litres,
+      airTemp,
+      "Air",
+      World.Accessor,
+      maxOutputPressure: 3f
+    );
     // The stove reads the passthrough's client-synced Volume/Medium/Temperature, so push the network
     // state into those display fields (a broadcast) before the tick.
     _airInNet.BroadcastUpdate(World.Accessor);
@@ -293,9 +376,11 @@ internal sealed class CowperRig
     return this;
   }
 
-  private void Tick() => ReflectionHelpers.Invoke(Stove, "OnProductionTick", 1f);
+  private void Tick() =>
+    ReflectionHelpers.Invoke(Stove, "OnProductionTick", 1f);
 
-  public float CoreTemperature => (float)ReflectionHelpers.GetField(Stove, "_internalTemperature")!;
+  public float CoreTemperature =>
+    (float)ReflectionHelpers.GetField(Stove, "_internalTemperature")!;
   public string HotBlastMedium => _hotOut.State?.MediumType ?? "";
   public float HotBlastTemperature => _hotOut.State?.Temperature ?? 0f;
   public float HotBlastVolume => _hotOut.State?.Volume ?? 0f;

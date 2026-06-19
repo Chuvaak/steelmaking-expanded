@@ -43,7 +43,10 @@ public class BlastFurnaceTapTests
   }
 
   /// <summary>Places a canal start in the cell the tap pours into (Pos + side.Opposite, one down).</summary>
-  private static BlockEntityMoltenCanalStart CanalBelow(TestWorld world, BlockEntityBlastFurnaceTap tap)
+  private static BlockEntityMoltenCanalStart CanalBelow(
+    TestWorld world,
+    BlockEntityBlastFurnaceTap tap
+  )
   {
     var facing = BlockFacing.FromCode("north");
     var pos = tap.Pos.AddCopy(facing.Opposite).DownCopy();

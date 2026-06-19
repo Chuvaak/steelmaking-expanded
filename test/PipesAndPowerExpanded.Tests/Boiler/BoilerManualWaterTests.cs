@@ -52,7 +52,10 @@ public class BoilerManualWaterTests
   {
     var be = Boiler(water: 400f);
     Assert.False(
-      be.TryManualDrain(Substitute.For<IPlayer>(), HeldItem("game:rock-granite"))
+      be.TryManualDrain(
+        Substitute.For<IPlayer>(),
+        HeldItem("game:rock-granite")
+      )
     );
     Assert.Equal(400f, WaterOf(be), 3);
   }

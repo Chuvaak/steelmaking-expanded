@@ -14,7 +14,9 @@ namespace PipesAndPowerExpanded.Tests;
 /// </summary>
 public class PipeBeTests
 {
-  private static (TestWorld world, BlockEntityPipe be) NewPipe(BlockPos? at = null)
+  private static (TestWorld world, BlockEntityPipe be) NewPipe(
+    BlockPos? at = null
+  )
   {
     var world = new TestWorld();
     world.RegisterNetwork("pipe", sys => new PipeNetwork(sys));
@@ -98,7 +100,9 @@ public class PipeBeTests
   public void Display_fields_and_network_state_round_trip_through_the_tree()
   {
     var (_, be) = NewPipe();
-    be.OnNetworkUpdate(State(vol: 450f, temp: 160f, medium: "Steam", pressure: 3f));
+    be.OnNetworkUpdate(
+      State(vol: 450f, temp: 160f, medium: "Steam", pressure: 3f)
+    );
 
     var tree = new TreeAttribute();
     be.ToTreeAttributes(tree);
@@ -163,7 +167,11 @@ public class PipeBeTests
       world.Attach(bes[z]);
     }
     // Seal the ends so a gas can build pressure instead of leaking out.
-    var rock = TestBlocks.Configure(new Vintagestory.API.Common.Block(), "game:rock", 99);
+    var rock = TestBlocks.Configure(
+      new Vintagestory.API.Common.Block(),
+      "game:rock",
+      99
+    );
     world.Place(new BlockPos(0, 0, -1), rock);
     world.Place(new BlockPos(0, 0, 3), rock);
 
@@ -171,13 +179,22 @@ public class PipeBeTests
       world.AddNode(new BlockPos(0, 0, z), "pipe");
 
     var net = (PipeNetwork)world.NetworkAt(new BlockPos(0, 0, 0))!;
-    net.TryProduceGas(450f, 150f, "Steam", world.Accessor, maxOutputPressure: 10f);
+    net.TryProduceGas(
+      450f,
+      150f,
+      "Steam",
+      world.Accessor,
+      maxOutputPressure: 10f
+    );
     net.BroadcastUpdate(world.Accessor);
 
     foreach (var be in bes)
     {
       Assert.Equal("Steam", be.Medium);
-      Assert.True(be.Pressure > 0f, "each pipe should see the network pressure");
+      Assert.True(
+        be.Pressure > 0f,
+        "each pipe should see the network pressure"
+      );
     }
   }
 }

@@ -41,7 +41,11 @@ internal sealed class BoilerRig
       1,
       ("side", "north")
     );
-    Be = new BlockEntityBoilerCornish { Pos = new BlockPos(0, 8, 0), Block = Block };
+    Be = new BlockEntityBoilerCornish
+    {
+      Pos = new BlockPos(0, 8, 0),
+      Block = Block,
+    };
     World.Place(Be.Pos, Block, Be);
     World.Attach(Be);
     BoilerFakes.ForceConstructed(Be);
@@ -66,9 +70,11 @@ internal sealed class BoilerRig
   public BoilerState State =>
     (BoilerState)ReflectionHelpers.GetField(Be, "_state")!;
 
-  public float WaterVolume => (float)ReflectionHelpers.GetField(Be, "_waterVolume")!;
+  public float WaterVolume =>
+    (float)ReflectionHelpers.GetField(Be, "_waterVolume")!;
 
-  public float SteamVolume => (float)ReflectionHelpers.GetField(Be, "_steamVolume")!;
+  public float SteamVolume =>
+    (float)ReflectionHelpers.GetField(Be, "_steamVolume")!;
 
   public BoilerRig SetState(BoilerState state)
   {
@@ -106,5 +112,4 @@ internal sealed class BoilerRig
     ReflectionHelpers.SetField(Pile, "burning", false);
     return this;
   }
-
 }

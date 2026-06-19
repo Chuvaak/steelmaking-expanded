@@ -56,8 +56,9 @@ public class ConfigMigrationTests
     return (api, () => captured);
   }
 
-  private static ExConfigRegister<FakeConfig> Store(params ExConfigMigration[] m) =>
-    new(FileName, ModId, m);
+  private static ExConfigRegister<FakeConfig> Store(
+    params ExConfigMigration[] m
+  ) => new(FileName, ModId, m);
 
   [Fact]
   public void Missing_file_loads_coded_defaults_and_stamps_version()

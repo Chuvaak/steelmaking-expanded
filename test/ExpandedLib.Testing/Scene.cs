@@ -24,7 +24,8 @@ public sealed class Scene
   /// <summary>The underlying in-memory world (store, graph manager, fake API).</summary>
   public TestWorld World { get; } = new();
 
-  private readonly List<(BlockPos pos, string networkType)> _pendingNodes = new();
+  private readonly List<(BlockPos pos, string networkType)> _pendingNodes =
+    new();
   private bool _built;
 
   /// <summary>Registers a network factory, exactly as a mod would at startup.</summary>
@@ -87,9 +88,9 @@ public sealed class Scene
     int z0 = Math.Min(a.Z, b.Z),
       z1 = Math.Max(a.Z, b.Z);
     for (int x = x0; x <= x1; x++)
-      for (int y = y0; y <= y1; y++)
-        for (int z = z0; z <= z1; z++)
-          World.Place(new BlockPos(x, y, z), block);
+    for (int y = y0; y <= y1; y++)
+    for (int z = z0; z <= z1; z++)
+      World.Place(new BlockPos(x, y, z), block);
     return this;
   }
 

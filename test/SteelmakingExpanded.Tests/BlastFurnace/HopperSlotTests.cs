@@ -42,7 +42,10 @@ public class HopperSlotTests
   [InlineData(5, "iron")]
   [InlineData(6, "coke")]
   [InlineData(7, "lime")]
-  public void NewSlot_assigns_the_feed_type_per_index(int index, string expected)
+  public void NewSlot_assigns_the_feed_type_per_index(
+    int index,
+    string expected
+  )
   {
     var inv = new InventoryBlastFurnace(8, "test", null, null);
     Assert.Equal(expected, ((ItemSlotBlastFurnace)inv[index]).AllowedType);
@@ -93,7 +96,10 @@ public class HopperSlotTests
   [InlineData("crushed-iron-magnetite", true)]
   [InlineData("crushed-coke", false)]
   [InlineData("lime", false)]
-  public void IsCrushedIronOre_matches_the_crushed_iron_prefix(string path, bool expected)
+  public void IsCrushedIronOre_matches_the_crushed_iron_prefix(
+    string path,
+    bool expected
+  )
   {
     Assert.Equal(expected, IronOreCompat.IsCrushedIronOre(path));
   }

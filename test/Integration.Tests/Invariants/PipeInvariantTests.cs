@@ -17,7 +17,8 @@ public class PipeInvariantTests
   // The weakest (iron) pipe bursts at 5 atm; over-pressure may sit AT the ceiling but never above.
   private const float IronBurst = 5.0f;
 
-  private static bool Finite(float f) => !float.IsNaN(f) && !float.IsInfinity(f);
+  private static bool Finite(float f) =>
+    !float.IsNaN(f) && !float.IsInfinity(f);
 
   [Theory]
   [InlineData(1)]
@@ -56,9 +57,14 @@ public class PipeInvariantTests
       if (s == null)
         continue;
 
-      Assert.True(Finite(s.Volume) && Finite(s.Pressure) && Finite(s.Temperature),
-        $"state went non-finite (seed {seed}, op {op})");
-      Assert.True(s.Volume >= -0.001f, $"negative volume {s.Volume} (seed {seed})");
+      Assert.True(
+        Finite(s.Volume) && Finite(s.Pressure) && Finite(s.Temperature),
+        $"state went non-finite (seed {seed}, op {op})"
+      );
+      Assert.True(
+        s.Volume >= -0.001f,
+        $"negative volume {s.Volume} (seed {seed})"
+      );
       // Over-pressure is allowed up to the burst ceiling; beyond it the run must have burst
       // (fewer nodes) rather than hold an impossible pressure.
       bool burst = w.Networks.AllNetworks.Sum(n => n.Nodes.Count) < length;
@@ -82,7 +88,10 @@ public class PipeInvariantTests
     float beforeVol = net.State?.Volume ?? 0f;
     float drawn = net.TryConsumeGas(1_000_000f, w.Accessor); // ask for far more than exists
 
-    Assert.True(drawn <= beforeVol + 0.001f, $"drew {drawn} from {beforeVol} (seed {seed})");
+    Assert.True(
+      drawn <= beforeVol + 0.001f,
+      $"drew {drawn} from {beforeVol} (seed {seed})"
+    );
     Assert.True(drawn >= 0f);
     Assert.True((net.State?.Volume ?? 0f) >= -0.001f);
   }

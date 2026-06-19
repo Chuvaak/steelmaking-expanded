@@ -39,11 +39,17 @@ public class ConverterTransmissionTests
   [InlineData("east", "west")]
   [InlineData("south", "north")]
   [InlineData("west", "east")]
-  public void Discovery_face_is_opposite_the_placed_side(string side, string expectedFace)
+  public void Discovery_face_is_opposite_the_placed_side(
+    string side,
+    string expectedFace
+  )
   {
     var mp = Behavior(side);
     mp.SetOrientations();
-    Assert.Equal(BlockFacing.FromCode(expectedFace), mp.OutFacingForNetworkDiscovery);
+    Assert.Equal(
+      BlockFacing.FromCode(expectedFace),
+      mp.OutFacingForNetworkDiscovery
+    );
   }
 
   [Theory]
@@ -54,7 +60,9 @@ public class ConverterTransmissionTests
     var mp = Behavior(side);
     mp.SetOrientations();
     int[] expected =
-      mp.OutFacingForNetworkDiscovery.Axis == EnumAxis.X ? [-1, 0, 0] : [0, 0, -1];
+      mp.OutFacingForNetworkDiscovery.Axis == EnumAxis.X
+        ? [-1, 0, 0]
+        : [0, 0, -1];
     Assert.Equal(expected, mp.AxisSign);
   }
 }

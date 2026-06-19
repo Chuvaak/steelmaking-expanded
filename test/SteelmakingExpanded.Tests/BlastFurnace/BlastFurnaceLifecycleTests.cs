@@ -29,7 +29,12 @@ public class BlastFurnaceLifecycleTests
     var be = new BlockEntityBlastFurnace
     {
       Pos = new BlockPos(0, 16, 0),
-      Block = TestBlocks.Configure(new Block(), "smex:blastfurnacedoor-north", 1, ("side", "north")),
+      Block = TestBlocks.Configure(
+        new Block(),
+        "smex:blastfurnacedoor-north",
+        1,
+        ("side", "north")
+      ),
       BaseAngleRad = 0f,
     };
     world.Attach(be);
@@ -39,25 +44,39 @@ public class BlastFurnaceLifecycleTests
   }
 
   /// <summary>A hearth coal pile holding <paramref name="units"/> of blast mix, lit.</summary>
-  private static BlockEntityCoalPile BlastmixPile(TestWorld world, BlockPos pos, int units)
+  private static BlockEntityCoalPile BlastmixPile(
+    TestWorld world,
+    BlockPos pos,
+    int units
+  )
   {
     var pile = new BlockEntityCoalPile { Pos = pos.Copy() };
     // Pass a real Api so slot.MarkDirty() (DidModifyItemSlot) doesn't NRE when ConsumeForMelting
     // takes blast mix out of the slot.
     var inv = new InventoryGeneric(1, "coalpile", "test", world.Api, null);
-    var blastmix = new Item { Code = new AssetLocation("smex", "blastmix"), ItemId = 4242 };
+    var blastmix = new Item
+    {
+      Code = new AssetLocation("smex", "blastmix"),
+      ItemId = 4242,
+    };
     inv[0].Itemstack = new ItemStack(blastmix, units);
     ReflectionHelpers.SetField(pile, "inventory", inv);
     ReflectionHelpers.SetField(pile, "burning", true);
-    world.Place(pos, TestBlocks.Configure(new Block(), "game:coalpile", 50), pile);
+    world.Place(
+      pos,
+      TestBlocks.Configure(new Block(), "game:coalpile", 50),
+      pile
+    );
     world.Attach(pile);
     return pile;
   }
 
-  private static List<(BlockPos, BlockEntityCoalPile)> Piles(params (BlockPos, BlockEntityCoalPile)[] p) =>
-    new(p);
+  private static List<(BlockPos, BlockEntityCoalPile)> Piles(
+    params (BlockPos, BlockEntityCoalPile)[] p
+  ) => new(p);
 
-  private static int Mix(BlockEntityCoalPile pile) => pile.inventory[0].StackSize;
+  private static int Mix(BlockEntityCoalPile pile) =>
+    pile.inventory[0].StackSize;
 
   private static float Iron(BlockEntityBlastFurnace be) =>
     (float)ReflectionHelpers.GetField(be, "_moltenIron")!;
@@ -95,9 +114,20 @@ public class BlastFurnaceLifecycleTests
     var be = Furnace(world);
     var pile = BlastmixPile(world, new BlockPos(0, 13, 0), 100);
     // Already near the iron ceiling (2400 default).
-    ReflectionHelpers.SetField(be, "_moltenIron", SmexValues.BfMaxMoltenIron - 10f);
+    ReflectionHelpers.SetField(
+      be,
+      "_moltenIron",
+      SmexValues.BfMaxMoltenIron - 10f
+    );
 
-    ReflectionHelpers.Invoke(be, "ConsumeForMelting", Piles((pile.Pos, pile)), 16, 60f, 10f);
+    ReflectionHelpers.Invoke(
+      be,
+      "ConsumeForMelting",
+      Piles((pile.Pos, pile)),
+      16,
+      60f,
+      10f
+    );
 
     Assert.Equal(SmexValues.BfMaxMoltenIron, Iron(be), 1); // capped, not 2450
   }
@@ -132,7 +162,11 @@ public class BlastFurnaceLifecycleTests
   {
     var world = NewWorld();
     var be = Furnace(world);
-    var pile = BlastmixPile(world, new BlockPos(0, 13, 0), SmexValues.BlastMixRequiredToFire);
+    var pile = BlastmixPile(
+      world,
+      new BlockPos(0, 13, 0),
+      SmexValues.BlastMixRequiredToFire
+    );
 
     object[] args = { Piles((pile.Pos, pile)), false };
     int count = (int)ReflectionHelpers.Invoke(be, "GetBlastMixCount", args)!;
@@ -163,9 +197,15 @@ public class BlastFurnaceLifecycleTests
   public void Extinguishing_a_melt_solidifies_the_iron_in_the_hearth()
   {
     var world = NewWorld();
-    world.Register(TestBlocks.Configure(new Block(), "smex:solidifiediron", 70));
+    world.Register(
+      TestBlocks.Configure(new Block(), "smex:solidifiediron", 70)
+    );
     var be = Furnace(world); // no hearth piles -> the slag-conversion walk is a no-op
-    ReflectionHelpers.SetProperty(be, nameof(be.State), BlastFurnaceState.Melting);
+    ReflectionHelpers.SetProperty(
+      be,
+      nameof(be.State),
+      BlastFurnaceState.Melting
+    );
     ReflectionHelpers.SetField(be, "_moltenIron", 50f);
 
     ReflectionHelpers.Invoke(be, "Extinguish");
@@ -174,8 +214,11 @@ public class BlastFurnaceLifecycleTests
     Assert.Equal(0f, Iron(be), 3); // the molten pool is gone
 
     // A solidified-iron block was left in the hearth for the player to mine out.
-    var ironBlock = world.World.GetBlock(new AssetLocation("smex", "solidifiediron"))!;
-    var placedAt = (BlockPos)ReflectionHelpers.Invoke(be, "GetGlobalPos", 0, -2, 2)!;
+    var ironBlock = world.World.GetBlock(
+      new AssetLocation("smex", "solidifiediron")
+    )!;
+    var placedAt = (BlockPos)
+      ReflectionHelpers.Invoke(be, "GetGlobalPos", 0, -2, 2)!;
     Assert.Equal(ironBlock.BlockId, world.GetBlock(placedAt).BlockId);
   }
 

@@ -5,10 +5,10 @@ using PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities;
 using PipesAndPowerExpanded.BlockNetworkPipe.Blocks;
 using PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 using PipesAndPowerExpanded.BlockStructures.Engine.Blocks;
-using SmexAirBlowerBe = SteelmakingExpanded.BlockStructures.Engine.BlockEntities.BlockEntityEngineAirBlower;
-using SmexAirBlowerBlock = SteelmakingExpanded.BlockStructures.Engine.Blocks.BlockEngineAirBlower;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
+using SmexAirBlowerBe = SteelmakingExpanded.BlockStructures.Engine.BlockEntities.BlockEntityEngineAirBlower;
+using SmexAirBlowerBlock = SteelmakingExpanded.BlockStructures.Engine.Blocks.BlockEngineAirBlower;
 
 namespace PipesAndPowerExpanded.Tests;
 
@@ -29,8 +29,17 @@ internal static class EnginePlant
     string material = "iron"
   )
   {
-    var block = PipeTestWorld.MakePipe(material: material, orientation: orientation, id: id);
-    scene.Node(pos, block, new BlockEntityPipe { Pos = pos.Copy(), Block = block }, "pipe");
+    var block = PipeTestWorld.MakePipe(
+      material: material,
+      orientation: orientation,
+      id: id
+    );
+    scene.Node(
+      pos,
+      block,
+      new BlockEntityPipe { Pos = pos.Copy(), Block = block },
+      "pipe"
+    );
   }
 
   /// <summary>The pipe axis ("ns"/"we") that lies along <paramref name="face"/>.</summary>
@@ -67,7 +76,11 @@ internal sealed class WaterPumpPlant
       30,
       ("side", "north")
     );
-    Engine = new BlockEntityEngineWatt { Pos = pos.Copy(), Block = engineBlock };
+    Engine = new BlockEntityEngineWatt
+    {
+      Pos = pos.Copy(),
+      Block = engineBlock,
+    };
     scene.Machine(pos, engineBlock, Engine);
     RccFake.Complete(Engine); // Initialize cleared _rcc from the absent behavior
 
@@ -85,7 +98,11 @@ internal sealed class WaterPumpPlant
       33,
       ("side", "east")
     );
-    Pump = new BlockEntityEngineFluidPump { Pos = subPos.Copy(), Block = pumpBlock };
+    Pump = new BlockEntityEngineFluidPump
+    {
+      Pos = subPos.Copy(),
+      Block = pumpBlock,
+    };
     scene.Machine(subPos, pumpBlock, Pump);
 
     // Source line: a fluid intake directly below the pump (oriented "u" so it presents a connector up
@@ -98,11 +115,19 @@ internal sealed class WaterPumpPlant
       ("orientation", "u")
     );
     ReflectionHelpers.SetProperty(intakeBlock, "Orientation", "u");
-    Intake = new BlockEntityFluidIntake { Pos = _pond.Copy(), Block = intakeBlock };
+    Intake = new BlockEntityFluidIntake
+    {
+      Pos = _pond.Copy(),
+      Block = intakeBlock,
+    };
     scene.Node(_pond, intakeBlock, Intake, "pipe");
     // The intake reads water below + resolves its own network when the pump asks it to refill.
     ReflectionHelpers.SetProperty(Intake, nameof(Intake.HasWater), true);
-    ReflectionHelpers.SetProperty(Intake, nameof(Intake.NetworkSystem), scene.World.Networks);
+    ReflectionHelpers.SetProperty(
+      Intake,
+      nameof(Intake.NetworkSystem),
+      scene.World.Networks
+    );
 
     // Output line: a sealed water main on the pump's left face.
     BlockFacing leftFace = ExOrientation.RotateFacing(
@@ -119,7 +144,13 @@ internal sealed class WaterPumpPlant
   {
     _scene
       .NetworkAt<PipeNetwork>(_inlet)!
-      .TryProduceGas(atm * 30f, 150f, "Steam", _scene.World.Accessor, maxOutputPressure: atm);
+      .TryProduceGas(
+        atm * 30f,
+        150f,
+        "Steam",
+        _scene.World.Accessor,
+        maxOutputPressure: atm
+      );
     return this;
   }
 
@@ -141,14 +172,18 @@ internal sealed class WaterPumpPlant
   /// <summary>Pre-fills the pond (source line) with standing water for the pump to lift.</summary>
   public WaterPumpPlant FillPond(float litres)
   {
-    _scene.NetworkAt<PipeNetwork>(_pond)!
+    _scene
+      .NetworkAt<PipeNetwork>(_pond)!
       .TryProduceLiquid(litres, 12f, 1f, _scene.World.Accessor);
     return this;
   }
 
-  public float OutputVolume => _scene.NetworkAt<PipeNetwork>(_output)!.State?.Volume ?? 0f;
-  public float PondVolume => _scene.NetworkAt<PipeNetwork>(_pond)!.State?.Volume ?? 0f;
-  public float InletVolume => _scene.NetworkAt<PipeNetwork>(_inlet)!.State?.Volume ?? 0f;
+  public float OutputVolume =>
+    _scene.NetworkAt<PipeNetwork>(_output)!.State?.Volume ?? 0f;
+  public float PondVolume =>
+    _scene.NetworkAt<PipeNetwork>(_pond)!.State?.Volume ?? 0f;
+  public float InletVolume =>
+    _scene.NetworkAt<PipeNetwork>(_inlet)!.State?.Volume ?? 0f;
 }
 
 /// <summary>
@@ -175,14 +210,24 @@ internal sealed class MpGeneratorPlant
       40,
       ("side", "north")
     );
-    Engine = new BlockEntityEngineCornish { Pos = pos.Copy(), Block = engineBlock };
+    Engine = new BlockEntityEngineCornish
+    {
+      Pos = pos.Copy(),
+      Block = engineBlock,
+    };
     scene.Machine(pos, engineBlock, Engine);
     RccFake.Complete(Engine);
 
     BlockFacing inletFace = engineBlock.SteamInletFace;
     _inlet = pos.AddCopy(inletFace);
     // The Cornish engine's band is high (≥6 atm) - an iron pipe bursts at 5, so feed it through steel.
-    EnginePlant.Pipe(scene, _inlet, EnginePlant.Axis(inletFace), 41, material: "steel");
+    EnginePlant.Pipe(
+      scene,
+      _inlet,
+      EnginePlant.Axis(inletFace),
+      41,
+      material: "steel"
+    );
     scene.Block(_inlet.AddCopy(inletFace), PpexScenes.Cap(42));
 
     BlockPos subPos = engineBlock.SubmachinePos(pos);
@@ -192,7 +237,11 @@ internal sealed class MpGeneratorPlant
       43,
       ("side", "east")
     );
-    Generator = new BlockEntityEngineMpGenerator { Pos = subPos.Copy(), Block = genBlock };
+    Generator = new BlockEntityEngineMpGenerator
+    {
+      Pos = subPos.Copy(),
+      Block = genBlock,
+    };
     scene.Machine(subPos, genBlock, Generator);
   }
 
@@ -200,7 +249,13 @@ internal sealed class MpGeneratorPlant
   {
     _scene
       .NetworkAt<PipeNetwork>(_inlet)!
-      .TryProduceGas(atm * 30f, 150f, "Steam", _scene.World.Accessor, maxOutputPressure: atm);
+      .TryProduceGas(
+        atm * 30f,
+        150f,
+        "Steam",
+        _scene.World.Accessor,
+        maxOutputPressure: atm
+      );
     return this;
   }
 
@@ -216,7 +271,8 @@ internal sealed class MpGeneratorPlant
   }
 
   public float MpPowerBudget => Engine.MpPowerBudget;
-  public float InletVolume => _scene.NetworkAt<PipeNetwork>(_inlet)!.State?.Volume ?? 0f;
+  public float InletVolume =>
+    _scene.NetworkAt<PipeNetwork>(_inlet)!.State?.Volume ?? 0f;
 }
 
 /// <summary>
@@ -245,14 +301,24 @@ internal sealed class AirBlowerPlant
       45,
       ("side", "north")
     );
-    Engine = new BlockEntityEngineCornish { Pos = pos.Copy(), Block = engineBlock };
+    Engine = new BlockEntityEngineCornish
+    {
+      Pos = pos.Copy(),
+      Block = engineBlock,
+    };
     scene.Machine(pos, engineBlock, Engine);
     RccFake.Complete(Engine);
 
     // The Cornish band is high (≥6 atm) - feed the inlet through steel (iron bursts at 5).
     BlockFacing inletFace = engineBlock.SteamInletFace;
     _inlet = pos.AddCopy(inletFace);
-    EnginePlant.Pipe(scene, _inlet, EnginePlant.Axis(inletFace), 46, material: "steel");
+    EnginePlant.Pipe(
+      scene,
+      _inlet,
+      EnginePlant.Axis(inletFace),
+      46,
+      material: "steel"
+    );
     scene.Block(_inlet.AddCopy(inletFace), PpexScenes.Cap(47));
 
     BlockPos subPos = engineBlock.SubmachinePos(pos);
@@ -272,7 +338,13 @@ internal sealed class AirBlowerPlant
       ExOrientation.AngleFromSide("east")
     );
     _blast = subPos.AddCopy(leftFace);
-    EnginePlant.Pipe(scene, _blast, EnginePlant.Axis(leftFace), 49, material: "steel");
+    EnginePlant.Pipe(
+      scene,
+      _blast,
+      EnginePlant.Axis(leftFace),
+      49,
+      material: "steel"
+    );
     scene.Block(_blast.AddCopy(leftFace), PpexScenes.Cap(50));
   }
 
@@ -280,7 +352,13 @@ internal sealed class AirBlowerPlant
   {
     _scene
       .NetworkAt<PipeNetwork>(_inlet)!
-      .TryProduceGas(atm * 30f, 150f, "Steam", _scene.World.Accessor, maxOutputPressure: atm);
+      .TryProduceGas(
+        atm * 30f,
+        150f,
+        "Steam",
+        _scene.World.Accessor,
+        maxOutputPressure: atm
+      );
     return this;
   }
 

@@ -1,8 +1,6 @@
 {
   "code": "gear",
-  "variantgroups": [
-    { "code": "metal", "states": ["iron", "steel"] }
-  ],
+  "variantgroups": [{ "code": "metal", "states": ["iron", "steel"] }],
   "shape": { "base": "game:item/gear-rusty" },
   "textures": {
     "rusty-iron": { "base": "game:block/metal/ingot/{metal}" }

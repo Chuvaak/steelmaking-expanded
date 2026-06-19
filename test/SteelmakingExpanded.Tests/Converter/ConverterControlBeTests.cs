@@ -64,7 +64,11 @@ public class ConverterControlBeTests
 
     Assert.Equal(ConverterOpState.Filling, dst.OpState);
     Assert.Equal(30, (int)ReflectionHelpers.GetField(dst, "_contentUnits")!);
-    Assert.Equal(12f, (float)ReflectionHelpers.GetField(dst, "_processSeconds")!, 3);
+    Assert.Equal(
+      12f,
+      (float)ReflectionHelpers.GetField(dst, "_processSeconds")!,
+      3
+    );
     Assert.True((bool)ReflectionHelpers.GetField(dst, "_solidified")!);
   }
 
@@ -73,7 +77,8 @@ public class ConverterControlBeTests
   {
     var world = new TestWorld();
     // The solidified-bits drop resolves the bit item; any non-null item yields a stack.
-    world.World.GetItem(Arg.Any<AssetLocation>())
+    world
+      .World.GetItem(Arg.Any<AssetLocation>())
       .Returns(new Item { Code = new AssetLocation("game:metalbit-iron") });
 
     var be = Control(world);

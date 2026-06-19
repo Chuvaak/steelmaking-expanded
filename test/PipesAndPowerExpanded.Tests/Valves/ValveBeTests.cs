@@ -24,7 +24,11 @@ public class ValveBeTests
     world.RegisterNetwork("pipe", sys => new PipeNetwork(sys));
     var pipe = PipeTestWorld.MakePipe();
 
-    var valve = new BlockEntityValve { Pos = new BlockPos(0, 0, 1), Block = pipe };
+    var valve = new BlockEntityValve
+    {
+      Pos = new BlockPos(0, 0, 1),
+      Block = pipe,
+    };
     world.Place(new BlockPos(0, 0, 0), pipe);
     world.Place(new BlockPos(0, 0, 1), pipe, valve);
     world.Place(new BlockPos(0, 0, 2), pipe);
@@ -94,7 +98,13 @@ public class ValveBeTests
 
     // Pressurise the joined run, then broadcast so the valve caches the (meaningful) pool.
     var net = (PipeNetwork)world.NetworkAt(valve.Pos)!;
-    net.TryProduceGas(450f, 150f, "Steam", world.Accessor, maxOutputPressure: 10f);
+    net.TryProduceGas(
+      450f,
+      150f,
+      "Steam",
+      world.Accessor,
+      maxOutputPressure: 10f
+    );
     net.BroadcastUpdate(world.Accessor);
     Assert.NotNull(ReflectionHelpers.GetField(valve, "_savedNetworkState"));
 
@@ -131,7 +141,11 @@ public class ValveBeTests
     // shape the burst bug produced). FromTree must discard it before Initialize can restore it.
     var world = new TestWorld();
     var pipe = PipeTestWorld.MakePipe();
-    var valve = new BlockEntityValve { Pos = new BlockPos(0, 0, 0), Block = pipe };
+    var valve = new BlockEntityValve
+    {
+      Pos = new BlockPos(0, 0, 0),
+      Block = pipe,
+    };
     world.Place(valve.Pos, pipe, valve);
     world.Attach(valve);
 

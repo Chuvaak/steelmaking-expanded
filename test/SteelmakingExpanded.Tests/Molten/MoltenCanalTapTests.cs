@@ -25,9 +25,7 @@ public class MoltenCanalTapTests
     world.RegisterItem(Iron, 1500f);
     world.RegisterItem("game:ingot-copper", 1084f);
     // The barrel block the tap resolves when detaching a parked barrel.
-    world.Register(
-      TestBlocks.Configure(new Block(), "smex:moltenbarrel", 50)
-    );
+    world.Register(TestBlocks.Configure(new Block(), "smex:moltenbarrel", 50));
     return world;
   }
 
@@ -160,8 +158,10 @@ public class MoltenCanalTapTests
   #region Server-side drain
 
   // The drain speed is read from block attributes in Initialize (not run here), so set it directly.
-  private static void PrimeDrainSpeed(BlockEntityMoltenCanalTap be, float speed) =>
-    ReflectionHelpers.SetField(be, "_drainSpeed", speed);
+  private static void PrimeDrainSpeed(
+    BlockEntityMoltenCanalTap be,
+    float speed
+  ) => ReflectionHelpers.SetField(be, "_drainSpeed", speed);
 
   [Fact]
   public void OnServerTick_drains_cell_metal_into_a_parked_barrel()

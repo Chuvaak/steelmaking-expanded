@@ -16,7 +16,10 @@ namespace SteelmakingExpanded.Tests;
 /// </summary>
 public class HopperReinforcedBeTests
 {
-  private static BlockEntityHopperReinforced Hopper(TestWorld world, BlockPos pos)
+  private static BlockEntityHopperReinforced Hopper(
+    TestWorld world,
+    BlockPos pos
+  )
   {
     var be = new BlockEntityHopperReinforced
     {
@@ -28,7 +31,10 @@ public class HopperReinforcedBeTests
     return be;
   }
 
-  private static BlockEntityHopperBell BellBelow(TestWorld world, BlockEntityHopperReinforced hopper)
+  private static BlockEntityHopperBell BellBelow(
+    TestWorld world,
+    BlockEntityHopperReinforced hopper
+  )
   {
     var pos = hopper.Pos.DownCopy();
     var bell = new BlockEntityHopperBell
@@ -77,7 +83,10 @@ public class HopperReinforcedBeTests
   [InlineData(5, "iron")]
   [InlineData(6, "coke")]
   [InlineData(7, "lime")]
-  public void The_eight_slots_are_typed_iron_coke_and_flux(int slot, string expectedType)
+  public void The_eight_slots_are_typed_iron_coke_and_flux(
+    int slot,
+    string expectedType
+  )
   {
     var hopper = Hopper(new TestWorld(), new BlockPos(0, 16, 0));
 
@@ -148,7 +157,9 @@ public class HopperReinforcedBeTests
 
     hopper.OnReceivedClientPacket(player, 1000, null!);
 
-    player.InventoryManager.DidNotReceive().OpenInventory(Arg.Any<IInventory>());
+    player
+      .InventoryManager.DidNotReceive()
+      .OpenInventory(Arg.Any<IInventory>());
   }
 
   #endregion

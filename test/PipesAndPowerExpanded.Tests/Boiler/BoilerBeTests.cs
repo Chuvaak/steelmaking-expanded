@@ -53,13 +53,25 @@ public class BoilerBeTests
     var dst = Boiler(world);
     dst.FromTreeAttributes(tree, world.World);
 
-    Assert.Equal(300f, (float)ReflectionHelpers.GetField(dst, "_waterVolume")!, 3);
-    Assert.Equal(200f, (float)ReflectionHelpers.GetField(dst, "_steamVolume")!, 3);
+    Assert.Equal(
+      300f,
+      (float)ReflectionHelpers.GetField(dst, "_waterVolume")!,
+      3
+    );
+    Assert.Equal(
+      200f,
+      (float)ReflectionHelpers.GetField(dst, "_steamVolume")!,
+      3
+    );
     Assert.Equal(
       BlockEntityBoiler.BoilerState.Boiling,
       ReflectionHelpers.GetField(dst, "_state")
     );
-    Assert.Equal(90f, (float)ReflectionHelpers.GetField(dst, "_heatingSeconds")!, 3);
+    Assert.Equal(
+      90f,
+      (float)ReflectionHelpers.GetField(dst, "_heatingSeconds")!,
+      3
+    );
     Assert.True(dst.LidOpen);
     // Derived pressure reconstructs from the restored volumes: 200 / (800 - 300) = 0.4.
     Assert.Equal(0.4f, dst.InternalPressure, 3);

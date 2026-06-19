@@ -36,8 +36,18 @@ public class HotBlastScenarioTests
   }
 
   /// <summary>One tick of the furnace spilling <paramref name="exhaust"/> litres into the main.</summary>
-  private static void Furnace(TestWorld world, PipeNetwork net, float exhaust) =>
-    net.TryProduceGas(exhaust, 700f, "Exhaust", world.Accessor, maxOutputPressure: 20f);
+  private static void Furnace(
+    TestWorld world,
+    PipeNetwork net,
+    float exhaust
+  ) =>
+    net.TryProduceGas(
+      exhaust,
+      700f,
+      "Exhaust",
+      world.Accessor,
+      maxOutputPressure: 20f
+    );
 
   #region Smoke stack safety valve
 
@@ -60,7 +70,8 @@ public class HotBlastScenarioTests
 
     // The stack swallows more than the furnace spills, so the main stays well below a choking
     // over-pressure (a couple intakes' worth of slack at most).
-    float vented = (float)ReflectionHelpers.GetField(stack, "_lastConsumedAmount")!;
+    float vented = (float)
+      ReflectionHelpers.GetField(stack, "_lastConsumedAmount")!;
     Assert.True(vented > 0f, "the stack should be venting exhaust");
     Assert.True(
       (net.State?.Volume ?? 0f) <= 2f * SmexValues.SmokestackGasIntakeVolume,
@@ -99,19 +110,28 @@ public class HotBlastScenarioTests
     for (int i = 0; i < 200; i++)
       rig.ChargeFromExhaust(exhaustTemp: 1200f);
     float charged = rig.CoreTemperature;
-    Assert.True(charged > 100f, $"the core should charge from exhaust, was {charged} C");
+    Assert.True(
+      charged > 100f,
+      $"the core should charge from exhaust, was {charged} C"
+    );
 
     // Discharge: route cool (20 C) air through the charged stove - it leaves scorching hot, and the
     // core gives up its heat.
     rig.DischargeAir(airTemp: 20f);
 
     Assert.Equal("Air", rig.HotBlastMedium);
-    Assert.True(rig.HotBlastVolume > 0f, "hot blast should be produced at the outlet");
+    Assert.True(
+      rig.HotBlastVolume > 0f,
+      "hot blast should be produced at the outlet"
+    );
     Assert.True(
       rig.HotBlastTemperature > 100f,
       $"the air should leave far hotter than it entered, was {rig.HotBlastTemperature} C"
     );
-    Assert.True(rig.CoreTemperature < charged, "discharging should cool the core");
+    Assert.True(
+      rig.CoreTemperature < charged,
+      "discharging should cool the core"
+    );
   }
 
   [Fact]

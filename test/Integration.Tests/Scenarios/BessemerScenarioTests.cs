@@ -21,7 +21,10 @@ public class BessemerScenarioTests
     rig.PourIronToInput(50);
     rig.Fill();
     Assert.Equal(50, rig.ContentUnits);
-    Assert.True(rig.Input.IsCellEmpty, "the input cell should have drained into the vessel");
+    Assert.True(
+      rig.Input.IsCellEmpty,
+      "the input cell should have drained into the vessel"
+    );
     Assert.Equal("game:ingot-iron", rig.ContentCode);
 
     // 2. Refine: with blast flowing the converter boils the carbon out, advancing the process clock
@@ -30,7 +33,10 @@ public class BessemerScenarioTests
     float blastBefore = rig.BlastVolume;
     rig.Refine();
     Assert.True(rig.ProcessSeconds > 0f, "refining should advance while blown");
-    Assert.True(rig.BlastVolume < blastBefore, "refining should consume blast from the network");
+    Assert.True(
+      rig.BlastVolume < blastBefore,
+      "refining should consume blast from the network"
+    );
 
     // 3. Finish the ~5-minute blow (fast-forwarded) - the charge becomes steel.
     rig.FastForwardToAlmostDone();
@@ -40,7 +46,10 @@ public class BessemerScenarioTests
 
     // 4. Pour: the finished steel drains into the output canal, ready to travel the molten network.
     rig.Pour();
-    Assert.True(rig.Output.CellAmount > 0, "the output canal should receive the steel");
+    Assert.True(
+      rig.Output.CellAmount > 0,
+      "the output canal should receive the steel"
+    );
     Assert.Equal("game:ingot-steel", rig.Output.CellMetalType);
   }
 
@@ -72,7 +81,10 @@ public class BessemerScenarioTests
     var rig = new ConverterRig();
     rig.SetMechPower(speed: 1f); // the engine's MP generator spins the transmission axle
 
-    Assert.True(rig.HasPower, "a turning transmission should power the converter");
+    Assert.True(
+      rig.HasPower,
+      "a turning transmission should power the converter"
+    );
   }
 
   [Fact]

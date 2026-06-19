@@ -356,7 +356,11 @@ public class BlockEntityPipe : BlockEntityNetworkNode, IPipeNode
 
       // Only the weakest pipes reach their burst rating (production is capped there), so
       // this lights up exactly on the cells at risk.
-      if (Block is BlockPipe bp && bp.CanBurst && Pressure >= bp.BurstPressure - 0.001f)
+      if (
+        Block is BlockPipe bp
+        && bp.CanBurst
+        && Pressure >= bp.BurstPressure - 0.001f
+      )
         dsc.AppendLine(Lang.Get("ppex:pipe-info-overpressure"));
     }
     else

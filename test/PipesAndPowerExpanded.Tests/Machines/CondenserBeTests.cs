@@ -29,7 +29,12 @@ public class CondenserBeTests
     return (world, be);
   }
 
-  private static PipeNetwork WaterNet(TestWorld world, int nodes, float litres, float temp = 30f)
+  private static PipeNetwork WaterNet(
+    TestWorld world,
+    int nodes,
+    float litres,
+    float temp = 30f
+  )
   {
     var net = PipeTestWorld.LooseNet(world.Networks, nodes);
     if (litres > 0f)
@@ -37,10 +42,21 @@ public class CondenserBeTests
     return net;
   }
 
-  private static PipeNetwork SteamNet(TestWorld world, int nodes, float litres, float temp = 150f)
+  private static PipeNetwork SteamNet(
+    TestWorld world,
+    int nodes,
+    float litres,
+    float temp = 150f
+  )
   {
     var net = PipeTestWorld.LooseNet(world.Networks, nodes);
-    net.TryProduceGas(litres, temp, "Steam", world.Accessor, maxOutputPressure: 20f);
+    net.TryProduceGas(
+      litres,
+      temp,
+      "Steam",
+      world.Accessor,
+      maxOutputPressure: 20f
+    );
     return net;
   }
 
@@ -138,7 +154,11 @@ public class CondenserBeTests
     var tree = new TreeAttribute();
     be.ToTreeAttributes(tree);
 
-    var restored = new BlockEntitySteamCondenser { Pos = be.Pos.Copy(), Block = be.Block };
+    var restored = new BlockEntitySteamCondenser
+    {
+      Pos = be.Pos.Copy(),
+      Block = be.Block,
+    };
     world.Attach(restored);
     restored.FromTreeAttributes(tree, world.World);
 

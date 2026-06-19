@@ -50,7 +50,10 @@ public class PressureValveBeTests
   public void MaxGatePressure_is_the_blocks_material_burst_rating()
   {
     var be = Valve("iron");
-    Assert.Equal(((BlockPressureValve)be.Block).BurstPressure, be.MaxGatePressure);
+    Assert.Equal(
+      ((BlockPressureValve)be.Block).BurstPressure,
+      be.MaxGatePressure
+    );
   }
 
   [Fact]
@@ -172,7 +175,11 @@ public class PressureValveBeTests
   /// output face (south) is open air - so any overflow vents to atmosphere. Returns the live input
   /// network so the test can pressurise it.
   /// </summary>
-  private static (TestWorld world, BlockEntityPressureValve valve, PipeNetwork inNet) VentRig()
+  private static (
+    TestWorld world,
+    BlockEntityPressureValve valve,
+    PipeNetwork inNet
+  ) VentRig()
   {
     var world = new TestWorld();
     world.RegisterNetwork("pipe", sys => new PipeNetwork(sys));
@@ -189,7 +196,11 @@ public class PressureValveBeTests
     };
     world.Place(valve.Pos, valveBlock); // caps the run's south end (non-air)
     world.Attach(valve);
-    ReflectionHelpers.SetProperty(valve, nameof(valve.NetworkSystem), world.Networks);
+    ReflectionHelpers.SetProperty(
+      valve,
+      nameof(valve.NetworkSystem),
+      world.Networks
+    );
 
     var rock = TestBlocks.Configure(new Block(), "game:rock", 99);
     world.Place(new BlockPos(0, 0, -2), rock); // caps the north end
@@ -213,7 +224,13 @@ public class PressureValveBeTests
     var (world, valve, inNet) = VentRig();
 
     // MaxVolume = 2 pipes * 30 L = 60; gate is 1 atm, so >60 L is overflow.
-    inNet.TryProduceGas(120f, 150f, "Steam", world.Accessor, maxOutputPressure: 10f);
+    inNet.TryProduceGas(
+      120f,
+      150f,
+      "Steam",
+      world.Accessor,
+      maxOutputPressure: 10f
+    );
     float before = inNet.State!.Volume;
 
     RunTick(valve);
@@ -228,7 +245,13 @@ public class PressureValveBeTests
     var (world, valve, inNet) = VentRig();
 
     // 30 L is below the 60 L gate allowance, so the valve stays shut.
-    inNet.TryProduceGas(30f, 150f, "Steam", world.Accessor, maxOutputPressure: 10f);
+    inNet.TryProduceGas(
+      30f,
+      150f,
+      "Steam",
+      world.Accessor,
+      maxOutputPressure: 10f
+    );
 
     RunTick(valve);
 

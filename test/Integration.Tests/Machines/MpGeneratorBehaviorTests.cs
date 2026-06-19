@@ -15,15 +15,21 @@ namespace PipesAndPowerExpanded.Tests;
 /// </summary>
 public class MpGeneratorBehaviorTests
 {
-  private static (Scene scene, MpGeneratorPlant plant, BEBehaviorEngineMPGenerator mp) Rig(
-    float availablePower
-  )
+  private static (
+    Scene scene,
+    MpGeneratorPlant plant,
+    BEBehaviorEngineMPGenerator mp
+  ) Rig(float availablePower)
   {
     var scene = new Scene().Network("pipe", s => new PipeNetwork(s));
     var plant = new MpGeneratorPlant(scene, new BlockPos(0, 8, 0));
     scene.Build();
     // Set the engine's available power directly (deterministic) instead of driving steam.
-    ReflectionHelpers.SetField(plant.Engine, "<AvailablePower>k__BackingField", availablePower);
+    ReflectionHelpers.SetField(
+      plant.Engine,
+      "<AvailablePower>k__BackingField",
+      availablePower
+    );
     var mp = new BEBehaviorEngineMPGenerator(plant.Generator);
     return (scene, plant, mp);
   }
@@ -44,7 +50,11 @@ public class MpGeneratorBehaviorTests
     float budget = plant.Engine.MpPowerBudget;
     Assert.True(budget > 0f, "the engine should have a power budget");
 
-    float torque = mp.GetTorque(0, PpexValues.MpRatedSpeed, out float resistance);
+    float torque = mp.GetTorque(
+      0,
+      PpexValues.MpRatedSpeed,
+      out float resistance
+    );
 
     Assert.Equal(budget, torque, 3);
     Assert.Equal(0f, resistance, 5);
@@ -59,7 +69,10 @@ public class MpGeneratorBehaviorTests
 
     float half = mp.GetTorque(0, 0.5f * rated, out _);
 
-    Assert.True(half > budget, "torque should rise as the shaft slows (constant power)");
+    Assert.True(
+      half > budget,
+      "torque should rise as the shaft slows (constant power)"
+    );
     Assert.Equal(budget, half * 0.5f * rated, 3); // power = torque × speed is held at the budget
   }
 
@@ -102,7 +115,11 @@ public class MpGeneratorBehaviorTests
   public void Power_demand_is_full_under_a_normal_load()
   {
     var (_, plant, mp) = Rig(0.5f);
-    MechPower.Attach(plant.Generator, mp, MechPower.Network(speed: 1f, resistance: 0f));
+    MechPower.Attach(
+      plant.Generator,
+      mp,
+      MechPower.Network(speed: 1f, resistance: 0f)
+    );
     ReflectionHelpers.SetField(plant.Generator, "_mp", mp);
 
     Assert.Equal(1f, plant.Generator.PowerDemand, 3);
@@ -113,7 +130,11 @@ public class MpGeneratorBehaviorTests
   {
     var (_, plant, mp) = Rig(0.5f);
     float overload = 3f * plant.Engine.MpRatedLoad; // past the 2× rated overstress ceiling
-    MechPower.Attach(plant.Generator, mp, MechPower.Network(speed: 1f, resistance: overload));
+    MechPower.Attach(
+      plant.Generator,
+      mp,
+      MechPower.Network(speed: 1f, resistance: overload)
+    );
     ReflectionHelpers.SetField(plant.Generator, "_mp", mp);
 
     Assert.Equal(0f, plant.Generator.PowerDemand, 3); // demand drops so the engine can recover

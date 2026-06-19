@@ -32,7 +32,11 @@ public class CowperStoveTests
     return be;
   }
 
-  private static BlockEntityHeatSink PlaceSink(TestWorld world, BlockEntityCowperStove stove, int y)
+  private static BlockEntityHeatSink PlaceSink(
+    TestWorld world,
+    BlockEntityCowperStove stove,
+    int y
+  )
   {
     var pos = (BlockPos)
       ReflectionHelpers.Invoke(stove, "GetGlobalPos", 0, y, 1)!;
@@ -73,6 +77,10 @@ public class CowperStoveTests
     var dst = Stove(world);
     dst.FromTreeAttributes(tree, world.World);
 
-    Assert.Equal(910f, (float)ReflectionHelpers.GetField(dst, "_internalTemperature")!, 1);
+    Assert.Equal(
+      910f,
+      (float)ReflectionHelpers.GetField(dst, "_internalTemperature")!,
+      1
+    );
   }
 }

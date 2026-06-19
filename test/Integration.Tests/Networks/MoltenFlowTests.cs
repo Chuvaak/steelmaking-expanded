@@ -49,8 +49,16 @@ public class MoltenFlowTests
     world.World.GetItem(Arg.Any<AssetLocation>()).Returns(item);
 
     var block = Canal();
-    var a = new BlockEntityMoltenCanal { Pos = new BlockPos(0, 0, 0), Block = block };
-    var b = new BlockEntityMoltenCanal { Pos = new BlockPos(0, 0, 1), Block = block };
+    var a = new BlockEntityMoltenCanal
+    {
+      Pos = new BlockPos(0, 0, 0),
+      Block = block,
+    };
+    var b = new BlockEntityMoltenCanal
+    {
+      Pos = new BlockPos(0, 0, 1),
+      Block = block,
+    };
     world.Place(a.Pos, block, a);
     world.Place(b.Pos, block, b);
     world.Attach(a);

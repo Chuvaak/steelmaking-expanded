@@ -49,7 +49,13 @@ public class RegressionScenarioTests
     valve.ToggleOpen(); // open
 
     var net = (PipeNetwork)world.NetworkAt(valve.Pos)!;
-    net.TryProduceGas(450f, 150f, "Steam", world.Accessor, maxOutputPressure: 10f);
+    net.TryProduceGas(
+      450f,
+      150f,
+      "Steam",
+      world.Accessor,
+      maxOutputPressure: 10f
+    );
     net.BroadcastUpdate(world.Accessor);
 
     valve.ToggleOpen(); // close - must drop the cached pool
@@ -77,20 +83,28 @@ public class RegressionScenarioTests
     Assert.True(eng.Engine.AvailablePower > 0f);
   }
 
-  private static (TestWorld world, PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities.BlockEntityValve valve) ValveScenario()
+  private static (
+    TestWorld world,
+    PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities.BlockEntityValve valve
+  ) ValveScenario()
   {
     var world = new TestWorld();
     world.RegisterNetwork("pipe", s => new PipeNetwork(s));
     var pipe = PipeTestWorld.MakePipe();
-    var valve = new PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities.BlockEntityValve
-    {
-      Pos = new BlockPos(0, 0, 1),
-      Block = pipe,
-    };
+    var valve =
+      new PipesAndPowerExpanded.BlockNetworkPipe.BlockEntities.BlockEntityValve
+      {
+        Pos = new BlockPos(0, 0, 1),
+        Block = pipe,
+      };
     world.Place(new BlockPos(0, 0, 0), pipe);
     world.Place(new BlockPos(0, 0, 1), pipe, valve);
     world.Place(new BlockPos(0, 0, 2), pipe);
-    var rock = TestBlocks.Configure(new Vintagestory.API.Common.Block(), "game:rock", 99);
+    var rock = TestBlocks.Configure(
+      new Vintagestory.API.Common.Block(),
+      "game:rock",
+      99
+    );
     world.Place(new BlockPos(0, 0, -1), rock);
     world.Place(new BlockPos(0, 0, 3), rock);
     world.Initialize(valve);

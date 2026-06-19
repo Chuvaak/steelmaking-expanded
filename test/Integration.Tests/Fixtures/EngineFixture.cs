@@ -42,7 +42,12 @@ internal sealed class EngineFixture
     // south end capped, so a produced charge holds its pressure instead of leaking.
     _inletPipe = pos.AddCopy(0, 0, 1);
     var nsPipe = PipeTestWorld.MakePipe(orientation: "ns", id: 21);
-    scene.Node(_inletPipe, nsPipe, new BlockEntityPipe { Pos = _inletPipe.Copy(), Block = nsPipe }, "pipe");
+    scene.Node(
+      _inletPipe,
+      nsPipe,
+      new BlockEntityPipe { Pos = _inletPipe.Copy(), Block = nsPipe },
+      "pipe"
+    );
     scene.Block(pos.AddCopy(0, 0, 2), PpexScenes.Cap(98));
 
     // Fluid-pump sub-machine at the engine's sub-machine cell (provides the power demand).
@@ -53,7 +58,11 @@ internal sealed class EngineFixture
       22,
       ("side", "east")
     );
-    Pump = new BlockEntityEngineFluidPump { Pos = subPos.Copy(), Block = pumpBlock };
+    Pump = new BlockEntityEngineFluidPump
+    {
+      Pos = subPos.Copy(),
+      Block = pumpBlock,
+    };
     scene.Machine(subPos, pumpBlock, Pump);
   }
 
@@ -62,9 +71,16 @@ internal sealed class EngineFixture
   {
     _scene
       .NetworkAt<PipeNetwork>(_inletPipe)!
-      .TryProduceGas(atm * 30f, 150f, "Steam", _scene.World.Accessor, maxOutputPressure: atm);
+      .TryProduceGas(
+        atm * 30f,
+        150f,
+        "Steam",
+        _scene.World.Accessor,
+        maxOutputPressure: atm
+      );
     return this;
   }
 
-  public float InletVolume => _scene.NetworkAt<PipeNetwork>(_inletPipe)!.State?.Volume ?? 0f;
+  public float InletVolume =>
+    _scene.NetworkAt<PipeNetwork>(_inletPipe)!.State?.Volume ?? 0f;
 }

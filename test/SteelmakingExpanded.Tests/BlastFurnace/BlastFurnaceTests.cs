@@ -55,7 +55,11 @@ public class BlastFurnaceTests
   public void TransitionToMelting_moves_firing_into_melting()
   {
     var be = Furnace(NewWorld());
-    ReflectionHelpers.SetProperty(be, nameof(be.State), BlastFurnaceState.Firing);
+    ReflectionHelpers.SetProperty(
+      be,
+      nameof(be.State),
+      BlastFurnaceState.Firing
+    );
 
     ReflectionHelpers.Invoke(be, "TransitionToMelting");
 
@@ -67,14 +71,22 @@ public class BlastFurnaceTests
   public void Extinguish_returns_to_idle_and_resets_heat()
   {
     var be = Furnace(NewWorld());
-    ReflectionHelpers.SetProperty(be, nameof(be.State), BlastFurnaceState.Melting);
+    ReflectionHelpers.SetProperty(
+      be,
+      nameof(be.State),
+      BlastFurnaceState.Melting
+    );
     ReflectionHelpers.SetField(be, "_internalTemp", 1500f);
     // No molten iron, so the solidified-iron drop branch is skipped.
 
     ReflectionHelpers.Invoke(be, "Extinguish");
 
     Assert.Equal(BlastFurnaceState.Idle, be.State);
-    Assert.Equal(20f, (float)ReflectionHelpers.GetField(be, "_internalTemp")!, 1);
+    Assert.Equal(
+      20f,
+      (float)ReflectionHelpers.GetField(be, "_internalTemp")!,
+      1
+    );
     Assert.Equal(0f, (float)ReflectionHelpers.GetField(be, "_moltenIron")!, 3);
   }
 
@@ -116,7 +128,8 @@ public class BlastFurnaceTests
     var be = Furnace(world);
 
     Assert.Null(
-      (ItemStack?)ReflectionHelpers.Invoke(be, "CreateMoltenStack", "gold", 5, 1400f)
+      (ItemStack?)
+        ReflectionHelpers.Invoke(be, "CreateMoltenStack", "gold", 5, 1400f)
     );
   }
 
@@ -129,7 +142,11 @@ public class BlastFurnaceTests
   {
     var world = NewWorld();
     var src = Furnace(world);
-    ReflectionHelpers.SetProperty(src, nameof(src.State), BlastFurnaceState.Melting);
+    ReflectionHelpers.SetProperty(
+      src,
+      nameof(src.State),
+      BlastFurnaceState.Melting
+    );
     ReflectionHelpers.SetProperty(src, nameof(src.IsChoked), true);
     ReflectionHelpers.SetField(src, "_internalTemp", 1456f);
     ReflectionHelpers.SetField(src, "_moltenIron", 80f);
@@ -145,9 +162,21 @@ public class BlastFurnaceTests
 
     Assert.Equal(BlastFurnaceState.Melting, dst.State);
     Assert.True(dst.IsChoked);
-    Assert.Equal(1456f, (float)ReflectionHelpers.GetField(dst, "_internalTemp")!, 1);
-    Assert.Equal(80f, (float)ReflectionHelpers.GetField(dst, "_moltenIron")!, 1);
-    Assert.Equal(40f, (float)ReflectionHelpers.GetField(dst, "_moltenSlag")!, 1);
+    Assert.Equal(
+      1456f,
+      (float)ReflectionHelpers.GetField(dst, "_internalTemp")!,
+      1
+    );
+    Assert.Equal(
+      80f,
+      (float)ReflectionHelpers.GetField(dst, "_moltenIron")!,
+      1
+    );
+    Assert.Equal(
+      40f,
+      (float)ReflectionHelpers.GetField(dst, "_moltenSlag")!,
+      1
+    );
     Assert.Equal(220, (int)ReflectionHelpers.GetField(dst, "_cachedMixCount")!);
   }
 

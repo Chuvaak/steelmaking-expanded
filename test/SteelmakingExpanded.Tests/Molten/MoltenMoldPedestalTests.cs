@@ -48,7 +48,11 @@ public class MoltenMoldPedestalTests
     MoltenMetal.CreateStack(world.World, code, temp)!;
 
   /// <summary>A tool-mold item stack optionally carrying cast metal in its block-entity attributes.</summary>
-  private static ItemStack Mold(TestWorld world, ItemStack? content = null, int units = 0)
+  private static ItemStack Mold(
+    TestWorld world,
+    ItemStack? content = null,
+    int units = 0
+  )
   {
     var block = TestBlocks.Configure(new Block(), "smex:toolmold-anvil", 60);
     world.Register(block);

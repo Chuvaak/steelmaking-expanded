@@ -22,6 +22,7 @@ public class BlockEntityHopperBell : BlockEntity
   private long _tickId;
   private Item? _blastMixItem;
   private int _blastMixMagazine = 0;
+
   // Dropping is on by default so a freshly built furnace feeds itself without the
   // player having to discover the Ctrl + right-click toggle first.
   private bool _isDropping = true;

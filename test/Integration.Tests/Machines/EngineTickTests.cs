@@ -1,5 +1,5 @@
-using ExpandedLib.Testing;
 using ExpandedLib.Blocks.Machines;
+using ExpandedLib.Testing;
 using PipesAndPowerExpanded.BlockNetworkPipe;
 using PipesAndPowerExpanded.BlockStructures.Engine.BlockEntities;
 using Vintagestory.API.Datastructures;
@@ -43,10 +43,16 @@ public class EngineTickTests
     float before = eng.InletVolume;
     scene.Step();
 
-    Assert.True(eng.Engine.AvailablePower > 0f, "engine should make power in band");
+    Assert.True(
+      eng.Engine.AvailablePower > 0f,
+      "engine should make power in band"
+    );
     Assert.True(eng.Engine.IsRunning);
     Assert.Equal(3f, eng.Engine.InletPressure, 1);
-    Assert.True(eng.InletVolume < before, "running should draw steam from the inlet");
+    Assert.True(
+      eng.InletVolume < before,
+      "running should draw steam from the inlet"
+    );
   }
 
   [Fact]
@@ -57,13 +63,20 @@ public class EngineTickTests
     // Pre-load the over-pressure timer to just under the break threshold, then run one tick above
     // the break pressure so it crosses - avoids stepping the full EngineOverPressureSeconds.
     var primed = new GraceTimer();
-    primed.Update(true, PpexValues.EngineOverPressureSeconds - 0.5f, float.MaxValue);
+    primed.Update(
+      true,
+      PpexValues.EngineOverPressureSeconds - 0.5f,
+      float.MaxValue
+    );
     ReflectionHelpers.SetField(eng.Engine, "_overPressure", primed);
 
     eng.SetInletPressure(4.5f); // above the 4 atm break pressure
     scene.Step();
 
-    Assert.True(eng.Engine.IsBroken, "sustained over-pressure should burst the engine");
+    Assert.True(
+      eng.Engine.IsBroken,
+      "sustained over-pressure should burst the engine"
+    );
     Assert.Equal(0f, eng.Engine.AvailablePower, 4);
     Assert.False(eng.Engine.IsRunning);
   }
@@ -89,7 +102,11 @@ public class EngineTickTests
   {
     var (scene, eng) = NewEngine();
     ReflectionHelpers.SetField(eng.Engine, "_running", true);
-    ReflectionHelpers.SetField(eng.Engine, "<AvailablePower>k__BackingField", 0.25f);
+    ReflectionHelpers.SetField(
+      eng.Engine,
+      "<AvailablePower>k__BackingField",
+      0.25f
+    );
     ReflectionHelpers.SetField(eng.Engine, "<IsBroken>k__BackingField", true);
 
     var tree = new TreeAttribute();

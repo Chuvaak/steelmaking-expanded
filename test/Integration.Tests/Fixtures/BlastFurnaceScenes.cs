@@ -39,14 +39,23 @@ internal sealed class BlastFurnaceRig
     Furnace = new BlockEntityBlastFurnace
     {
       Pos = _pos,
-      Block = TestBlocks.Configure(new Block(), "smex:blastfurnacedoor-north", 1, ("side", "north")),
+      Block = TestBlocks.Configure(
+        new Block(),
+        "smex:blastfurnacedoor-north",
+        1,
+        ("side", "north")
+      ),
       BaseAngleRad = 0f,
     };
     World.Place(_pos, Furnace.Block, Furnace);
     World.Attach(Furnace);
     ReflectionHelpers.Invoke(Furnace, "UpdateStructureRotation");
     ReflectionHelpers.Invoke(Furnace, "CacheAttributes");
-    ReflectionHelpers.SetProperty(Furnace, nameof(Furnace.StructureComplete), true);
+    ReflectionHelpers.SetProperty(
+      Furnace,
+      nameof(Furnace.StructureComplete),
+      true
+    );
     // Initialize (which scans for the gas-outlet/tuyere cells) isn't run headlessly - do that scan
     // so the tick reads the tuyeres we place below.
     ReflectionHelpers.Invoke(Furnace, "ScanForOutlets");
@@ -67,11 +76,24 @@ internal sealed class BlastFurnaceRig
   {
     var pile = new BlockEntityCoalPile { Pos = pos.Copy() };
     var inv = new InventoryGeneric(1, "coalpile", "test", World.Api, null);
-    var blastmix = new Item { Code = new AssetLocation("smex", "blastmix"), ItemId = 4242 };
+    var blastmix = new Item
+    {
+      Code = new AssetLocation("smex", "blastmix"),
+      ItemId = 4242,
+    };
     inv[0].Itemstack = new ItemStack(blastmix, units);
     ReflectionHelpers.SetField(pile, "inventory", inv);
     ReflectionHelpers.SetField(pile, "burning", true);
-    World.Place(pos, TestBlocks.Configure(new Block(), "game:coalpile", 50 + pos.Y, ("dummy", "x")), pile);
+    World.Place(
+      pos,
+      TestBlocks.Configure(
+        new Block(),
+        "game:coalpile",
+        50 + pos.Y,
+        ("dummy", "x")
+      ),
+      pile
+    );
     World.Attach(pile);
   }
 
@@ -107,7 +129,12 @@ internal sealed class BlastFurnaceRig
     var tap = new BlockEntityBlastFurnaceTap
     {
       Pos = tapPos.Copy(),
-      Block = TestBlocks.Configure(new Block(), "smex:blastfurnacetap-north", 30, ("side", "north")),
+      Block = TestBlocks.Configure(
+        new Block(),
+        "smex:blastfurnacetap-north",
+        30,
+        ("side", "north")
+      ),
     };
     World.Place(tapPos, tap.Block, tap);
     World.Attach(tap);
@@ -141,7 +168,13 @@ internal sealed class BlastFurnaceRig
       if (_blastTemp >= 0f)
         foreach (var net in _tuyeres)
         {
-          net.TryProduceGas(150f, _blastTemp, "Air", World.Accessor, maxOutputPressure: 5f);
+          net.TryProduceGas(
+            150f,
+            _blastTemp,
+            "Air",
+            World.Accessor,
+            maxOutputPressure: 5f
+          );
           net.BroadcastUpdate(World.Accessor); // push Medium/Pressure/Temperature to the tuyere pipes
         }
       ReflectionHelpers.Invoke(Furnace, "OnProductionTick", 1f);
@@ -182,8 +215,10 @@ internal sealed class BlastFurnaceRig
   }
 
   public BlastFurnaceState State => Furnace.State;
-  public float Temp => (float)ReflectionHelpers.GetField(Furnace, "_internalTemp")!;
-  public float MoltenIron => (float)ReflectionHelpers.GetField(Furnace, "_moltenIron")!;
+  public float Temp =>
+    (float)ReflectionHelpers.GetField(Furnace, "_internalTemp")!;
+  public float MoltenIron =>
+    (float)ReflectionHelpers.GetField(Furnace, "_moltenIron")!;
   public int CanalIron => Canal?.CellAmount ?? 0;
 
   #endregion

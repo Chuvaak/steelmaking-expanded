@@ -25,16 +25,28 @@ public class FluidIntakeBeTests
   }
 
   /// <summary>An intake at the origin, registered in its own pipe network.</summary>
-  private static (TestWorld world, BlockEntityFluidIntake intake, PipeNetwork net) Rig()
+  private static (
+    TestWorld world,
+    BlockEntityFluidIntake intake,
+    PipeNetwork net
+  ) Rig()
   {
     var world = new TestWorld();
     world.RegisterNetwork("pipe", sys => new PipeNetwork(sys));
 
     var block = TestBlocks.Configure(new Block(), "ppex:fluidintake", 60);
-    var intake = new BlockEntityFluidIntake { Pos = new BlockPos(0, 8, 0), Block = block };
+    var intake = new BlockEntityFluidIntake
+    {
+      Pos = new BlockPos(0, 8, 0),
+      Block = block,
+    };
     world.Place(intake.Pos, block, intake);
     world.Attach(intake);
-    ReflectionHelpers.SetProperty(intake, nameof(intake.NetworkSystem), world.Networks);
+    ReflectionHelpers.SetProperty(
+      intake,
+      nameof(intake.NetworkSystem),
+      world.Networks
+    );
     world.AddNode(intake.Pos, "pipe");
 
     var net = (PipeNetwork)world.NetworkAt(intake.Pos)!;

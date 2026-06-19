@@ -37,7 +37,11 @@ internal sealed class RegulatedEnginePlant
       55,
       ("side", "north")
     );
-    Engine = new BlockEntityEngineWatt { Pos = enginePos.Copy(), Block = engineBlock };
+    Engine = new BlockEntityEngineWatt
+    {
+      Pos = enginePos.Copy(),
+      Block = engineBlock,
+    };
     scene.Machine(enginePos, engineBlock, Engine);
     RccFake.Complete(Engine);
 
@@ -65,9 +69,17 @@ internal sealed class RegulatedEnginePlant
     ReflectionHelpers.SetProperty(valveBlock, "Type", "pressurevalve");
     ReflectionHelpers.SetProperty(valveBlock, "Orientation", orient);
     BlockPos vPos = m1.AddCopy(inletFace);
-    Valve = new BlockEntityPressureValve { Pos = vPos.Copy(), Block = valveBlock };
+    Valve = new BlockEntityPressureValve
+    {
+      Pos = vPos.Copy(),
+      Block = valveBlock,
+    };
     scene.Machine(vPos, valveBlock, Valve); // place + Initialize (registers the relief tick); not a node
-    ReflectionHelpers.SetProperty(Valve, nameof(Valve.NetworkSystem), scene.World.Networks);
+    ReflectionHelpers.SetProperty(
+      Valve,
+      nameof(Valve.NetworkSystem),
+      scene.World.Networks
+    );
     SetGate(gateAtm);
 
     // Drain line on the valve's output face - the relief sink, capped so it reads its own pressure.
@@ -96,8 +108,16 @@ internal sealed class RegulatedEnginePlant
   {
     // Walk the gate up/down in the valve's real 0.25 atm steps so the clamp logic is exercised.
     int guard = 0;
-    while (Valve.GatePressure < atm - 0.001f && Valve.AdjustGatePressure(true) && guard++ < 200) { }
-    while (Valve.GatePressure > atm + 0.001f && Valve.AdjustGatePressure(false) && guard++ < 200) { }
+    while (
+      Valve.GatePressure < atm - 0.001f
+      && Valve.AdjustGatePressure(true)
+      && guard++ < 200
+    ) { }
+    while (
+      Valve.GatePressure > atm + 0.001f
+      && Valve.AdjustGatePressure(false)
+      && guard++ < 200
+    ) { }
   }
 
   /// <summary>Charges the steam main to <paramref name="atm"/> (the boiler's over-pressure).</summary>
@@ -105,7 +125,13 @@ internal sealed class RegulatedEnginePlant
   {
     _scene
       .NetworkAt<PipeNetwork>(_main)!
-      .TryProduceGas(atm * 60f, 150f, "Steam", _scene.World.Accessor, maxOutputPressure: atm);
+      .TryProduceGas(
+        atm * 60f,
+        150f,
+        "Steam",
+        _scene.World.Accessor,
+        maxOutputPressure: atm
+      );
     return this;
   }
 
@@ -124,8 +150,10 @@ internal sealed class RegulatedEnginePlant
     return this;
   }
 
-  public float MainPressure => _scene.NetworkAt<PipeNetwork>(_main)!.State?.Pressure ?? 0f;
-  public float DrainVolume => _scene.NetworkAt<PipeNetwork>(_drain)!.State?.Volume ?? 0f;
+  public float MainPressure =>
+    _scene.NetworkAt<PipeNetwork>(_main)!.State?.Pressure ?? 0f;
+  public float DrainVolume =>
+    _scene.NetworkAt<PipeNetwork>(_drain)!.State?.Volume ?? 0f;
   public float InletPressure => Engine.InletPressure;
 }
 
@@ -154,7 +182,11 @@ internal sealed class ManualPumpPlant
       62,
       ("side", "north")
     );
-    Pump = new BlockEntityManualFluidPump { Pos = pos.Copy(), Block = pumpBlock };
+    Pump = new BlockEntityManualFluidPump
+    {
+      Pos = pos.Copy(),
+      Block = pumpBlock,
+    };
     scene.Machine(pos, pumpBlock, Pump); // Initialize registers the crank work tick
 
     int angle = ExOrientation.AngleFromSide("north");
@@ -169,11 +201,23 @@ internal sealed class ManualPumpPlant
       63,
       ("orientation", inFace.Opposite.Code[..1])
     );
-    ReflectionHelpers.SetProperty(intakeBlock, "Orientation", inFace.Opposite.Code[..1]);
-    Intake = new BlockEntityFluidIntake { Pos = _pond.Copy(), Block = intakeBlock };
+    ReflectionHelpers.SetProperty(
+      intakeBlock,
+      "Orientation",
+      inFace.Opposite.Code[..1]
+    );
+    Intake = new BlockEntityFluidIntake
+    {
+      Pos = _pond.Copy(),
+      Block = intakeBlock,
+    };
     scene.Node(_pond, intakeBlock, Intake, "pipe");
     ReflectionHelpers.SetProperty(Intake, nameof(Intake.HasWater), true);
-    ReflectionHelpers.SetProperty(Intake, nameof(Intake.NetworkSystem), scene.World.Networks);
+    ReflectionHelpers.SetProperty(
+      Intake,
+      nameof(Intake.NetworkSystem),
+      scene.World.Networks
+    );
 
     // Output main on the delivery face - the line that climbs into the boiler.
     _output = pos.AddCopy(outFace);
@@ -185,7 +229,8 @@ internal sealed class ManualPumpPlant
   /// <summary>Pre-fills the pond's input line with standing water for the pump to lift.</summary>
   public ManualPumpPlant FillPond(float litres)
   {
-    _scene.NetworkAt<PipeNetwork>(_pond)!
+    _scene
+      .NetworkAt<PipeNetwork>(_pond)!
       .TryProduceLiquid(litres, 20f, 1f, _scene.World.Accessor);
     return this;
   }
@@ -202,8 +247,10 @@ internal sealed class ManualPumpPlant
     return this;
   }
 
-  public float OutputVolume => _scene.NetworkAt<PipeNetwork>(_output)!.State?.Volume ?? 0f;
-  public bool OutputIsWater => _scene.NetworkAt<PipeNetwork>(_output)!.State?.IsLiquid ?? false;
+  public float OutputVolume =>
+    _scene.NetworkAt<PipeNetwork>(_output)!.State?.Volume ?? 0f;
+  public bool OutputIsWater =>
+    _scene.NetworkAt<PipeNetwork>(_output)!.State?.IsLiquid ?? false;
 }
 
 /// <summary>
@@ -232,7 +279,11 @@ internal sealed class CondenserPlant
       66,
       ("side", "north")
     );
-    Condenser = new BlockEntitySteamCondenser { Pos = pos.Copy(), Block = block };
+    Condenser = new BlockEntitySteamCondenser
+    {
+      Pos = pos.Copy(),
+      Block = block,
+    };
     scene.Machine(pos, block, Condenser); // Initialize registers the condense tick
 
     // North: the spent-steam line.
@@ -255,19 +306,30 @@ internal sealed class CondenserPlant
   {
     _scene
       .NetworkAt<PipeNetwork>(_steam)!
-      .TryProduceGas(litres, 150f, "Steam", _scene.World.Accessor, maxOutputPressure: 20f);
+      .TryProduceGas(
+        litres,
+        150f,
+        "Steam",
+        _scene.World.Accessor,
+        maxOutputPressure: 20f
+      );
     return this;
   }
 
   public CondenserPlant ChargeFeedWater(float litres)
   {
-    _scene.NetworkAt<PipeNetwork>(_feed)!
+    _scene
+      .NetworkAt<PipeNetwork>(_feed)!
       .TryProduceLiquid(litres, 40f, 1f, _scene.World.Accessor);
     return this;
   }
 
-  public bool Condensing => (bool)ReflectionHelpers.GetField(Condenser, "_condensing")!;
-  public float SteamVolume => _scene.NetworkAt<PipeNetwork>(_steam)!.State?.Volume ?? 0f;
-  public float RecoveredVolume => _scene.NetworkAt<PipeNetwork>(_recovered)!.State?.Volume ?? 0f;
-  public bool RecoveredIsWater => _scene.NetworkAt<PipeNetwork>(_recovered)!.State?.IsLiquid ?? false;
+  public bool Condensing =>
+    (bool)ReflectionHelpers.GetField(Condenser, "_condensing")!;
+  public float SteamVolume =>
+    _scene.NetworkAt<PipeNetwork>(_steam)!.State?.Volume ?? 0f;
+  public float RecoveredVolume =>
+    _scene.NetworkAt<PipeNetwork>(_recovered)!.State?.Volume ?? 0f;
+  public bool RecoveredIsWater =>
+    _scene.NetworkAt<PipeNetwork>(_recovered)!.State?.IsLiquid ?? false;
 }

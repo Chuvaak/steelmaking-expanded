@@ -91,7 +91,11 @@ public class MoltenBarrelTests
     be.ReceiveLiquidMetal(Metal(world, Iron, 1300f), ref first, 1300f);
 
     int amount = 20;
-    be.ReceiveLiquidMetal(Metal(world, "game:ingot-copper", 1000f), ref amount, 1000f);
+    be.ReceiveLiquidMetal(
+      Metal(world, "game:ingot-copper", 1000f),
+      ref amount,
+      1000f
+    );
 
     Assert.Equal(20, amount); // nothing taken
     Assert.Equal(20, be.CurrentUnitAmount);
@@ -104,7 +108,10 @@ public class MoltenBarrelTests
   [Theory]
   [InlineData(1400f, false)] // liquid
   [InlineData(300f, true)] // below the hardened threshold
-  public void IsHardened_tracks_the_stored_temperature(float temp, bool hardened)
+  public void IsHardened_tracks_the_stored_temperature(
+    float temp,
+    bool hardened
+  )
   {
     var world = NewWorld();
     var be = Barrel(world);

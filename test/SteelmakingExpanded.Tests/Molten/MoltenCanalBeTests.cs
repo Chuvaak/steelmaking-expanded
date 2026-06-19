@@ -82,7 +82,12 @@ public class MoltenCanalBeTests
   public void An_empty_cell_is_never_solidified_on_load()
   {
     // Scrubs a phantom solidified+empty combination from an old save.
-    var be = CanalWith(amount: 0, metal: "game:ingot-iron", temp: 0f, solidified: true);
+    var be = CanalWith(
+      amount: 0,
+      metal: "game:ingot-iron",
+      temp: 0f,
+      solidified: true
+    );
     Assert.False(be.Solidified);
     Assert.Equal("", be.CellMetalType);
     Assert.True(be.IsCellEmpty);
@@ -91,8 +96,14 @@ public class MoltenCanalBeTests
   [Fact]
   public void Sealed_or_solidified_cells_sever_the_network()
   {
-    Assert.True(CanalWith(10, "game:ingot-iron", 1400f, sealed_: true).IsConnectionBroken());
-    Assert.True(CanalWith(10, "game:ingot-iron", 1400f, solidified: true).IsConnectionBroken());
+    Assert.True(
+      CanalWith(10, "game:ingot-iron", 1400f, sealed_: true)
+        .IsConnectionBroken()
+    );
+    Assert.True(
+      CanalWith(10, "game:ingot-iron", 1400f, solidified: true)
+        .IsConnectionBroken()
+    );
     Assert.False(CanalWith(10, "game:ingot-iron", 1400f).IsConnectionBroken());
   }
 
@@ -111,7 +122,8 @@ public class MoltenCanalBeTests
   {
     Assert.True(CanalWith(10, "game:ingot-iron", 1400f).WouldSpillOnRemoval());
     Assert.False(
-      CanalWith(10, "game:ingot-iron", 400f, solidified: true).WouldSpillOnRemoval()
+      CanalWith(10, "game:ingot-iron", 400f, solidified: true)
+        .WouldSpillOnRemoval()
     );
     Assert.False(CanalWith(0, "", 0f).WouldSpillOnRemoval());
   }

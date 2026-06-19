@@ -63,7 +63,13 @@ public class ConverterControlProcessTests
   )
   {
     var pos = (BlockPos)
-      ReflectionHelpers.Invoke(control, "GetGlobalPos", local.x, local.y, local.z)!;
+      ReflectionHelpers.Invoke(
+        control,
+        "GetGlobalPos",
+        local.x,
+        local.y,
+        local.z
+      )!;
     var cell = new BlockEntityMoltenCanal
     {
       Block = TestBlocks.Configure(
@@ -164,7 +170,10 @@ public class ConverterControlProcessTests
 
     ReflectionHelpers.Invoke(be, "UpdateSolidified");
 
-    Assert.Equal(expected, (bool)ReflectionHelpers.GetField(be, "_solidified")!);
+    Assert.Equal(
+      expected,
+      (bool)ReflectionHelpers.GetField(be, "_solidified")!
+    );
   }
 
   #endregion
