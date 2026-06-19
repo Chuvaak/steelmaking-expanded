@@ -43,6 +43,11 @@
                 "allowedVariants": ["iron", "steel"],
                 "storeWildCard": "metal",
                 "quantity": 12
+              },
+              {
+                "type": "item",
+                "code": "game:burnedbrick-fire",
+                "quantity": 36
               }
             ],
             "addElements": ["Root/BeamSupport"]
