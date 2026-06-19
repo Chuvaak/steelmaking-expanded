@@ -4,6 +4,7 @@ using System.Text;
 using ExpandedLib.Helpers;
 using ExpandedLib.Registries.Entities;
 using SteelmakingExpanded.BlockNetworkMolten.Blocks;
+using SteelmakingExpanded.Molds;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
@@ -151,6 +152,16 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
 
   private void OnServerTick(float dt)
   {
+    // A mold whose type a server admin disabled (/exmod molds ... off) is purged from the pedestal
+    // on load - the world-block/inventory copies are removed by the shared migration sweep, but a
+    // pedestal's mold is stored outside any inventory, so clear it here.
+    if (IsMold && MoldGating.IsToolMoldDisabled(MoldStack?.Collectible?.Code))
+    {
+      RemoveMold();
+      MarkDirty(true);
+      return;
+    }
+
     // The pedestal drains its own cell (where the run delivers metal) into the mold.
     if (
       !IsMold

@@ -223,4 +223,20 @@ public class SmexConfig : IExVersionedConfig
   /// <summary>Exhaust gas (L/s) the smoke stack vents from the network.</summary>
   public float SmokestackGasIntakeVolume { get; set; } = 48.0f;
   #endregion
+
+  #region Tool molds
+  // Availability of the mod's added casting molds. Disabling one removes its clay-forming recipe
+  // and hides it from creative/the handbook on the next world load, and stops any already-placed
+  // mold of that type from yielding a casting immediately. Toggled in-game by a server admin via
+  // /exmod molds <plate|ingot|rod|all> <on|off>; persisted to smex.json.
+
+  /// <summary>Whether the plate mold (casts metal plates) is available.</summary>
+  public bool EnablePlateMold { get; set; } = true;
+
+  /// <summary>Whether the double-ingot mold (casts 2 ingots) is available.</summary>
+  public bool EnableIngotMold { get; set; } = true;
+
+  /// <summary>Whether the quad-rod mold (casts 4 rods) is available.</summary>
+  public bool EnableRodMold { get; set; } = true;
+  #endregion
 }

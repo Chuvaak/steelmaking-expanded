@@ -65,6 +65,52 @@ public class MoltenMoldPedestalTests
   private static void ServerTick(BlockEntityMoltenCanalMoldPedestal be) =>
     ReflectionHelpers.Invoke(be, "OnServerTick", 1f);
 
+  #region Disabled-mold purge
+
+  [Fact]
+  public void A_disabled_mold_is_cleared_from_the_pedestal_on_the_next_tick()
+  {
+    var world = NewWorld();
+    var be = Pedestal(world);
+
+    var moldBlock = TestBlocks.Configure(
+      new Block(),
+      "smex:toolmold-blue-fired-plate",
+      61
+    );
+    world.Register(moldBlock);
+    be.AddMold(new ItemStack(moldBlock));
+    Assert.True(be.IsMold);
+
+    try
+    {
+      SteelmakingExpanded.Molds.MoldGating.SetEnabled("plate", false);
+      ServerTick(be); // the pedestal purges its own mold on load (chunk scan can't reach it)
+
+      Assert.False(be.IsMold);
+      Assert.Null(be.MoldStack);
+    }
+    finally
+    {
+      SteelmakingExpanded.Molds.MoldGating.SetEnabled("plate", true);
+    }
+  }
+
+  [Fact]
+  public void An_enabled_mold_is_left_on_the_pedestal()
+  {
+    var world = NewWorld();
+    var be = Pedestal(world);
+    be.AddMold(Mold(world)); // anvil mold, never a gated type
+    Assert.True(be.IsMold);
+
+    ServerTick(be);
+
+    Assert.True(be.IsMold);
+  }
+
+  #endregion
+
   #region Capacity / connectivity
 
   [Fact]

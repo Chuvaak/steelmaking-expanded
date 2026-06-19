@@ -11,25 +11,29 @@ using Vintagestory.API.Server;
 namespace ExpandedLib.Blocks.Migrations;
 
 /// <summary>
-/// Generic, server-side world migrator for renamed/re-variantted blocks. Collects every
-/// <see cref="IBlockCodeMigration"/> in all loaded assemblies into one legacy-code → replacement
-/// table and rewrites matching blocks as chunk columns load. It matches on <see cref="Block.Code"/>
-/// (not a precomputed id, since the engine renumbers ids on load) so it also catches the
-/// missing-block placeholders the engine keeps for removed codes.
+/// Generic, server-side world migrator for renamed/re-variantted blocks - and a purger for ones a
+/// mod wants gone. Collects every <see cref="IBlockCodeMigration"/> and <see cref="IBlockRemoval"/>
+/// in all loaded assemblies into one legacy-code → action table and applies it to matching blocks as
+/// chunk columns load. It matches on <see cref="Block.Code"/> (not a precomputed id, since the engine
+/// renumbers ids on load) so it also catches the missing-block placeholders the engine keeps for
+/// removed codes.
 /// <para>
 /// A plain migration is a bare block-id swap (state reconstructed from the new variant code); one
-/// that also implements <see cref="IBlockEntityMigration"/> gets the old BE's tree handed to it.
-/// Migrated blocks held as item stacks (container BEs, player inventories) are rewritten too,
-/// preserving stack size and attributes.
+/// that also implements <see cref="IBlockEntityMigration"/> gets the old BE's tree handed to it. A
+/// removal deletes the block in place. Either way the same matching content held as item stacks
+/// (container BEs, player inventories) is rewritten or stripped too, migrations preserving stack size
+/// and attributes.
 /// </para>
 /// </summary>
 public class BlockMigrationModSystem : ModSystem
 {
-  /// <summary>One resolved remap target for a given legacy block code.</summary>
+  /// <summary>One resolved action for a given legacy block code. A null
+  /// <see cref="NewBlock"/> means "remove" (delete the block / drop the item stack); otherwise it is
+  /// the replacement to swap in.</summary>
   private readonly record struct RemapEntry(
-    Block NewBlock,
+    Block? NewBlock,
     AssetLocation OldCode,
-    AssetLocation NewCode,
+    AssetLocation? NewCode,
     IBlockEntityMigration? BlockEntityMigration
   );
 
@@ -197,6 +201,15 @@ public class BlockMigrationModSystem : ModSystem
       )
         continue;
 
+      // A removal: drop the stack from the slot entirely.
+      if (entry.NewBlock == null)
+      {
+        slot.Itemstack = null;
+        slot.MarkDirty();
+        changed++;
+        continue;
+      }
+
       ItemStack replacement = new(entry.NewBlock, stack.StackSize);
       if (stack.Attributes is { Count: > 0 })
         replacement.Attributes = stack.Attributes.Clone();
@@ -259,7 +272,7 @@ public class BlockMigrationModSystem : ModSystem
 
   private void BuildRemapTable()
   {
-    foreach (IBlockCodeMigration migration in DiscoverMigrations())
+    foreach (IBlockCodeMigration migration in Discover<IBlockCodeMigration>())
     {
       var beMigration = migration as IBlockEntityMigration;
       int count = 0;
@@ -284,12 +297,12 @@ public class BlockMigrationModSystem : ModSystem
 
         if (
           _remap.TryGetValue(oldCode, out RemapEntry existing)
-          && !existing.NewBlock.Code.Equals(newCode)
+          && existing.NewBlock?.Code.Equals(newCode) != true
         )
         {
           _sapi.Logger.Warning(
             Tag
-              + " Migration '{0}' remaps {1} but it is already remapped elsewhere; keeping the first mapping.",
+              + " Migration '{0}' remaps {1} but it is already mapped elsewhere; keeping the first mapping.",
             migration.Name,
             oldCode
           );
@@ -312,6 +325,38 @@ public class BlockMigrationModSystem : ModSystem
           count
         );
     }
+
+    // Purges (IBlockRemoval): same matching, but the action is "delete" (null replacement).
+    foreach (IBlockRemoval removal in Discover<IBlockRemoval>())
+    {
+      int count = 0;
+      foreach (AssetLocation code in removal.GetRemovals(_sapi))
+      {
+        if (code == null || _sapi.World.GetBlock(code) == null)
+          continue;
+
+        if (_remap.ContainsKey(code))
+        {
+          _sapi.Logger.Warning(
+            Tag
+              + " Removal '{0}' targets {1} but it is already mapped elsewhere; keeping the existing mapping.",
+            removal.Name,
+            code
+          );
+          continue;
+        }
+
+        _remap[code] = new RemapEntry(null, code, null, null);
+        count++;
+      }
+
+      if (count > 0)
+        _sapi.Logger.Notification(
+          Tag + " Removal '{0}': {1} block code(s) marked for purge.",
+          removal.Name,
+          count
+        );
+    }
   }
 
   /// <summary>
@@ -321,6 +366,13 @@ public class BlockMigrationModSystem : ModSystem
   /// </summary>
   private void ReplaceBlock(IBlockAccessor ba, BlockPos pos, RemapEntry entry)
   {
+    // A removal: delete the block (and its entity) outright.
+    if (entry.NewBlock == null)
+    {
+      ba.SetBlock(0, pos);
+      return;
+    }
+
     if (entry.BlockEntityMigration == null)
     {
       ba.SetBlock(entry.NewBlock.BlockId, pos);
@@ -340,7 +392,7 @@ public class BlockMigrationModSystem : ModSystem
     {
       entry.BlockEntityMigration.MigrateBlockEntity(
         entry.OldCode,
-        entry.NewCode,
+        entry.NewCode!, // non-null for a migration entry (removals return above)
         oldState,
         newBe,
         _sapi.World
@@ -349,8 +401,10 @@ public class BlockMigrationModSystem : ModSystem
     }
   }
 
-  // Scan every loaded assembly: this system lives in exlib, but ppex/smex declare their own migrations.
-  private static IEnumerable<IBlockCodeMigration> DiscoverMigrations()
+  // Scan every loaded assembly for parameterless implementations of T: this system lives in exlib,
+  // but ppex/smex declare their own migrations and removals.
+  private static IEnumerable<T> Discover<T>()
+    where T : class
   {
     foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
     {
@@ -367,12 +421,12 @@ public class BlockMigrationModSystem : ModSystem
       foreach (var t in types)
       {
         if (
-          !typeof(IBlockCodeMigration).IsAssignableFrom(t)
+          !typeof(T).IsAssignableFrom(t)
           || t is not { IsAbstract: false, IsInterface: false }
           || t.GetConstructor(Type.EmptyTypes) == null
         )
           continue;
-        yield return (IBlockCodeMigration)Activator.CreateInstance(t)!;
+        yield return (T)Activator.CreateInstance(t)!;
       }
     }
   }

@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ExpandedLib.Helpers;
 using HarmonyLib;
 using SteelmakingExpanded.BlockNetworkMolten;
 using SteelmakingExpanded.BlockNetworkMolten.Blocks;
+using SteelmakingExpanded.Molds;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
+using Vintagestory.API.Server;
 using Vintagestory.API.Util;
 using Vintagestory.GameContent;
 
@@ -218,6 +221,37 @@ public static class ToolMoldPatches
   }
 
   /// <summary>
+  /// Strips the cast item from a disabled mold's break drops, so an already-placed mold of a
+  /// server-disabled type can't be broken to bypass the casting gate. The empty mold (or its shards)
+  /// still drops; only the molded plate/ingot/rod is withheld.
+  /// </summary>
+  [HarmonyPostfix]
+  [HarmonyPatch(typeof(BlockToolMold), nameof(BlockToolMold.GetDrops))]
+  public static void GetDropsPostfix(
+    BlockToolMold __instance,
+    IWorldAccessor world,
+    BlockPos pos,
+    ref ItemStack[] __result
+  )
+  {
+    if (
+      __result is not { Length: > 0 }
+      || !MoldGating.IsToolMoldDisabled(__instance.Code)
+    )
+      return;
+
+    // Shattered molds drop only shards (no casting), so leave those untouched.
+    if (
+      world.BlockAccessor.GetBlockEntity(pos)
+        is not BlockEntityToolMold { Shattered: false }
+    )
+      return;
+
+    // A non-shattered mold drops the mold itself plus the casting; keep only the mold.
+    __result = __result.Where(s => s?.Collectible is BlockToolMold).ToArray();
+  }
+
+  /// <summary>
   /// Whether the metal in <paramref name="be"/> can be cast into this mold's tool. Substitutes the
   /// metal into the drop code's <c>{metal}</c> placeholder and checks it resolves, to gate the
   /// finished-casting path so non-castable charges (e.g. slag) skip vanilla's resolver (and its warning).
@@ -314,6 +348,14 @@ public static class ToolMoldPatches
       && CanCastInto(__instance, world, be)
     )
     {
+      // A server admin can disable this mold type (early-game balance) - then it yields no casting.
+      if (MoldGating.IsToolMoldDisabled(__instance.Code))
+      {
+        (byPlayer as IServerPlayer)?.SendIngameError("smex-molddisabled");
+        __result = true;
+        return false;
+      }
+
       ItemStack[]? molded = be.GetStateAwareMoldedStacks();
       if (molded is { Length: > 0 })
       {

@@ -148,7 +148,10 @@ public sealed class ExConfigRegister<TConfig>
     );
   }
 
-  private void Save()
+  /// <summary>Writes the live <see cref="Config"/> back to <c>ModConfig/&lt;fileName&gt;</c>. Called at
+  /// the end of <see cref="Load"/>; also public so a runtime config-mutating command (e.g. an admin
+  /// toggle) can persist a change made through <see cref="Config"/>.</summary>
+  public void Save()
   {
     try
     {

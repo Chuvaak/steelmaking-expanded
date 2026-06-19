@@ -5,6 +5,7 @@ using HarmonyLib;
 using SteelmakingExpanded.BlockNetworkMolten;
 using SteelmakingExpanded.BlockNetworkMolten.Blocks;
 using SteelmakingExpanded.Compat;
+using SteelmakingExpanded.Molds;
 using SteelmakingExpanded.Patches;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
@@ -36,8 +37,14 @@ public class SteelmakingExpandedModSystem : ModSystem
   }
 
   #region Creative category
-  public override void StartClientSide(ICoreClientAPI api) =>
+  public override void StartClientSide(ICoreClientAPI api)
+  {
     ExCreativeTabs.EnsureTab(Mod.Info.ModID);
+
+    // Enforce any config-disabled molds on the client too, so they vanish from the creative
+    // inventory and handbook (recipes have resolved by StartClientSide).
+    MoldGating.ApplyDisables(api);
+  }
   #endregion
 
   #region Global player interactions
@@ -46,6 +53,9 @@ public class SteelmakingExpandedModSystem : ModSystem
     api.Event.AfterActiveSlotChanged += (player, ev) =>
       OnAfterActiveSlotChanged(api, player, ev);
     api.Event.RegisterGameTickListener(_ => OnMoldServerTick(api), 1000);
+
+    // Strip the clay-forming recipes of any config-disabled molds (recipes have resolved by now).
+    MoldGating.ApplyDisables(api);
   }
 
   private static void OnMoldServerTick(ICoreServerAPI api)
