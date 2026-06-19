@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpandedLib.Tests", "Expand
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PipesAndPowerExpanded.Tests", "PipesAndPowerExpanded.Tests\PipesAndPowerExpanded.Tests.csproj", "{C082F959-ABFC-4DF4-A4DB-EF0D1F1BC2C8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteelmakingExpanded.Tests", "SteelmakingExpanded.Tests\SteelmakingExpanded.Tests.csproj", "{38E9CAF7-4B5F-4DB5-99DD-B33E762ECD53}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -125,6 +127,18 @@ Global
 		{C082F959-ABFC-4DF4-A4DB-EF0D1F1BC2C8}.Release|x64.Build.0 = Release|Any CPU
 		{C082F959-ABFC-4DF4-A4DB-EF0D1F1BC2C8}.Release|x86.ActiveCfg = Release|Any CPU
 		{C082F959-ABFC-4DF4-A4DB-EF0D1F1BC2C8}.Release|x86.Build.0 = Release|Any CPU
+		{38E9CAF7-4B5F-4DB5-99DD-B33E762ECD53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38E9CAF7-4B5F-4DB5-99DD-B33E762ECD53}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38E9CAF7-4B5F-4DB5-99DD-B33E762ECD53}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{38E9CAF7-4B5F-4DB5-99DD-B33E762ECD53}.Debug|x64.Build.0 = Debug|Any CPU
+		{38E9CAF7-4B5F-4DB5-99DD-B33E762ECD53}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{38E9CAF7-4B5F-4DB5-99DD-B33E762ECD53}.Debug|x86.Build.0 = Debug|Any CPU
+		{38E9CAF7-4B5F-4DB5-99DD-B33E762ECD53}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38E9CAF7-4B5F-4DB5-99DD-B33E762ECD53}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38E9CAF7-4B5F-4DB5-99DD-B33E762ECD53}.Release|x64.ActiveCfg = Release|Any CPU
+		{38E9CAF7-4B5F-4DB5-99DD-B33E762ECD53}.Release|x64.Build.0 = Release|Any CPU
+		{38E9CAF7-4B5F-4DB5-99DD-B33E762ECD53}.Release|x86.ActiveCfg = Release|Any CPU
+		{38E9CAF7-4B5F-4DB5-99DD-B33E762ECD53}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

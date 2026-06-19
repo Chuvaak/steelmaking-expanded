@@ -1,11 +1,11 @@
 using System.Runtime.CompilerServices;
 using ExpandedLib.Testing;
 
-namespace ExpandedLib.Tests;
+namespace SteelmakingExpanded.Tests;
 
 /// <summary>
 /// Registers the Vintage Story assembly resolver before any test type (which references the game
-/// assemblies) is touched by the runner's reflection-based discovery.
+/// assemblies, plus exlib/ppex/smex) is touched by the runner's reflection-based discovery.
 /// </summary>
 internal static class ModuleInit
 {

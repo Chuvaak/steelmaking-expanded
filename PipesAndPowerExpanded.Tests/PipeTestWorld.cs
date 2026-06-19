@@ -11,7 +11,11 @@ namespace PipesAndPowerExpanded.Tests;
 internal static class ModuleInit
 {
   [ModuleInitializer]
-  internal static void Init() => VsAssemblyResolver.Register();
+  internal static void Init()
+  {
+    VsAssemblyResolver.Register();
+    TestLang.Init();
+  }
 }
 
 /// <summary>
