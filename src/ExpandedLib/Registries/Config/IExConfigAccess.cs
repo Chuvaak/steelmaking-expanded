@@ -65,4 +65,7 @@ public sealed class ExConfigEditResult
   /// <summary>For <see cref="ExConfigEditStatus.ParseFailed"/>: a short name of the expected input
   /// (e.g. <c>"number"</c>, <c>"true/false"</c>).</summary>
   public string? Expected { get; init; }
+
+  /// <summary>For <see cref="ExConfigEditStatus.OutOfRange"/>: the accepted range, e.g. <c>"0 to 1"</c>.</summary>
+  public string? Range { get; init; }
 }

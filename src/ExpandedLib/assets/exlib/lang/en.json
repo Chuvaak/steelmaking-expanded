@@ -36,7 +36,7 @@
   "command-config-current": "{0} = {1}",
   "command-config-set": "{0} changed from {1} to {2}. Applied immediately.",
   "command-config-parsefail": "Could not read '{0}' as a value for {1} (expected {2}).",
-  "command-config-range": "Value for {0} is out of range (must be a finite, non-negative number).",
+  "command-config-range": "Value for {0} is out of range (allowed: {1}).",
 
   "command-network-desc": "Visualise block networks (pipes, molten canals, …)",
   "command-network-hi-desc": "Highlight every network block, coloured per network",

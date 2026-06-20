@@ -97,10 +97,11 @@ public sealed class ExConfigRegister<TConfig> : IExConfigAccess
 
   /// <summary>
   /// Repairs values a player edited into something that would break the sim: every numeric tunable
-  /// that is NaN, infinite or negative - and any string set to null - is reset to its coded default
-  /// (a missing key already falls back to the default, and a type-mangled file already fell back to
-  /// full defaults in <see cref="Load"/>). The repaired config is written back, so the file is fixed
-  /// on disk too. Complex/collection properties (e.g. a recipe catalogue) carry their own repair.
+  /// outside its valid range (NaN/infinite, or beyond its <see cref="ExConfigRangeAttribute"/> bounds -
+  /// which default to non-negative) and any string set to null is reset to its coded default (a missing
+  /// key already falls back to the default, and a type-mangled file already fell back to full defaults
+  /// in <see cref="Load"/>). The repaired config is written back, so the file is fixed on disk too.
+  /// Complex/collection properties (e.g. a recipe catalogue) carry their own repair.
   /// </summary>
   private void Sanitize(TConfig config, ILogger logger)
   {
@@ -120,15 +121,11 @@ public sealed class ExConfigRegister<TConfig> : IExConfigAccess
       )
         continue;
 
-      bool bad = p.GetValue(config) switch
-      {
-        float f => float.IsNaN(f) || float.IsInfinity(f) || f < 0f,
-        double d => double.IsNaN(d) || double.IsInfinity(d) || d < 0d,
-        int i => i < 0,
-        long l => l < 0,
-        null when p.PropertyType == typeof(string) => true,
-        _ => false,
-      };
+      object? value = p.GetValue(config);
+      bool bad =
+        AsNumber(value) is double n
+          ? !InNumericRange(p, n)
+          : value is null && p.PropertyType == typeof(string);
 
       if (bad)
       {
@@ -292,12 +289,13 @@ public sealed class ExConfigRegister<TConfig> : IExConfigAccess
         Expected = expected,
       };
 
-    if (!InRange(parsed))
+    if (AsNumber(parsed) is double n && !InNumericRange(p, n))
       return new ExConfigEditResult
       {
         Status = ExConfigEditStatus.OutOfRange,
         Name = p.Name,
         OldValue = oldValue,
+        Range = FormatRange(p),
       };
 
     p.SetValue(Config, parsed);
@@ -440,17 +438,48 @@ public sealed class ExConfigRegister<TConfig> : IExConfigAccess
     return false;
   }
 
-  /// <summary>Mirrors <see cref="Sanitize"/>: a number must be finite and non-negative (so an edit
-  /// cannot push the config into a value the next load would just reset). Non-numbers always pass.</summary>
-  private static bool InRange(object? value) =>
-    value switch
+  /// <summary>The numeric value of <paramref name="v"/> as a <see cref="double"/>, or <c>null</c> for a
+  /// non-numeric (string/bool) property.</summary>
+  private static double? AsNumber(object? v) =>
+    v switch
     {
-      float f => !float.IsNaN(f) && !float.IsInfinity(f) && f >= 0f,
-      double d => !double.IsNaN(d) && !double.IsInfinity(d) && d >= 0d,
-      int i => i >= 0,
-      long l => l >= 0,
-      _ => true,
+      float f => f,
+      double d => d,
+      int i => i,
+      long l => l,
+      _ => null,
     };
+
+  /// <summary>The inclusive <c>[min, max]</c> a numeric property accepts: its
+  /// <see cref="ExConfigRangeAttribute"/> when present, else the baseline non-negative range
+  /// <c>[0, +∞)</c>.</summary>
+  private static (double Min, double Max) RangeOf(PropertyInfo p)
+  {
+    var attr = p.GetCustomAttribute<ExConfigRangeAttribute>();
+    return attr != null ? (attr.Min, attr.Max) : (0d, double.PositiveInfinity);
+  }
+
+  /// <summary>Whether <paramref name="n"/> is finite and within the property's accepted range - so an
+  /// edit cannot push the config into a value the next load would just reset.</summary>
+  private static bool InNumericRange(PropertyInfo p, double n)
+  {
+    if (double.IsNaN(n) || double.IsInfinity(n))
+      return false;
+    var (min, max) = RangeOf(p);
+    return n >= min && n <= max;
+  }
+
+  /// <summary>A compact, language-neutral description of the property's accepted range for the edit
+  /// error: <c>"0..1"</c> for a bounded range, <c>"0+"</c> for a floor only. Avoids <c>&lt;</c>/<c>&gt;</c>
+  /// for VTML safety.</summary>
+  private static string FormatRange(PropertyInfo p)
+  {
+    var (min, max) = RangeOf(p);
+    string lo = min.ToString(CultureInfo.InvariantCulture);
+    return double.IsPositiveInfinity(max)
+      ? $"{lo}+"
+      : $"{lo}..{max.ToString(CultureInfo.InvariantCulture)}";
+  }
   #endregion
 
   /// <summary>Parses a mod version (e.g. <c>"0.9.1"</c>, tolerating a <c>-prerelease</c> suffix) into a

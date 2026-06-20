@@ -20,6 +20,10 @@ internal sealed class EditableConfig : IExVersionedConfig
   public bool Enabled { get; set; } = true;
   public string Label { get; set; } = "normal";
 
+  /// <summary>A bounded fraction: only values in [0, 1] are accepted.</summary>
+  [ExConfigRange(0, 1)]
+  public float Ratio { get; set; } = 0.5f;
+
   /// <summary>Complex type: must be excluded from the editable value set.</summary>
   public int[] NotEditable { get; set; } = [1, 2, 3];
 
@@ -45,7 +49,7 @@ public class ConfigEditTests
     IExConfigAccess store = Store();
 
     Assert.Equal(
-      ["Count", "Big", "Rate", "Precise", "Enabled", "Label"],
+      ["Count", "Big", "Rate", "Precise", "Enabled", "Label", "Ratio"],
       store.ValueNames.ToArray()
     );
   }
@@ -153,6 +157,41 @@ public class ConfigEditTests
     Assert.Equal(1.5f, store.Config.Rate, 3); // unchanged
   }
 
+  [Theory]
+  [InlineData("1.5")] // above the max
+  [InlineData("-0.1")] // below the min
+  public void Set_rejects_a_value_outside_its_declared_range(string raw)
+  {
+    var store = Store();
+
+    var result = store.Set("ratio", raw);
+
+    Assert.Equal(ExConfigEditStatus.OutOfRange, result.Status);
+    Assert.Equal("0..1", result.Range); // surfaced to the player
+    Assert.Equal(0.5f, store.Config.Ratio, 3); // unchanged
+  }
+
+  [Theory]
+  [InlineData("0")]
+  [InlineData("1")]
+  [InlineData("0.75")]
+  public void Set_accepts_a_value_within_its_declared_range(string raw)
+  {
+    var store = Store();
+
+    Assert.Equal(ExConfigEditStatus.Ok, store.Set("ratio", raw).Status);
+  }
+
+  [Fact]
+  public void Set_reports_the_non_negative_baseline_range_for_an_unbounded_value()
+  {
+    var store = Store();
+
+    var result = store.Set("rate", "-1");
+
+    Assert.Equal("0+", result.Range); // no upper bound -> floor only
+  }
+
   [Fact]
   public void Set_returns_unknown_for_a_missing_value()
   {
@@ -162,6 +201,40 @@ public class ConfigEditTests
       ExConfigEditStatus.UnknownValue,
       store.Set("nope", "1").Status
     );
+  }
+  #endregion
+
+  #region Load-time sanitization
+  [Fact]
+  public void Load_resets_out_of_range_and_invalid_values_to_defaults()
+  {
+    using var dir = new TempModConfig();
+    var bad = new EditableConfig
+    {
+      Ratio = 5f, // out of [0, 1]
+      Count = -1, // negative (baseline guard)
+      Rate = float.NaN, // not finite
+    };
+
+    var store = new ExConfigRegister<EditableConfig>("c.json", "fakemod");
+    store.Load(FakeApiLoading(bad));
+
+    Assert.Equal(0.5f, store.Config.Ratio, 3); // reset to default
+    Assert.Equal(10, store.Config.Count); // reset to default
+    Assert.Equal(1.5f, store.Config.Rate, 3); // reset to default
+  }
+
+  [Fact]
+  public void Load_keeps_in_range_values()
+  {
+    using var dir = new TempModConfig();
+    var good = new EditableConfig { Ratio = 0.9f, Count = 7 };
+
+    var store = new ExConfigRegister<EditableConfig>("c.json", "fakemod");
+    store.Load(FakeApiLoading(good));
+
+    Assert.Equal(0.9f, store.Config.Ratio, 3); // within [0, 1] - kept
+    Assert.Equal(7, store.Config.Count);
   }
   #endregion
 
@@ -212,12 +285,15 @@ public class ConfigEditTests
 
   /// <summary>A fake API whose <c>LoadModConfig</c> returns null (so Load falls back to defaults) and
   /// whose mod version resolves; the legacy rename runs against the real filesystem via GamePaths.</summary>
-  private static ICoreAPI FakeApi()
+  private static ICoreAPI FakeApi() => FakeApiLoading(null);
+
+  /// <summary>As <see cref="FakeApi"/>, but <c>LoadModConfig</c> returns <paramref name="loaded"/> - so a
+  /// test can feed a tampered-with config into <see cref="ExConfigRegister{TConfig}.Load"/>.</summary>
+  private static ICoreAPI FakeApiLoading(EditableConfig? loaded)
   {
     var api = Substitute.For<ICoreAPI>();
     api.Logger.Returns(Substitute.For<ILogger>());
-    api.LoadModConfig<EditableConfig>(Arg.Any<string>())
-      .Returns((EditableConfig?)null);
+    api.LoadModConfig<EditableConfig>(Arg.Any<string>()).Returns(loaded);
 
     var mod = Substitute.For<Mod>();
     typeof(Mod)

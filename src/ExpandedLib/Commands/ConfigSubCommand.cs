@@ -73,7 +73,8 @@ public sealed class ConfigSubCommand : IExSubCommand
       ),
       ExConfigEditStatus.OutOfRange => Err(
         "exlib:command-config-range",
-        result.Name
+        result.Name,
+        result.Range
       ),
       _ => Err("exlib:command-config-novalue", name, config.ModId),
     };

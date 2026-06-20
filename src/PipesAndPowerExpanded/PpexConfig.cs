@@ -41,6 +41,7 @@ public class PpexConfig : IExVersionedConfig
 
   #region Pipes
   /// <summary>Litres a single pipe holds at 1 atm (both the gas and water pools).</summary>
+  [ExConfigRange(1, 1_000_000)] // pipe capacity divides pressure - must stay positive
   public float LitresPerPipe { get; set; } = 30f;
 
   /// <summary>Per-material pipe burst pressure (atm) - the weakest pipe limits a run.</summary>
@@ -71,6 +72,7 @@ public class PpexConfig : IExVersionedConfig
 
   #region Steam
   /// <summary>Litres of steam produced by boiling one litre of water (and the reverse ratio steam condenses back at).</summary>
+  [ExConfigRange(1, 100_000)] // divides steam back into water - must stay positive
   public float SteamExpansionFactor { get; set; } = 16f;
 
   /// <summary>Exponent of the saturated-steam temperature curve: steam temperature (°C) =
@@ -110,6 +112,7 @@ public class PpexConfig : IExVersionedConfig
 
   /// <summary>Fraction of the vessel capacity the automatic pump intake fills to - keeps a piped
   /// supply from overfilling the boiler (manual pouring can still go up to the boil-water ceiling).</summary>
+  [ExConfigRange(0, 1)]
   public float BoilerWaterIntakeFillFraction { get; set; } = 0.5f;
 
   /// <summary>Maximum rate (L/s) the boiler draws water from its feed network through the automatic
@@ -135,10 +138,12 @@ public class PpexConfig : IExVersionedConfig
 
   /// <summary>Fraction (0..1) of the boiler's construction materials scattered as salvage when it
   /// bursts - less forgiving than mining it intact (see <see cref="RccBrokenDropsRatio"/>).</summary>
+  [ExConfigRange(0, 1)]
   public float BoilerExplosionDropRatio { get; set; } = 0.4f;
 
   /// <summary>Fraction (0..1) of an engine/boiler's construction materials recovered when it is mined
   /// intact - the right-click-construction salvage ratio. Player-tunable; applied live on the next break.</summary>
+  [ExConfigRange(0, 1)]
   public float RccBrokenDropsRatio { get; set; } = 0.8f;
 
   /// <summary>Internal steam (L/s) an open lid vents to atmosphere.</summary>
@@ -150,11 +155,13 @@ public class PpexConfig : IExVersionedConfig
 
   /// <summary>Rendered water-surface height (block units) while the boiler holds some water
   /// but is below its operating threshold - kept below the flue tubes.</summary>
+  [ExConfigRange(0, 1)]
   public float BoilerWaterSurfaceLowLevel { get; set; } = 0.2f;
 
   /// <summary>Rendered water-surface height (block units) once the boiler holds enough
   /// water to operate - raised above the flue tubes. Kept just under a full block to
   /// avoid z-fighting with the cell boundary.</summary>
+  [ExConfigRange(0, 1)]
   public float BoilerWaterSurfaceHighLevel { get; set; } = 0.99f;
 
   /// <summary>Extra steam (L) flashed per litre of admitted water per atm of feed-water pressure
@@ -237,6 +244,7 @@ public class PpexConfig : IExVersionedConfig
 
   /// <summary>Steam-engine efficiency: an engine sets its sub-machine's output pressure
   /// (pump water, air blower) to its inlet steam pressure times this fraction.</summary>
+  [ExConfigRange(0, 1)]
   public float SteamEngineEfficiency { get; set; } = 0.75f;
 
   /// <summary>Seconds an engine may run above its band before it breaks and needs repairing.</summary>

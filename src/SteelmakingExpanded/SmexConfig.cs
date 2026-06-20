@@ -224,6 +224,7 @@ public class SmexConfig : IExVersionedConfig
   /// <summary>Fraction of the converter capacity below which a hardened (cooled) charge can be chiselled
   /// out of the vessel instead of breaking the whole structure. A residue at or above this is salvaged
   /// by breaking it.</summary>
+  [ExConfigRange(0, 1)]
   public float BessemerChiselMaxFraction { get; set; } = 0.2f;
 
   /// <summary>Fraction (0..1) of the converter's construction materials recovered when its vessel is
