@@ -399,15 +399,16 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
 
   #region Temperature handling
 
-  // Re-stamps the live charge's cooldown rate from the (live) config every tick, so an admin
-  // changing BessemerCooldownCoefficient via /exmod config speeds up or slows down the metal already
-  // in the vessel - not just metal added on a later fill. SetCooldownSpeed only rewrites the rate
-  // attribute (it doesn't reset the stored temperature or its timestamp), so re-applying the same
-  // value is a no-op and a changed value takes effect from this tick forward.
+  // Re-stamps the live charge's cooldown rate from the (live) config every tick, so an admin changing
+  // BessemerCooldownCoefficient (or the base MoltenCooldownSpeed) via /exmod config speeds up or slows
+  // down the metal already in the vessel - not just metal added on a later fill. Rebases the cooldown
+  // baseline to the current temperature (see MoltenMetal.SyncCooldownSpeed) so the new rate applies from
+  // this tick forward even when the charge has been sitting idle (its timestamp would otherwise be stale,
+  // and rewriting the rate alone would retro-apply it across that whole idle span).
   private void SyncContentCooldown()
   {
     if (_content != null)
-      MoltenMetal.SetCooldownSpeed(_content, ContentCooldownSpeed);
+      MoltenMetal.SyncCooldownSpeed(Api.World, _content, ContentCooldownSpeed);
   }
 
   private void HoldTemperature(float dt)
@@ -861,14 +862,21 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
     return recovered;
   }
 
-  // A solidified charge small enough to chisel out points the player at the chisel; otherwise tell
-  // them to break the vessel to salvage it.
-  private string SolidifiedStatus() =>
-    Lang.Get(
-      CanChiselOut()
+  // Guides the player through clearing a frozen charge, the same way a clogged canal cell does:
+  //  - too large a residue to chisel  -> break the vessel to salvage it;
+  //  - small, but still too hot        -> wait for it to harden, then chisel (it can't be chipped yet);
+  //  - small and fully hardened        -> chisel it out from the upper hatch.
+  private string SolidifiedStatus()
+  {
+    if (_contentUnits >= ChiselMaxFraction * CapacityUnits)
+      return Lang.Get("smex:bessemer-status-solidified");
+
+    return Lang.Get(
+      ChargeIsHardened
         ? "smex:bessemer-status-chiselout"
-        : "smex:bessemer-status-solidified"
+        : "smex:bessemer-status-coolingtochisel"
     );
+  }
 
   #endregion
 

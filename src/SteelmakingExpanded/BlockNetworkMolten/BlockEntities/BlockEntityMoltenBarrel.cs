@@ -33,6 +33,11 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
 
   private MoltenRenderer? _renderer;
 
+  // Cooldown rate for the stored metal: the molten-system base scaled by the barrel's coefficient
+  // (mirrors the converter's charge cooldown). Read live so a config change applies immediately.
+  private static float ContentCooldownSpeed =>
+    SmexValues.MoltenCooldownSpeed * SmexValues.BarrelCooldownCoefficient;
+
   /// <summary>Temperature (°C) of the stored metal, or 0 when empty.</summary>
   public float Temperature =>
     MetalContent?.Collectible.GetTemperature(Api.World, MetalContent) ?? 0f;
@@ -130,10 +135,7 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
       MetalContent.ResolveBlockOrItem(Api.World);
       MoltenMetal.SetTemperature(Api.World, MetalContent, temperature);
       MetalContent.StackSize = 1;
-      MoltenMetal.SetCooldownSpeed(
-        MetalContent,
-        SmexValues.MoltenCooldownSpeed
-      );
+      MoltenMetal.SetCooldownSpeed(MetalContent, ContentCooldownSpeed);
     }
     else
     {
@@ -170,8 +172,18 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
     else
     {
       // No other server tick exists, so drive the cooling glow fade from here.
-      RegisterGameTickListener(_ => UpdateGlow(), 1000);
+      RegisterGameTickListener(_ => OnServerTick(), 1000);
     }
+  }
+
+  // Server tick: keep the stored metal's cooldown rate in step with the live config so a
+  // `/exmod config smex MoltenCooldownSpeed ...` change affects metal already in the barrel,
+  // then fade the incandescent glow as it cools.
+  private void OnServerTick()
+  {
+    if (MetalContent != null && CurrentUnitAmount > 0)
+      MoltenMetal.SyncCooldownSpeed(Api.World, MetalContent, ContentCooldownSpeed);
+    UpdateGlow();
   }
 
   private void InitRenderer(ICoreClientAPI capi)

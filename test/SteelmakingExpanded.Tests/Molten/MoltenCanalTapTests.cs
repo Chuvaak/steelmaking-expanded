@@ -1,5 +1,6 @@
 using System;
 using ExpandedLib.Testing;
+using Newtonsoft.Json.Linq;
 using SteelmakingExpanded.BlockNetworkMolten;
 using SteelmakingExpanded.BlockNetworkMolten.BlockEntities;
 using SteelmakingExpanded.BlockNetworkMolten.Blocks;
@@ -157,11 +158,12 @@ public class MoltenCanalTapTests
 
   #region Server-side drain
 
-  // The drain speed is read from block attributes in Initialize (not run here), so set it directly.
+  // The drain speed is read live from the block's "drainSpeed" attribute (config fallback otherwise),
+  // so prime it by setting that attribute on the test block.
   private static void PrimeDrainSpeed(
     BlockEntityMoltenCanalTap be,
     float speed
-  ) => ReflectionHelpers.SetField(be, "_drainSpeed", speed);
+  ) => be.Block.Attributes = new JsonObject(new JObject { ["drainSpeed"] = speed });
 
   [Fact]
   public void OnServerTick_drains_cell_metal_into_a_parked_barrel()
@@ -217,6 +219,29 @@ public class MoltenCanalTapTests
 
     Assert.Equal(5, be.BarrelCurrentUnits); // unchanged
     Assert.Equal(20, be.CellAmount);
+  }
+
+  #endregion
+
+  #region Cell solidify + chisel-clear
+
+  // The tap's own cell now clogs and is chiselled clear like a canal or the start block, instead of
+  // staying permanently liquid - so a run that goes cold with metal left in the tap can be recovered.
+  [Fact]
+  public void A_cold_tap_cell_solidifies_severs_and_can_be_cleared()
+  {
+    var world = NewWorld();
+    world.RegisterItem("game:metalbit-iron"); // the chiselled-out solid drop
+    var be = Tap(world);
+    be.PushMetal(20, Metal(world, Iron, 400f), world.World); // below the 1500 melting point
+
+    ReflectionHelpers.Invoke(be, "UpdateThermal", world.World);
+
+    Assert.True(be.Solidified);
+    Assert.True(be.IsConnectionBroken()); // clogged -> drops off the run
+
+    Assert.NotNull(be.ClearSolidified()); // chiselled clear
+    Assert.False(be.Solidified);
   }
 
   #endregion

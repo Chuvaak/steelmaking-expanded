@@ -40,11 +40,14 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
     }
   }
 
-  // The pedestal is a drain fitting that keeps delivering to the mold, so it never clogs.
-  protected override bool SolidifiesWhenCold => false;
+  // The pedestal's own cell clogs and is chiselled clear like any canal or the start block: it
+  // inherits the default SolidifiesWhenCold (true). Metal being actively delivered stays hot, so it
+  // only freezes once the run goes cold with metal left standing in the cell - then HasMoltenMetal/
+  // IsConnectionBroken stop the fill and sever it until the player chips it out.
 
   // A closed pedestal severs itself from the run (single-connector leaf) so no metal flows into
   // its cell - otherwise IsPouring only gates draining into the mold, leaving the cell to fill.
+  // Solidified (base) severs it too, so a frozen cell drops off the run until cleared.
   public override bool IsConnectionBroken() =>
     base.IsConnectionBroken() || !IsPouring;
 
@@ -63,6 +66,11 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
   /// <summary> Mold pedestal by itself has low capacity. </summary>
   public override int MaxUnitCapacity =>
     (int)Math.Ceiling(SmexValues.CanalDefaultUnitCapacity / 2.0);
+
+  // Cooldown rate for metal cast in the mold: the molten-system base scaled by the pedestal's mold
+  // coefficient (mirrors the converter's charge cooldown). Read live so a config change applies now.
+  private static float MoldCooldownSpeed =>
+    SmexValues.MoltenCooldownSpeed * SmexValues.MoldPedestalCooldownCoefficient;
 
   /// <summary>Toggles whether the pedestal fills its mold from the network.</summary>
   public void TryTogglePouring()
@@ -162,6 +170,11 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
       return;
     }
 
+    // Keep the cast mold's cooldown rate in step with the live config (before the pour gate) so a
+    // `/exmod config smex MoltenCooldownSpeed ...` change affects metal already cast in the mold.
+    if (IsMold && MoldMetalContent != null && MoldCurrentUnits > 0)
+      MoltenMetal.SyncCooldownSpeed(Api.World, MoldMetalContent, MoldCooldownSpeed);
+
     // The pedestal drains its own cell (where the run delivers metal) into the mold.
     if (
       !IsMold
@@ -194,7 +207,12 @@ public class BlockEntityMoltenCanalMoldPedestal : BlockEntityMoltenCanal
 
     if (MoldMetalContent == null)
     {
-      MoldMetalContent = MoltenMetal.CreateStack(Api.World, type, temp);
+      MoldMetalContent = MoltenMetal.CreateStack(
+        Api.World,
+        type,
+        temp,
+        MoldCooldownSpeed
+      );
       if (MoldMetalContent == null)
         return;
     }

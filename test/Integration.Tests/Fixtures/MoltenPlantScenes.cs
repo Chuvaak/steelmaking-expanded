@@ -1,9 +1,11 @@
 using ExpandedLib.Testing;
+using Newtonsoft.Json.Linq;
 using NSubstitute;
 using SteelmakingExpanded.BlockNetworkMolten;
 using SteelmakingExpanded.BlockNetworkMolten.BlockEntities;
 using SteelmakingExpanded.BlockNetworkMolten.Blocks;
 using Vintagestory.API.Common;
+using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 
 namespace SteelmakingExpanded.Tests;
@@ -107,7 +109,10 @@ internal sealed class CastingLine
   public CastingLine ParkBarrel(float drainSpeed)
   {
     Tap!.IsBarrel = true;
-    ReflectionHelpers.SetField(Tap, "_drainSpeed", drainSpeed);
+    // The tap reads its drain speed live from the block's "drainSpeed" attribute, so prime it there.
+    Tap.Block.Attributes = new JsonObject(
+      new JObject { ["drainSpeed"] = drainSpeed }
+    );
     return this;
   }
 

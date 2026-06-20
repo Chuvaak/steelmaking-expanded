@@ -34,7 +34,7 @@
   "command-config-unknown": "Unknown config '{0}'. Registered: {1}.",
   "command-config-novalue": "Config '{1}' has no editable value named '{0}'.",
   "command-config-current": "{0} = {1}",
-  "command-config-set": "{0} = {1} -> {2}. Applied immediately.",
+  "command-config-set": "{0} changed from {1} to {2}. Applied immediately.",
   "command-config-parsefail": "Could not read '{0}' as a value for {1} (expected {2}).",
   "command-config-range": "Value for {0} is out of range (must be a finite, non-negative number).",
 

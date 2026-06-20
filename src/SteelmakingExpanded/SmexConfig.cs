@@ -64,6 +64,19 @@ public class SmexConfig : IExVersionedConfig
   /// <summary>Temperature cooldown speed applied to molten-metal stacks held by the molten system (canal cells, taps, barrels, molds, the bessemer charge).</summary>
   public float MoltenCooldownSpeed { get; set; } = 24f;
 
+  /// <summary>Multiplier on <see cref="MoltenCooldownSpeed"/> for metal stored in a standalone molten
+  /// barrel (mirrors the converter's <see cref="BessemerCooldownCoefficient"/>). Below 1 the barrel
+  /// holds its heat longer; 1 = the base molten rate. Applied live to metal already in the barrel.</summary>
+  public float BarrelCooldownCoefficient { get; set; } = 1f;
+
+  /// <summary>Multiplier on <see cref="MoltenCooldownSpeed"/> for metal cast in a mold parked under a
+  /// canal tap. Below 1 the cast holds its heat longer; 1 = the base molten rate. Applied live.</summary>
+  public float TapMoldCooldownCoefficient { get; set; } = 1f;
+
+  /// <summary>Multiplier on <see cref="MoltenCooldownSpeed"/> for metal cast in a mold on a pedestal.
+  /// Below 1 the cast holds its heat longer; 1 = the base molten rate. Applied live.</summary>
+  public float MoldPedestalCooldownCoefficient { get; set; } = 1f;
+
   /// <summary>Max metal (units) flowing across one canal connection per second; balance against <see cref="MoltenCooldownSpeed"/>.</summary>
   public int MoltenFlowRate { get; set; } = 50;
 

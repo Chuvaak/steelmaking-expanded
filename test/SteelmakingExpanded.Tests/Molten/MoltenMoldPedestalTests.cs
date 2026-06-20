@@ -254,6 +254,29 @@ public class MoltenMoldPedestalTests
 
   #endregion
 
+  #region Cell solidify + chisel-clear
+
+  // The pedestal's own cell now clogs and is chiselled clear like a canal or the start block, instead
+  // of staying permanently liquid - so a run that goes cold with metal left in the cell is recoverable.
+  [Fact]
+  public void A_cold_pedestal_cell_solidifies_severs_and_can_be_cleared()
+  {
+    var world = NewWorld();
+    world.RegisterItem("game:metalbit-iron"); // the chiselled-out solid drop
+    var be = Pedestal(world);
+    be.PushMetal(20, Metal(world, Iron, 400f), world.World); // below the 1500 melting point
+
+    ReflectionHelpers.Invoke(be, "UpdateThermal", world.World);
+
+    Assert.True(be.Solidified);
+    Assert.True(be.IsConnectionBroken()); // clogged -> drops off the run
+
+    Assert.NotNull(be.ClearSolidified()); // chiselled clear
+    Assert.False(be.Solidified);
+  }
+
+  #endregion
+
   #region Serialization
 
   [Fact]

@@ -145,6 +145,66 @@ public class MoltenBarrelTests
 
   #endregion
 
+  #region Cooldown coefficient (live)
+
+  // The VS time-based cooldown speed lives on the stack's temperature tree.
+  private static float CooldownSpeedOf(ItemStack stack) =>
+    (stack.Attributes["temperature"] as ITreeAttribute)?.GetFloat(
+      "cooldownSpeed"
+    ) ?? 0f;
+
+  [Fact]
+  public void The_barrel_cooldown_coefficient_defaults_to_one()
+  {
+    // Ships as a no-op multiplier (1x the molten-system rate); admins can slow the barrel down.
+    Assert.Equal(1f, SmexValues.BarrelCooldownCoefficient, 3);
+  }
+
+  [Fact]
+  public void Stored_metal_carries_the_barrel_cooldown_coefficient()
+  {
+    var world = NewWorld();
+    var be = Barrel(world);
+    int amount = 20;
+    be.ReceiveLiquidMetal(Metal(world, Iron, 1300f), ref amount, 1300f);
+
+    Assert.Equal(
+      SmexValues.MoltenCooldownSpeed * SmexValues.BarrelCooldownCoefficient,
+      CooldownSpeedOf(be.MetalContent!),
+      3
+    );
+  }
+
+  // Regression: a live `/exmod config smex barrelcooldowncoefficient ...` change must reach metal
+  // already standing in the barrel, not just the next pour - the server tick re-stamps the live rate.
+  [Fact]
+  public void Changing_the_barrel_coefficient_reaches_metal_already_in_the_barrel()
+  {
+    var world = NewWorld();
+    var be = Barrel(world);
+    int amount = 20;
+    be.ReceiveLiquidMetal(Metal(world, Iron, 1300f), ref amount, 1300f);
+
+    float original = SmexValues.BarrelCooldownCoefficient;
+    try
+    {
+      SmexValues.Edit(c => c.BarrelCooldownCoefficient = 5f);
+      ReflectionHelpers.Invoke(be, "OnServerTick");
+
+      Assert.Equal(
+        SmexValues.MoltenCooldownSpeed * 5f,
+        CooldownSpeedOf(be.MetalContent!),
+        3
+      );
+    }
+    finally
+    {
+      SmexValues.Edit(c => c.BarrelCooldownCoefficient = original);
+    }
+  }
+
+  #endregion
+
   #region Drops
 
   [Fact]

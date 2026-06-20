@@ -201,6 +201,45 @@ public class ConverterChiselTests
 
   #endregion
 
+  #region Solidified status feedback
+
+  // The block-info status walks the player through clearing a frozen charge, the way a clogged canal
+  // does: break a large residue, wait for a small-but-hot one to harden, chisel a small hardened one.
+  private static string SolidifiedStatus(BlockEntityConverterControl be) =>
+    (string)ReflectionHelpers.Invoke(be, "SolidifiedStatus")!;
+
+  [Fact]
+  public void Status_tells_the_player_to_break_a_large_solidified_charge()
+  {
+    var world = NewWorld();
+    var be = Control(world);
+    PrimeCharge(be, world, 300f, 300, solidified: true); // hardened but 300 >= 240
+
+    Assert.Equal("smex:bessemer-status-solidified", SolidifiedStatus(be));
+  }
+
+  [Fact]
+  public void Status_tells_the_player_to_wait_for_a_small_hot_residue_to_harden()
+  {
+    var world = NewWorld();
+    var be = Control(world);
+    PrimeCharge(be, world, 800f, 100, solidified: true); // small (100 < 240) but not yet hardened
+
+    Assert.Equal("smex:bessemer-status-coolingtochisel", SolidifiedStatus(be));
+  }
+
+  [Fact]
+  public void Status_tells_the_player_to_chisel_a_small_hardened_residue()
+  {
+    var world = NewWorld();
+    var be = Control(world);
+    PrimeCharge(be, world, 300f, 100, solidified: true); // small and hardened
+
+    Assert.Equal("smex:bessemer-status-chiselout", SolidifiedStatus(be));
+  }
+
+  #endregion
+
   #region Chisel-out recovery
 
   [Fact]

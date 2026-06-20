@@ -343,6 +343,36 @@ public partial class BlockMoltenCanal : BlockNetworkNode
   private static ItemStack[]? _fireClayStacks;
   private static ItemStack[]? _chiselStacks;
 
+  /// <summary>
+  /// The "chip out the solidified cell" interaction hint, or <c>null</c> when the cell at
+  /// <paramref name="pos"/> can't be chiselled yet (not solidified, or not fully hardened). Exposed so
+  /// endpoint subclasses that build their own interaction help (the mold pedestal) can still advertise
+  /// clearing a clogged cell - the tap inherits the base help directly.
+  /// </summary>
+  protected WorldInteraction? ChiselClearInteraction(
+    IWorldAccessor world,
+    BlockPos pos
+  )
+  {
+    if (
+      world.BlockAccessor.GetBlockEntity(pos)
+      is not BlockEntityMoltenCanal { Solidified: true, IsHardened: true }
+    )
+      return null;
+
+    return new WorldInteraction
+    {
+      ActionLangCode = "smex:blockhelp-canal-clearsolidified",
+      MouseButton = EnumMouseButton.Right,
+      Itemstacks = _chiselStacks ??=
+        [
+          .. world
+            .SearchItems(new AssetLocation("chisel-*"))
+            .Select(i => new ItemStack(i)),
+        ],
+    };
+  }
+
   public override WorldInteraction[] GetPlacedBlockInteractionHelp(
     IWorldAccessor world,
     BlockSelection selection,

@@ -38,21 +38,17 @@ public sealed class ConfigSubCommand : IExSubCommand
 
   private static TextCommandResult OnCommand(TextCommandCallingArgs args)
   {
-    string? code = args[0] as string;
-    string? name = args[1] as string;
-    string? raw = args[2] as string;
-
-    if (code == null)
+    if (args[0] is not string code)
       return TextCommandResult.Success(ListConfigs());
 
     if (!ExConfigProfiles.TryGet(code, out var config))
       return Err("exlib:command-config-unknown", code, KnownCodes());
 
-    if (name == null)
+    if (args[1] is not string name)
       return TextCommandResult.Success(ListValues(config));
 
     // Read: print the current value.
-    if (raw == null)
+    if (args[2] is not string raw)
     {
       if (!config.TryGet(name, out var canonical, out var value))
         return Err("exlib:command-config-novalue", name, config.ModId);
@@ -83,11 +79,14 @@ public sealed class ConfigSubCommand : IExSubCommand
     };
   }
 
-  // The server re-runs Lang.Get on a single-line result message before showing it (VintagestoryLib
-  // command dispatch). Pre-formatting here and letting it re-resolve mangles any message containing a
-  // ':' - it gets read back as a "domain:key" and silently resolves to nothing. So hand the framework
-  // the lang KEY + args and let it format once: StatusMessage = key, MessageParams = the arguments.
-  private static TextCommandResult Ok(string key, params object[] args) =>
+  // Hand the framework the lang KEY + args (StatusMessage = key, MessageParams = arguments) so the
+  // server resolves it once, in the caller's language (VintagestoryLib dispatch: Lang.GetL(langCode,
+  // StatusMessage, MessageParams)). Two display traps to keep in mind, both in the lang strings, not
+  // here: (1) a single-line result we pre-formatted gets re-run through Lang.Get, so a literal ':' is
+  // read back as "domain:key"; (2) the client wraps CommandSuccess/Notification lines in a <font> tag
+  // before VTML parsing, so a bare '<' or '>' in the message (e.g. a "->"/"=>" arrow) breaks the tag
+  // stream and the whole line renders blank. Keep both characters out of the command-result strings.
+  private static TextCommandResult Ok(string key, params object?[] args) =>
     new()
     {
       Status = EnumCommandStatus.Success,
@@ -95,7 +94,7 @@ public sealed class ConfigSubCommand : IExSubCommand
       MessageParams = args,
     };
 
-  private static TextCommandResult Err(string key, params object[] args) =>
+  private static TextCommandResult Err(string key, params object?[] args) =>
     new()
     {
       Status = EnumCommandStatus.Error,

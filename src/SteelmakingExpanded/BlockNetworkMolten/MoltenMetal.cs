@@ -71,6 +71,27 @@ public static class MoltenMetal
       cooldownSpeed
     );
 
+  /// <summary>
+  /// Re-applies the (live) cooldown rate to an already-stamped stack, rebasing the cooldown baseline
+  /// to the stack's current temperature so a changed <c>cooldownSpeed</c> takes effect from this
+  /// moment forward. Call once per tick on standing/parked molten content (canal cells, parked molds,
+  /// barrels, the bessemer charge) to keep a live <c>/exmod config</c> change to the molten cooldown
+  /// applying to metal already in the world - not just to metal added afterward. The rebase matters:
+  /// vanilla scales the elapsed cooling by <c>cooldownSpeed</c>, so rewriting the rate alone would
+  /// retro-apply the new rate across the whole span since the stack was last stamped (a temperature
+  /// jump). Re-stamping the current temperature first resets that span to zero. With an unchanged
+  /// rate the rebase is exact (linear decay), so this is a no-op for the common case.
+  /// </summary>
+  public static void SyncCooldownSpeed(
+    IWorldAccessor world,
+    ItemStack stack,
+    float? cooldownSpeed = null
+  )
+  {
+    SetTemperature(world, stack, GetTemperature(world, stack));
+    SetCooldownSpeed(stack, cooldownSpeed ?? SmexValues.MoltenCooldownSpeed);
+  }
+
   /// <summary>Sets the stack temperature without delaying the cooldown (the mod-wide convention).</summary>
   public static void SetTemperature(
     IWorldAccessor world,

@@ -37,11 +37,14 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
     }
   }
 
-  // The tap is a drain fitting that keeps delivering to the parked barrel/mold, so it never clogs.
-  protected override bool SolidifiesWhenCold => false;
+  // The tap's own cell clogs and is chiselled clear like any canal or the start block: it inherits
+  // the default SolidifiesWhenCold (true). Metal being actively delivered stays hot, so a tap only
+  // freezes once its run goes cold with metal left standing in the cell - then HasMoltenMetal/
+  // IsConnectionBroken stop the drain and sever it until the player chips it out.
 
   // A closed tap severs itself from the run (single-connector leaf) so no metal flows into its
   // cell - otherwise IsPouring only gates draining into parked content, leaving the cell to fill.
+  // Solidified (base) severs it too, so a frozen cell drops off the run until cleared.
   public override bool IsConnectionBroken() =>
     base.IsConnectionBroken() || !IsPouring;
 
@@ -100,8 +103,17 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
   // Throttle for the looping molten-pour hiss while draining into the content.
   private long _lastDrainSoundMs;
 
-  // Current network drain speed.
-  private float _drainSpeed;
+  // Current network drain speed (units/tick). Read live so the config fallback applies immediately
+  // when the block JSON sets no explicit drainSpeed; the block attribute itself is a cheap parsed read.
+  private float DrainSpeed =>
+    Block.Attributes?["drainSpeed"].AsFloat(SmexValues.CanalDefaultDrainSpeed)
+    ?? SmexValues.CanalDefaultDrainSpeed;
+
+  // Cooldown rate for metal cast in the parked mold: the molten-system base scaled by the tap's mold
+  // coefficient (mirrors the converter's charge cooldown). The parked barrel cools at a fixed slow
+  // rate by design and is unaffected. Read live so a config change applies immediately.
+  private static float MoldCooldownSpeed =>
+    SmexValues.MoltenCooldownSpeed * SmexValues.TapMoldCooldownCoefficient;
 
   public override void Initialize(ICoreAPI api)
   {
@@ -112,10 +124,6 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
       // Parked metal keeps cooling after the pour stops broadcasting, so refresh the surface glow
       // from the stack's live temperature, or it freezes hot and snaps cold on interaction.
       RegisterGameTickListener(_ => UpdateRenderer(), 1000);
-
-    _drainSpeed = Block
-      .Attributes["drainSpeed"]
-      .AsFloat(SmexValues.CanalDefaultDrainSpeed);
   }
 
   public override void OnBlockRemoved()
@@ -364,6 +372,12 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
 
   private void OnServerTick(float dt)
   {
+    // Keep the parked mold's cooldown rate in step with the live config (the parked barrel cools at a
+    // fixed slow rate by design, so it is left alone) - this runs every tick, before the pour gate, so
+    // a `/exmod config smex MoltenCooldownSpeed ...` change affects metal already cast in the mold.
+    if (IsMold && MoldMetalContent != null && MoldCurrentUnits > 0)
+      MoltenMetal.SyncCooldownSpeed(Api.World, MoldMetalContent, MoldCooldownSpeed);
+
     // The tap drains its own cell (where the run delivers metal) into the parked barrel/mold.
     if (!IsPouring || !HasMoltenMetal)
       return;
@@ -394,7 +408,7 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
         ref content,
         MoldCurrentUnits,
         MoldMaxUnits,
-        SmexValues.MoltenCooldownSpeed
+        MoldCooldownSpeed
       );
       if (drained > 0)
       {
@@ -435,7 +449,7 @@ public class BlockEntityMoltenCanalTap : BlockEntityMoltenCanal
       return 0;
 
     int space = maxUnits - currentUnits;
-    int toDrain = (int)Math.Min(_drainSpeed, space);
+    int toDrain = (int)Math.Min(DrainSpeed, space);
     if (toDrain <= 0)
       return 0;
 

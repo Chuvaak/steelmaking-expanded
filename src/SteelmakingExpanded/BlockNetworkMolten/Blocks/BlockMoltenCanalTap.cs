@@ -49,11 +49,14 @@ public partial class BlockMoltenCanalTap : BlockMoltenCanal
       return false;
 
     // Sneak (ShiftKey) + RMB places/removes the barrel; the opposite modifier
-    // (CtrlKey) + RMB toggles pouring. Plain RMB is left unhandled.
+    // (CtrlKey) + RMB toggles pouring. Plain RMB chips out a clogged (solidified)
+    // cell with a chisel + hammer, exactly like a canal or the start block.
     bool sneak = byPlayer.Entity.Controls.ShiftKey;
     bool opposite = byPlayer.Entity.Controls.CtrlKey;
     if (!sneak && !opposite)
-      return false;
+      return be.Solidified
+        ? base.OnBlockInteractStart(world, byPlayer, blockSel)
+        : false;
 
     if (world.Side == EnumAppSide.Client)
       return true;

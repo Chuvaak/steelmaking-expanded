@@ -73,11 +73,14 @@ public partial class BlockMoltenCanalMoldPedestal : BlockMoltenCanalTap
       return false;
 
     // Sneak (ShiftKey) + RMB places/removes the mold; the opposite modifier
-    // (CtrlKey) + RMB toggles pouring. Plain RMB is left unhandled.
+    // (CtrlKey) + RMB toggles pouring. Plain RMB chips out a clogged (solidified)
+    // cell with a chisel + hammer, exactly like a canal or the start block.
     bool sneak = byPlayer.Entity.Controls.ShiftKey;
     bool opposite = byPlayer.Entity.Controls.CtrlKey;
     if (!sneak && !opposite)
-      return false;
+      return be.Solidified
+        ? base.OnBlockInteractStart(world, byPlayer, blockSel)
+        : false;
 
     if (world.Side == EnumAppSide.Client)
       return true;
@@ -155,28 +158,33 @@ public partial class BlockMoltenCanalMoldPedestal : BlockMoltenCanalTap
       HotKeyCode = "sprint",
     };
 
+    var result = new List<WorldInteraction>();
     if (!isMold)
-      return
-      [
+      result.Add(
         new WorldInteraction
         {
           ActionLangCode = "smex:blockhelp-pedestal-placemold",
           MouseButton = EnumMouseButton.Right,
           HotKeyCode = "sneak",
           Itemstacks = _acceptedMolds,
-        },
-        toggle,
-      ];
+        }
+      );
+    else
+      result.Add(
+        new WorldInteraction
+        {
+          ActionLangCode = "smex:blockhelp-pedestal-removemold",
+          MouseButton = EnumMouseButton.Right,
+          HotKeyCode = "sneak",
+        }
+      );
+    result.Add(toggle);
 
-    return
-    [
-      new WorldInteraction
-      {
-        ActionLangCode = "smex:blockhelp-pedestal-removemold",
-        MouseButton = EnumMouseButton.Right,
-        HotKeyCode = "sneak",
-      },
-      toggle,
-    ];
+    // A clogged (solidified, hardened) pedestal cell is chipped clear like a canal - advertise it.
+    WorldInteraction? chisel = ChiselClearInteraction(world, selection.Position);
+    if (chisel != null)
+      result.Add(chisel);
+
+    return result.ToArray();
   }
 }
