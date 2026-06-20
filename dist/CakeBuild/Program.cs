@@ -4,6 +4,7 @@ using System.IO;
 using Cake.Common;
 using Cake.Common.IO;
 using Cake.Common.Tools.DotNet;
+using Cake.Common.Tools.DotNet.Build;
 using Cake.Common.Tools.DotNet.MSBuild;
 using Cake.Common.Tools.DotNet.Publish;
 using Cake.Core;
@@ -203,6 +204,67 @@ public sealed class PackageTask : FrostingTask<BuildContext>
   }
 }
 
-[TaskName("Default")]
+[TaskName("PackageTesting")]
 [IsDependentOn(typeof(PackageTask))]
+public sealed class PackageTestingTask : FrostingTask<BuildContext>
+{
+  // The headless test harness (test/ExpandedLib.Testing) is a DEVELOPER library, not a game mod, so
+  // it isn't a mod zip and isn't on NuGet (its API still moves a lot release to release). We ship it
+  // as a dev bundle attached to the GitHub release: ExpandedLib.Testing.dll plus the exlib.dll it
+  // compiles against (exlib's AssemblyName is "exlib"), which a downstream test project references
+  // directly (the game assemblies and NSubstitute the consumer supplies - see the wiki
+  // "Consuming outside this repo").
+  //
+  // Built for the CURRENT game version only (net10.0 / 1.22); on 1.20/1.21 reference it from source.
+  const string BundleReadme =
+    "ExpandedLib.Testing - headless Vintage Story test harness (dev library)\n"
+    + "\n"
+    + "Built for the current game version (1.22 / net10.0). Add both DLLs to your test project\n"
+    + "with <Private>false</Private>, reference VintagestoryAPI/VSSurvivalMod/VSEssentials from\n"
+    + "your own game install, add NSubstitute + xUnit from NuGet, and call\n"
+    + "VsAssemblyResolver.Register() + TestLang.Init() from a [ModuleInitializer]. See the wiki:\n"
+    + "https://github.com/ringavirda/modding-vsexpanded/wiki/Testing-Harness\n";
+
+  public override void Run(BuildContext context)
+  {
+    var current = Array.Find(BuildContext.GameTargets, t => t.IsCurrent)!;
+    var exlib = context.Projects.Find(p => p.Folder == "ExpandedLib")!;
+
+    // Build the harness for the current target (single-TFM => flat bin/<config> output).
+    context.DotNetBuild(
+      "../../test/ExpandedLib.Testing/ExpandedLib.Testing.csproj",
+      new DotNetBuildSettings
+      {
+        Configuration = context.BuildConfiguration,
+        Framework = current.Tfm,
+      }
+    );
+
+    // Hyphen, not a dot, in the basename: GitHub's release-asset uploader sniffs content type from
+    // the filename and rejects a dotted name segment (exlib.testing_x.zip) with "we can't process
+    // this file". exlib-testing_<version>.zip keeps the _<version> convention and uploads cleanly.
+    string stageDir = $"../Releases/{current.GameVersion}/exlib-testing";
+    context.EnsureDirectoryExists(stageDir);
+
+    context.CopyFile(
+      $"../../test/ExpandedLib.Testing/bin/{context.BuildConfiguration}/ExpandedLib.Testing.dll",
+      $"{stageDir}/ExpandedLib.Testing.dll"
+    );
+    // exlib.dll comes from exlib's own publish output (the harness references it Private=false, so
+    // it isn't copied into the harness bin). The assembly file is exlib.dll (AssemblyName "exlib").
+    context.CopyFile(
+      $"{context.PublishDir(exlib, current)}/exlib.dll",
+      $"{stageDir}/exlib.dll"
+    );
+    File.WriteAllText($"{stageDir}/README.txt", BundleReadme);
+
+    context.Zip(
+      stageDir,
+      $"../Releases/{current.GameVersion}/exlib-testing_{exlib.Version}.zip"
+    );
+  }
+}
+
+[TaskName("Default")]
+[IsDependentOn(typeof(PackageTestingTask))]
 public class DefaultTask : FrostingTask { }
