@@ -158,8 +158,11 @@ public sealed class PackageTask : FrostingTask<BuildContext>
     context.EnsureDirectoryExists("../Releases");
     context.CleanDirectory("../Releases");
 
-    // One archive per (game version, mod), grouped into a per-version folder:
-    //   Releases/<gameVersion>/<modid>_<modVersion>.zip
+    // One archive per (game version, mod), grouped into a per-version folder. Legacy
+    // targets get a trailing game-version suffix so the files are distinguishable; the
+    // current version stays unsuffixed:
+    //   Releases/<gameVersion>/<modid>_<modVersion>.zip            (current)
+    //   Releases/<gameVersion>/<modid>_<modVersion>_<gameVersion>.zip (legacy)
     foreach (var target in BuildContext.GameTargets)
     {
       foreach (var project in context.Projects)
@@ -190,9 +193,10 @@ public sealed class PackageTask : FrostingTask<BuildContext>
           );
         File.WriteAllText($"{stageDir}/modinfo.json", modinfo);
 
+        string versionSuffix = target.IsCurrent ? "" : $"_{target.GameVersion}";
         context.Zip(
           stageDir,
-          $"../Releases/{target.GameVersion}/{project.ModId}_{project.Version}.zip"
+          $"../Releases/{target.GameVersion}/{project.ModId}_{project.Version}{versionSuffix}.zip"
         );
       }
     }
