@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ExpandedLib.Blocks.Construction;
 using ExpandedLib.Blocks.Machines;
 using ExpandedLib.Blocks.Networks;
 using ExpandedLib.Helpers;
@@ -27,7 +28,7 @@ namespace PipesAndPowerExpanded.BlockStructures.Engine;
 public abstract class BlockEntityEngine : BlockEntityProductionMachine
 {
   private BEBehaviorAnimatable? _animatable;
-  private BEBehaviorRightClickConstructable? _rcc;
+  private ExRightClickConstructable? _rcc;
   private bool _animatorReady;
 
   // The sub-machine sits two cells away (not a neighbour), so it never reaches us through
@@ -211,7 +212,7 @@ public abstract class BlockEntityEngine : BlockEntityProductionMachine
   {
     base.Initialize(api);
     _animatable = GetBehavior<BEBehaviorAnimatable>();
-    _rcc = GetBehavior<BEBehaviorRightClickConstructable>();
+    _rcc = GetBehavior<ExRightClickConstructable>();
 
     if (api is ICoreClientAPI && _animatable != null)
     {

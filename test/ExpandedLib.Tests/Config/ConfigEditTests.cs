@@ -158,7 +158,10 @@ public class ConfigEditTests
   {
     var store = Store();
 
-    Assert.Equal(ExConfigEditStatus.UnknownValue, store.Set("nope", "1").Status);
+    Assert.Equal(
+      ExConfigEditStatus.UnknownValue,
+      store.Set("nope", "1").Status
+    );
   }
   #endregion
 
@@ -213,10 +216,13 @@ public class ConfigEditTests
   {
     var api = Substitute.For<ICoreAPI>();
     api.Logger.Returns(Substitute.For<ILogger>());
-    api.LoadModConfig<EditableConfig>(Arg.Any<string>()).Returns((EditableConfig?)null);
+    api.LoadModConfig<EditableConfig>(Arg.Any<string>())
+      .Returns((EditableConfig?)null);
 
     var mod = Substitute.For<Mod>();
-    typeof(Mod).GetProperty("Info")!.SetValue(mod, new ModInfo { Version = "1.0.0" });
+    typeof(Mod)
+      .GetProperty("Info")!
+      .SetValue(mod, new ModInfo { Version = "1.0.0" });
     var modLoader = Substitute.For<IModLoader>();
     modLoader.GetMod("fakemod").Returns(mod);
     api.ModLoader.Returns(modLoader);
@@ -248,7 +254,9 @@ public class ConfigEditTests
       {
         Directory.Delete(_root, recursive: true);
       }
-      catch { /* best-effort cleanup */ }
+      catch
+      { /* best-effort cleanup */
+      }
     }
   }
 }

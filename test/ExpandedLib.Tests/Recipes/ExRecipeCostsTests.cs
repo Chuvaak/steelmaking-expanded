@@ -18,21 +18,42 @@ namespace ExpandedLib.Tests;
 /// </summary>
 public class ExRecipeCostsTests
 {
+  // 1.22 resolves grid ingredients into a CraftingRecipeIngredient[] property; 1.20/1.21 use a
+  // GridRecipeIngredient[] field (a CraftingRecipeIngredient subclass). The tests mutate the same
+  // ingredient instance they pass in and assert on it afterwards, so on legacy the instances
+  // themselves must be GridRecipeIngredients to live in that field - hence the per-version Ing.
+#if GAME_GE_1_22
   private static CraftingRecipeIngredient Ing(string code, int qty) =>
     new() { Code = new AssetLocation(code), Quantity = qty };
+#else
+  private static CraftingRecipeIngredient Ing(string code, int qty) =>
+    new GridRecipeIngredient { Code = new AssetLocation(code), Quantity = qty };
+#endif
 
   private static GridRecipe GridRecipe(
     string output,
     params CraftingRecipeIngredient[] ings
-  ) =>
-    new()
+  )
+  {
+    var recipe = new GridRecipe
     {
-      Output = new CraftingRecipeIngredient
-      {
-        Code = new AssetLocation(output),
-      },
-      ResolvedIngredients = ings,
+      Output = new CraftingRecipeIngredient { Code = new AssetLocation(output) },
     };
+    SetResolvedIngredients(recipe, ings);
+    return recipe;
+  }
+
+  /// <summary>Stores the resolved ingredients into whichever member this game version exposes,
+  /// keeping the same instances so a later Apply mutates the objects the test holds.</summary>
+  private static void SetResolvedIngredients(
+    GridRecipe recipe,
+    CraftingRecipeIngredient[] ings
+  ) =>
+#if GAME_GE_1_22
+    recipe.ResolvedIngredients = ings;
+#else
+    recipe.resolvedIngredients = ings.Cast<GridRecipeIngredient>().ToArray();
+#endif
 
   private static Block RccBlock(string code, JObject props)
   {
@@ -41,7 +62,7 @@ public class ExRecipeCostsTests
     [
       new BlockEntityBehaviorType
       {
-        Name = "RightClickConstructable",
+        Name = "ExRightClickConstructable",
         properties = new JsonObject(props),
       },
     ];

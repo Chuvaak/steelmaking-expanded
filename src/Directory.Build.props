@@ -1,0 +1,125 @@
+<Project>
+  <!--
+    ============================================================================================
+    SINGLE SOURCE OF TRUTH for the supported VintageStory versions: the "VERSION MANIFEST" region
+    below is the ONLY place to edit when the version set changes.
+
+    To ADD a version: append its TFM to $(AllGameTfms), add a per-version PropertyGroup (game
+    version + install env var), and add one GAME_GE_<ver> line in the capability-constants block.
+    To PROMOTE a new primary (e.g. when 1.22 becomes legacy and 1.23 arrives): point
+    $(CurrentGameTfm)/$(CurrentGameVer) at the new row (leaving the old one in $(AllGameTfms)).
+
+    Nothing in the csprojs or the #if-guarded code changes for a version move - it all derives
+    from here:
+      * $(CurrentGameTfm)/$(AllGameTfms) - csprojs read these for TargetFramework(s)
+      * $(GamePath)/$(GameVer)/$(GameVersion) - per-TFM install, version, modinfo stamp
+      * GAME_GE_<major>_<minor> compile constants - defined for every version <= the one being
+        built, so code guards on a CAPABILITY THRESHOLD (#if GAME_GE_1_22) not a raw TFM
+        (#if NET10_0). A threshold stays correct as newer versions appear: 1.23 is also >= 1.22,
+        so a "#if GAME_GE_1_22" current-API path keeps covering it and a "#if !GAME_GE_1_22"
+        legacy shim keeps covering only < 1.22 - including 1.22 itself once it is no longer
+        primary. (Mods are written against the CURRENT API; a shim bridges an OLDER version up to
+        it, so its guard is "version < where-this-API-arrived".)
+      * GameInstallEnv assembly metadata - lets runtime code (the test harness resolver) pick the
+        matching install without its own #if ladder.
+
+    Only an ACTUAL new API divergence still needs hand-written code: add a GAME_GE_<new> guard +
+    the shim. The plumbing never needs per-version edits again.
+
+    NOTE on evaluation: properties are evaluated before items in MSBuild, so the manifest is
+    properties (not an item list) to stay robust. $(TargetFramework) is empty during evaluation of
+    the default single-target / outer multi-target build (it's only a global property in the
+    legacy inner builds), so $(_GameTfm) falls back to the primary TFM.
+    ============================================================================================
+  -->
+
+  <!-- ===================== VERSION MANIFEST (edit only this region) ===================== -->
+  <PropertyGroup>
+    <CurrentGameTfm>net10.0</CurrentGameTfm>
+    <CurrentGameVer>1.22</CurrentGameVer>
+    <AllGameTfms>net7.0;net8.0;net10.0</AllGameTfms>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_GameTfm>$(TargetFramework)</_GameTfm>
+    <_GameTfm Condition="'$(_GameTfm)' == ''">$(CurrentGameTfm)</_GameTfm>
+    <IsCurrentGame Condition="'$(_GameTfm)' == '$(CurrentGameTfm)'">true</IsCurrentGame>
+  </PropertyGroup>
+
+  <!-- Per-version facts: game version string + the env var naming its install. One block per TFM. -->
+  <PropertyGroup Condition="'$(_GameTfm)' == 'net10.0'">
+    <GameVer>1.22</GameVer>
+    <GameInstallEnv>VINTAGE_STORY</GameInstallEnv>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(_GameTfm)' == 'net8.0'">
+    <GameVer>1.21</GameVer>
+    <GameInstallEnv>VINTAGE_STORY_121</GameInstallEnv>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(_GameTfm)' == 'net7.0'">
+    <GameVer>1.20</GameVer>
+    <GameInstallEnv>VINTAGE_STORY_120</GameInstallEnv>
+  </PropertyGroup>
+
+  <!-- Capability-threshold compile constants: GAME_GE_<ver> for every version <= the one built. -->
+  <PropertyGroup Condition="'$(GameVer)' != ''">
+    <DefineConstants Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(GameVer)', '1.20'))"
+      >$(DefineConstants);GAME_GE_1_20</DefineConstants>
+    <DefineConstants Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(GameVer)', '1.21'))"
+      >$(DefineConstants);GAME_GE_1_21</DefineConstants>
+    <DefineConstants Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(GameVer)', '1.22'))"
+      >$(DefineConstants);GAME_GE_1_22</DefineConstants>
+  </PropertyGroup>
+  <!-- =================== end VERSION MANIFEST =================== -->
+
+  <!-- Game version stamped into the legacy output modinfo (current keeps the authored value). -->
+  <PropertyGroup>
+    <GameVersion Condition="'$(IsCurrentGame)' != 'true' and '$(GameVer)' != ''"
+      >$(GameVer).0</GameVersion>
+  </PropertyGroup>
+
+  <!-- Pull the install paths from .env when the matching env var isn't already set, so legacy
+       builds work straight from the file (dotnet/MSBuild don't read .env on their own). -->
+  <PropertyGroup>
+    <_DotEnvPath>$(MSBuildThisFileDirectory)..\.env</_DotEnvPath>
+    <_DotEnv Condition="Exists('$(_DotEnvPath)')"
+      >$([System.IO.File]::ReadAllText('$(_DotEnvPath)'))</_DotEnv>
+  </PropertyGroup>
+
+  <!-- $(GamePath) = the install for THIS TFM: its env var if set, else that var's value from .env.
+       Both look the var up by the name in $(GameInstallEnv), so there are no per-version branches. -->
+  <PropertyGroup Condition="'$(GameInstallEnv)' != ''">
+    <GamePath Condition="'$(GamePath)' == ''"
+      >$([System.Environment]::GetEnvironmentVariable('$(GameInstallEnv)'))</GamePath>
+
+    <_EnvLineMatch Condition="'$(GamePath)' == '' and '$(_DotEnv)' != ''"
+      >$([System.Text.RegularExpressions.Regex]::Match($(_DotEnv), `(?m)^\s*$(GameInstallEnv)\s*=\s*[^\r\n]+`))</_EnvLineMatch>
+    <GamePath Condition="'$(GamePath)' == '' and '$(_EnvLineMatch)' != ''"
+      >$([System.Text.RegularExpressions.Regex]::Replace($(_EnvLineMatch), `^\s*$(GameInstallEnv)\s*=\s*`, ``))</GamePath>
+  </PropertyGroup>
+
+  <!-- Expose the install env-var name to runtime code (the test harness assembly resolver) so it
+       loads the matching version's assemblies without its own per-TFM #if ladder. -->
+  <ItemGroup Condition="'$(GameInstallEnv)' != ''">
+    <AssemblyMetadata Include="GameInstallEnv" Value="$(GameInstallEnv)" />
+  </ItemGroup>
+
+  <!-- The pre-current game APIs have less complete nullable-reference annotations, so passing null
+       to params they accept-but-don't-mark-nullable trips CS8625. Benign cross-version difference;
+       suppress it on the legacy targets only - the current build keeps full nullable checking. -->
+  <PropertyGroup Condition="'$(IsCurrentGame)' != 'true'">
+    <NoWarn>$(NoWarn);CS8625</NoWarn>
+  </PropertyGroup>
+
+  <!-- Fail clearly (instead of a cryptic CS1705 assembly-version mismatch) when a legacy build
+       can't find its game install because the env var / .env entry is missing. -->
+  <Target
+    Name="_CheckLegacyGamePath"
+    BeforeTargets="ResolveAssemblyReferences"
+    Condition="'$(IsCurrentGame)' != 'true' and '$(GameInstallEnv)' != ''"
+  >
+    <Error
+      Condition="!Exists('$(GamePath)\VintagestoryAPI.dll')"
+      Text="Legacy build for $(TargetFramework) (VintageStory $(GameVer)) can't find its game install (GamePath='$(GamePath)'). Set the $(GameInstallEnv) environment variable or its entry in the repo-root .env file - see .env.example."
+    />
+  </Target>
+</Project>

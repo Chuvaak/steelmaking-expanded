@@ -27,8 +27,11 @@ public partial class BlockConverterTransmission : Block, IMechanicalPowerBlock
   public bool HasMechPowerConnectorAt(
     IWorldAccessor world,
     BlockPos pos,
-    BlockFacing face,
+    BlockFacing face
+#if GAME_GE_1_22
+    ,
     BlockMPBase forBlock
+#endif
   ) => face == ConnectorFace;
 
   public void DidConnectAt(

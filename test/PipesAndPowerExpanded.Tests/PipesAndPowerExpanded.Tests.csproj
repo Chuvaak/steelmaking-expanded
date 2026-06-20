@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <!-- net10 (1.22) by default; -p:Legacy=true also tests net8.0 (1.21) + net7.0 (1.20). -->
+    <TargetFramework Condition="'$(Legacy)' != 'true'">$(CurrentGameTfm)</TargetFramework>
+    <TargetFrameworks Condition="'$(Legacy)' == 'true'"
+      >$(AllGameTfms)</TargetFrameworks>
+    <LangVersion>14</LangVersion>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
@@ -8,15 +12,15 @@
 
   <ItemGroup>
     <Reference Include="VintagestoryAPI">
-      <HintPath>$(VINTAGE_STORY)/VintagestoryAPI.dll</HintPath>
+      <HintPath>$(GamePath)/VintagestoryAPI.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="VSSurvivalMod">
-      <HintPath>$(VINTAGE_STORY)/Mods/VSSurvivalMod.dll</HintPath>
+      <HintPath>$(GamePath)/Mods/VSSurvivalMod.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="VSEssentials">
-      <HintPath>$(VINTAGE_STORY)/Mods/VSEssentials.dll</HintPath>
+      <HintPath>$(GamePath)/Mods/VSEssentials.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

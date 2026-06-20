@@ -19,7 +19,7 @@
   "entityBehaviors": [
     { "name": "Animatable" },
     {
-      "name": "RightClickConstructable",
+      "name": "ExRightClickConstructable",
       "properties": {
         "brokenDropsRatio": 0.8,
         "stages": [

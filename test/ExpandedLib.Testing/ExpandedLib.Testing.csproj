@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <!-- net10 (1.22) by default; opt into legacy game APIs with -p:Legacy=true to also test on
+         net8.0 (1.21) and net7.0 (1.20). $(GamePath) per TFM comes from ../Directory.Build.props. -->
+    <TargetFramework Condition="'$(Legacy)' != 'true'">$(CurrentGameTfm)</TargetFramework>
+    <TargetFrameworks Condition="'$(Legacy)' == 'true'"
+      >$(AllGameTfms)</TargetFrameworks>
+    <!-- A single-TFM build keeps the stable flat output path; multi-target must append the TFM to
+         avoid the three builds colliding in one folder. -->
+    <AppendTargetFrameworkToOutputPath Condition="'$(Legacy)' != 'true'"
+      >false</AppendTargetFrameworkToOutputPath>
+    <LangVersion>14</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>ExpandedLib.Testing</RootNamespace>
     <AssemblyName>ExpandedLib.Testing</AssemblyName>
@@ -11,23 +19,23 @@
 
   <ItemGroup>
     <Reference Include="VintagestoryAPI">
-      <HintPath>$(VINTAGE_STORY)/VintagestoryAPI.dll</HintPath>
+      <HintPath>$(GamePath)/VintagestoryAPI.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="VSSurvivalMod">
-      <HintPath>$(VINTAGE_STORY)/Mods/VSSurvivalMod.dll</HintPath>
+      <HintPath>$(GamePath)/Mods/VSSurvivalMod.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="VSEssentials">
-      <HintPath>$(VINTAGE_STORY)/Mods/VSEssentials.dll</HintPath>
+      <HintPath>$(GamePath)/Mods/VSEssentials.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="0Harmony">
-      <HintPath>$(VINTAGE_STORY)/Lib/0Harmony.dll</HintPath>
+      <HintPath>$(GamePath)/Lib/0Harmony.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json">
-      <HintPath>$(VINTAGE_STORY)/Lib/Newtonsoft.Json.dll</HintPath>
+      <HintPath>$(GamePath)/Lib/Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>

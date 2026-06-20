@@ -91,7 +91,9 @@ public sealed class ConfigSubCommand : IExSubCommand
       ExConfigEditStatus.OutOfRange => TextCommandResult.Error(
         Lang.Get("exlib:command-config-range", result.Name)
       ),
-      _ => TextCommandResult.Error(Lang.Get("exlib:command-config-novalue", name, config.ModId)),
+      _ => TextCommandResult.Error(
+        Lang.Get("exlib:command-config-novalue", name, config.ModId)
+      ),
     };
   }
 

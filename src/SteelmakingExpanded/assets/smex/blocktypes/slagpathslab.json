@@ -11,7 +11,7 @@
     "liquidBarrierOnSides": [0.5, 0.5, 0.5, 0.5],
     "inContainerTexture": { "base": "game:block/stone/gravel/phyllite" }
   },
-  "shape": { "base": "game:block/basic/slab/stonepath-slab-{cover}" },
+  "shape": { "base": "smex:legacy/basic/slab/stonepath-slab-{cover}" },
   "textures": {
     "normal1": {
       "base": "game:block/stone/gravel/phyllite",

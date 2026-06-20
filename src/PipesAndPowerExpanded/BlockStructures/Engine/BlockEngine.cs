@@ -258,12 +258,24 @@ public abstract class BlockEngine
     IWorldAccessor world,
     BlockSelection selection,
     IPlayer forPlayer
-  ) =>
-    RepairInteractionHelp(
+  )
+  {
+    var help = RepairInteractionHelp(
       world,
       selection.Position,
       base.GetPlacedBlockInteractionHelp(world, selection, forPlayer)
     );
+#if !GAME_GE_1_22
+    // Legacy lacks the vanilla IInteractableWithHelp path, so surface the construction help here.
+    help =
+      ExpandedLib.Blocks.Construction.ExRightClickConstructable.AppendConstructionHelp(
+        world,
+        selection,
+        help
+      );
+#endif
+    return help;
+  }
 
   /// <summary>
   /// Appends the wrench-repair action to <paramref name="baseHelp"/> when the engine is broken.

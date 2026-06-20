@@ -358,7 +358,25 @@ public abstract class BlockBoiler
     IWorldAccessor world,
     BlockSelection selection,
     IPlayer forPlayer
-  ) => HandleInteractionHelp(world, selection, forPlayer, selection.Position);
+  )
+  {
+    var help = HandleInteractionHelp(
+      world,
+      selection,
+      forPlayer,
+      selection.Position
+    );
+#if !GAME_GE_1_22
+    // Legacy lacks the vanilla IInteractableWithHelp path, so surface the construction help here.
+    help =
+      ExpandedLib.Blocks.Construction.ExRightClickConstructable.AppendConstructionHelp(
+        world,
+        selection,
+        help
+      );
+#endif
+    return help;
+  }
 
   WorldInteraction[] IFillerInteractionTarget.GetFillerInteractionHelp(
     IWorldAccessor world,

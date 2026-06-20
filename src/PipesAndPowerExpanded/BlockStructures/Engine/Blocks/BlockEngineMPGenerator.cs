@@ -21,8 +21,11 @@ public partial class BlockEngineMPGenerator
   public bool HasMechPowerConnectorAt(
     IWorldAccessor world,
     BlockPos pos,
-    BlockFacing face,
+    BlockFacing face
+#if GAME_GE_1_22
+    ,
     BlockMPBase forBlock
+#endif
   ) =>
     IsXAxis
       ? face == BlockFacing.EAST || face == BlockFacing.WEST

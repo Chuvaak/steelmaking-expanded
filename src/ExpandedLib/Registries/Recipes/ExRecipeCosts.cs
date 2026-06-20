@@ -26,7 +26,7 @@ public static class ExRecipeCosts
   /// recipe so a mod ships only its alternate profile(s).</summary>
   public const string ProfileNormal = "normal";
 
-  private const string RccBehaviorName = "RightClickConstructable";
+  private const string RccBehaviorName = "ExRightClickConstructable";
 
   /// <summary>
   /// Fills the <see cref="ProfileNormal"/> profile of every catalogue entry that lacks it by reading
@@ -84,7 +84,10 @@ public static class ExRecipeCosts
       // The cost data (ingredients/stages) is already filled - leave it (and any pin) alone.
       bool hasCosts =
         target != null
-        && ((target.Ingredients is { Count: > 0 }) || (target.Stages is { Count: > 0 }));
+        && (
+          (target.Ingredients is { Count: > 0 })
+          || (target.Stages is { Count: > 0 })
+        );
       if (hasCosts)
         continue;
 
@@ -157,9 +160,7 @@ public static class ExRecipeCosts
           cur.Profiles[name] = defProfile;
           changed = true;
         }
-        else if (
-          defProfile.Quantity.HasValue && !curProfile.Quantity.HasValue
-        )
+        else if (defProfile.Quantity.HasValue && !curProfile.Quantity.HasValue)
         {
           // Just the pinned output quantity (e.g. cheap pipes' doubled output).
           curProfile.Quantity = defProfile.Quantity;
@@ -192,12 +193,12 @@ public static class ExRecipeCosts
         }
     if (profile.Stages != null)
       foreach (var stage in profile.Stages.Values)
-        foreach (var k in stage.Keys.ToList())
-          if (stage[k] < 1)
-          {
-            stage[k] = 1;
-            changed = true;
-          }
+      foreach (var k in stage.Keys.ToList())
+        if (stage[k] < 1)
+        {
+          stage[k] = 1;
+          changed = true;
+        }
     if (profile.Quantity is < 1)
     {
       profile.Quantity = 1;
@@ -342,7 +343,10 @@ public static class ExRecipeCosts
       .BlockEntityBehaviors?.FirstOrDefault(b => b.Name == RccBehaviorName)
       ?.properties?.Token?["stages"] as JArray;
 
-  private static RecipeProfileCost ReadRcc(ICoreAPI api, AssetLocation blockCode)
+  private static RecipeProfileCost ReadRcc(
+    ICoreAPI api,
+    AssetLocation blockCode
+  )
   {
     var stages = new Dictionary<string, Dictionary<string, int>>();
     var block = RccBlocksFor(api, blockCode).FirstOrDefault();

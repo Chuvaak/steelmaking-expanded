@@ -340,8 +340,12 @@ public sealed class TestWorld
     api.Event.Returns(events);
     coreApi.Event.Returns(events);
 
-    // Capture the position-scoped server tick listeners block entities register, so the test can
-    // pump them via FireBlockEntityTicks. (BlockEntity.RegisterGameTickListener forwards to this.)
+    // Capture the server tick listeners block entities register, so the test can pump them via
+    // FireBlockEntityTicks. BlockEntity.RegisterGameTickListener forwards to a position-scoped
+    // event-API overload that gained a BlockPos parameter in 1.22: 1.22 calls
+    // (onGameTick, Pos, errorHandler, interval, delay); 1.20/1.21 call (onGameTick, errorHandler,
+    // interval, delay) with no position. Mock whichever overload this game version forwards to.
+#if GAME_GE_1_22
     events
       .RegisterGameTickListener(
         Arg.Any<System.Action<float>>(),
@@ -355,6 +359,20 @@ public sealed class TestWorld
         _beTickCallbacks.Add(ci.Arg<System.Action<float>>());
         return (long)_beTickCallbacks.Count;
       });
+#else
+    events
+      .RegisterGameTickListener(
+        Arg.Any<System.Action<float>>(),
+        Arg.Any<System.Action<System.Exception>>(),
+        Arg.Any<int>(),
+        Arg.Any<int>()
+      )
+      .Returns(ci =>
+      {
+        _beTickCallbacks.Add(ci.Arg<System.Action<float>>());
+        return (long)_beTickCallbacks.Count;
+      });
+#endif
 
     return api;
   }

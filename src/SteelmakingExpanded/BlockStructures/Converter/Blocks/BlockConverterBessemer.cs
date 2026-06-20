@@ -72,4 +72,18 @@ public partial class BlockConverterBessemer : Block, IFillerHost
     if (solidifiedDrops != null && world.Side == EnumAppSide.Server)
       world.SpawnItemEntity(solidifiedDrops, pos.ToVec3d().Add(0.5, 0.5, 0.5));
   }
+
+#if !GAME_GE_1_22
+  // Legacy lacks the vanilla IInteractableWithHelp path, so surface the construction help here.
+  public override Vintagestory.API.Client.WorldInteraction[] GetPlacedBlockInteractionHelp(
+    IWorldAccessor world,
+    BlockSelection selection,
+    IPlayer forPlayer
+  ) =>
+    ExpandedLib.Blocks.Construction.ExRightClickConstructable.AppendConstructionHelp(
+      world,
+      selection,
+      base.GetPlacedBlockInteractionHelp(world, selection, forPlayer)
+    );
+#endif
 }

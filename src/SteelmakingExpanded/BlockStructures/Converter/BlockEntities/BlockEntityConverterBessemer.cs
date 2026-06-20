@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using ExpandedLib.Blocks.Construction;
 using ExpandedLib.Helpers;
 using ExpandedLib.Registries.Entities;
 using Vintagestory.API.Client;
@@ -27,7 +28,7 @@ public class BlockEntityConverterBessemer : BlockEntity
   private int _chargeUnits;
 
   private BEBehaviorAnimatable? _animatable;
-  private BEBehaviorRightClickConstructable? _rcc;
+  private ExRightClickConstructable? _rcc;
   private bool _animatorReady;
 
   /// <summary>True once the player has finished the construction stages.</summary>
@@ -42,7 +43,7 @@ public class BlockEntityConverterBessemer : BlockEntity
   {
     base.Initialize(api);
     _animatable = GetBehavior<BEBehaviorAnimatable>();
-    _rcc = GetBehavior<BEBehaviorRightClickConstructable>();
+    _rcc = GetBehavior<ExRightClickConstructable>();
 
     if (api is ICoreClientAPI && _animatable != null)
     {

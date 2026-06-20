@@ -1,5 +1,5 @@
 using System;
-using System.Reflection;
+using ExpandedLib.Blocks.Construction;
 using ExpandedLib.Blocks.Machines;
 using ExpandedLib.Blocks.Networks;
 using ExpandedLib.Blocks.Structures;
@@ -28,7 +28,7 @@ namespace PipesAndPowerExpanded.BlockStructures.Boiler;
 public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
 {
   private BEBehaviorAnimatable? _animatable;
-  private BEBehaviorRightClickConstructable? _rcc;
+  private ExRightClickConstructable? _rcc;
   private bool _animatorReady;
 
   // Client-side in-vessel water surface + a tick to keep its state fresh.
@@ -144,7 +144,7 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
   {
     base.Initialize(api);
     _animatable = GetBehavior<BEBehaviorAnimatable>();
-    _rcc = GetBehavior<BEBehaviorRightClickConstructable>();
+    _rcc = GetBehavior<ExRightClickConstructable>();
 
     if (api is ICoreClientAPI capi && _animatable != null)
     {
@@ -262,6 +262,12 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
       )
       {
         LightPos = BoilerBlock.LightSampleWorldPos(Pos).ToVec3d(),
+        // Seed visibility from whether a pose is already running. 1.22's AnimatableRenderer
+        // ctor does this itself; the legacy (1.20/1.21) ctor leaves ShouldRender false and only
+        // flips it via OnAnimationsStateChange, which StartAnimation skips when the pose ("idle")
+        // is already active. Without this, a rebuild on each construction step (OnConstructShape
+        // Changed) births an invisible renderer and the vessel mesh vanishes after the first step.
+        ShouldRender = util.activeAnimationsByAnimCode.Count > 0,
       };
     }
   }
@@ -673,28 +679,14 @@ public abstract class BlockEntityBoiler : BlockEntityMultiblockStructure
     );
   }
 
-  /// <summary>The protected <c>rcc</c> field on the vanilla behavior - the only place the
-  /// consumed construction materials live. Cached for the reflection below.</summary>
-  private static readonly FieldInfo? RccField =
-    typeof(BEBehaviorRightClickConstructable).GetField(
-      "rcc",
-      BindingFlags.NonPublic | BindingFlags.Instance
-    );
-
   /// <summary>
   /// The build materials this boiler would drop at <paramref name="ratio"/> (0..1) of the
-  /// consumed stacks. Vanilla only scatters these from its own <c>OnBlockBroken</c> at a fixed
-  /// ratio and exposes no public hook, so reach <c>RightClickConstruction.GetDrops</c> through
-  /// the protected field. Returns empty if the behavior/field is missing (never throws).
+  /// consumed stacks. The construction behavior only scatters these from its own
+  /// <c>OnBlockBroken</c> at a fixed ratio, so go through its dedicated accessor. Returns empty
+  /// if the behavior is missing (never throws).
   /// </summary>
-  private ItemStack[] ConstructionMaterialDrops(float ratio)
-  {
-    object? rcc = _rcc != null ? RccField?.GetValue(_rcc) : null;
-    return rcc?.GetType()
-        .GetMethod("GetDrops", [typeof(float), typeof(Random)])
-        ?.Invoke(rcc, [ratio, Api.World.Rand]) as ItemStack[]
-      ?? [];
-  }
+  private ItemStack[] ConstructionMaterialDrops(float ratio) =>
+    _rcc?.GetConstructionDrops(ratio, Api.World.Rand) ?? [];
 
   /// <summary>
   /// Breaks every block within <paramref name="radius"/> of <paramref name="center"/> below

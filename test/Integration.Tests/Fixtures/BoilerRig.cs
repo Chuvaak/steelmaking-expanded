@@ -1,3 +1,4 @@
+using ExpandedLib.Blocks.Construction;
 using ExpandedLib.Testing;
 using PipesAndPowerExpanded.BlockNetworkPipe;
 using PipesAndPowerExpanded.BlockStructures.Boiler;
@@ -17,7 +18,7 @@ namespace PipesAndPowerExpanded.Tests;
 /// <list type="bullet">
 /// <item>a real <see cref="BlockBoilerCornish"/> (its geometry offsets fall back to hardcoded cells
 /// when no JSON attributes are present, so no asset load is needed);</item>
-/// <item>a complete <see cref="BEBehaviorRightClickConstructable"/> (a one-stage construction reads as
+/// <item>a complete <see cref="ExRightClickConstructable"/> (a one-stage construction reads as
 /// finished), so <c>IsConstructed</c> is true;</item>
 /// <item>a burning <see cref="BlockEntityCoalPile"/> in the firebox cell, so the fire is lit.</item>
 /// </list>
