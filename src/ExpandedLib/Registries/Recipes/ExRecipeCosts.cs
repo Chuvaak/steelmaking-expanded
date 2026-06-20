@@ -8,10 +8,10 @@ using Vintagestory.API.Util;
 namespace ExpandedLib.Registries.Recipes;
 
 /// <summary>
-/// Generic recipe-cost adjuster: rewrites the ingredient quantities of grid (crafting) recipes and
-/// right-click-construction (RCC) blocks to a named "cost level" from a catalogue, so a mod can offer
-/// a balance toggle (e.g. <c>cheap</c> vs <c>normal</c>). Catalogue keys are wildcard-aware block /
-/// output codes, so a whole variant family is matched at once.
+/// Generic recipe-cost adjuster: rewrites the ingredient quantities (and grid output count) of grid
+/// (crafting) recipes and right-click-construction (RCC) blocks to a named cost "profile" from a
+/// catalogue, so a mod can offer a balance toggle (e.g. <c>cheap</c> vs <c>normal</c>). Catalogue keys
+/// are wildcard-aware block / output codes, so a whole variant family is matched at once.
 /// <para>
 /// Apply at load, once recipes have resolved (a mod system's <c>StartServerSide</c>/
 /// <c>StartClientSide</c>), on the side that owns the recipe. Grid recipes are edited in the live
@@ -22,15 +22,15 @@ namespace ExpandedLib.Registries.Recipes;
 /// </summary>
 public static class ExRecipeCosts
 {
-  /// <summary>The level whose numbers mirror the recipes as authored; auto-filled from the live
-  /// recipe so a mod ships only its alternate level(s).</summary>
-  public const string LevelNormal = "normal";
+  /// <summary>The profile whose numbers mirror the recipes as authored; auto-filled from the live
+  /// recipe so a mod ships only its alternate profile(s).</summary>
+  public const string ProfileNormal = "normal";
 
   private const string RccBehaviorName = "RightClickConstructable";
 
   /// <summary>
-  /// Fills the <see cref="LevelNormal"/> level of every catalogue entry that lacks it by reading the
-  /// live recipe's current quantities. Returns <c>true</c> if anything was added, so the caller can
+  /// Fills the <see cref="ProfileNormal"/> profile of every catalogue entry that lacks it by reading
+  /// the live recipe's current quantities. Returns <c>true</c> if anything was added, so the caller can
   /// persist the catalogue. Run this BEFORE <see cref="Apply"/> (which mutates the live recipes).
   /// </summary>
   public static bool EnsureNormalExtracted(
@@ -39,13 +39,13 @@ public static class ExRecipeCosts
   )
   {
     bool changed = false;
-    foreach (var (key, entry) in catalogue)
+    foreach (var entry in catalogue.Values)
     {
       if (
         string.IsNullOrEmpty(entry.Match)
         || (
-          entry.Levels.TryGetValue(LevelNormal, out var existing)
-          && existing.Count > 0
+          entry.Profiles.TryGetValue(ProfileNormal, out var existing)
+          && existing.HasContent
         )
       )
         continue;
@@ -53,9 +53,9 @@ public static class ExRecipeCosts
       var normal = IsRcc(entry)
         ? ReadRcc(api, new AssetLocation(entry.Match))
         : ReadGrid(api, new AssetLocation(entry.Match));
-      if (normal.Count > 0)
+      if (normal.HasContent)
       {
-        entry.Levels[LevelNormal] = normal;
+        entry.Profiles[ProfileNormal] = normal;
         changed = true;
       }
     }
@@ -63,32 +63,44 @@ public static class ExRecipeCosts
   }
 
   /// <summary>
-  /// Fills <paramref name="level"/> for any entry that lacks it by scaling its <see cref="LevelNormal"/>
-  /// quantities by <paramref name="factor"/> (each floored at 1). Lets a mod ship a whole alternate
-  /// level from one number while still letting a recipe pin exact values by pre-seeding that level.
-  /// Run after <see cref="EnsureNormalExtracted"/>. Returns <c>true</c> if anything was added.
+  /// Fills <paramref name="profile"/> for any entry whose costs it lacks by scaling its
+  /// <see cref="ProfileNormal"/> quantities by <paramref name="factor"/> (each floored at 1). A pinned
+  /// value already present in the profile (e.g. a doubled output) is kept; only the missing cost data
+  /// is filled. Run after <see cref="EnsureNormalExtracted"/>. Returns <c>true</c> if anything changed.
   /// </summary>
   public static bool EnsureScaledLevel(
     IDictionary<string, RecipeCostEntry> catalogue,
-    string level,
+    string profile,
     double factor
   )
   {
     bool changed = false;
     foreach (var entry in catalogue.Values)
     {
-      if (
-        (
-          entry.Levels.TryGetValue(level, out var existing)
-          && existing.Count > 0
-        ) || !entry.Levels.TryGetValue(LevelNormal, out var normal)
-      )
+      if (!entry.Profiles.TryGetValue(ProfileNormal, out var normal))
         continue;
 
-      entry.Levels[level] = normal.ToDictionary(
-        kv => kv.Key,
-        kv => Math.Max(1, (int)Math.Round(kv.Value * factor))
-      );
+      entry.Profiles.TryGetValue(profile, out var target);
+      // The cost data (ingredients/stages) is already filled - leave it (and any pin) alone.
+      bool hasCosts =
+        target != null
+        && ((target.Ingredients is { Count: > 0 }) || (target.Stages is { Count: > 0 }));
+      if (hasCosts)
+        continue;
+
+      target ??= new RecipeProfileCost(); // keep any pinned Quantity already here
+      if (normal.Ingredients is { Count: > 0 })
+        target.Ingredients = normal.Ingredients.ToDictionary(
+          kv => kv.Key,
+          kv => Scale(kv.Value, factor)
+        );
+      if (normal.Stages is { Count: > 0 })
+        target.Stages = normal.Stages.ToDictionary(
+          s => s.Key,
+          s => s.Value.ToDictionary(kv => kv.Key, kv => Scale(kv.Value, factor))
+        );
+
+      entry.Profiles[profile] = target;
       changed = true;
     }
     return changed;
@@ -97,9 +109,9 @@ public static class ExRecipeCosts
   /// <summary>
   /// Repairs a player-edited catalogue against the mod's code <paramref name="defaults"/> so a wrong
   /// edit or deletion can't break recipe loading: restores any deleted entry, fixes the structural
-  /// fields (<see cref="RecipeCostEntry.Match"/>/<see cref="RecipeCostEntry.Kind"/>, which aren't meant
-  /// to be edited) of present entries, restores any pinned default level a player removed, and clamps
-  /// every quantity to at least 1. Player-set level numbers (≥1) and extra player-added entries are
+  /// fields (<see cref="RecipeCostEntry.Match"/>/<see cref="RecipeCostEntry.Type"/>, which aren't meant
+  /// to be edited) of present entries, restores any pinned default profile/value a player removed, and
+  /// clamps every quantity to at least 1. Player-set numbers (≥1) and extra player-added entries are
   /// kept. Run before <see cref="EnsureNormalExtracted"/>/<see cref="Apply"/>. Returns <c>true</c> if
   /// anything was changed (so the caller can persist the repaired file).
   /// </summary>
@@ -119,77 +131,111 @@ public static class ExRecipeCosts
         continue;
       }
 
+      if (cur.Type != def.Type)
+      {
+        cur.Type = def.Type;
+        changed = true;
+      }
       if (cur.Match != def.Match)
       {
         cur.Match = def.Match;
         changed = true;
       }
-      if (cur.Kind != def.Kind)
-      {
-        cur.Kind = def.Kind;
-        changed = true;
-      }
-      cur.Levels ??= new();
+      cur.Profiles ??= new();
 
-      // Restore any non-empty default level the player deleted (e.g. a pinned "cheap").
-      foreach (var (levelName, defNums) in def.Levels)
+      foreach (var (name, defProfile) in def.Profiles)
+      {
+        if (!defProfile.HasContent)
+          continue;
+
         if (
-          defNums.Count > 0
-          && (
-            !cur.Levels.TryGetValue(levelName, out var curNums)
-            || curNums.Count == 0
-          )
+          !cur.Profiles.TryGetValue(name, out var curProfile)
+          || curProfile == null
         )
         {
-          cur.Levels[levelName] = new Dictionary<string, int>(defNums);
+          // A whole pinned default profile the player deleted.
+          cur.Profiles[name] = defProfile;
           changed = true;
         }
+        else if (
+          defProfile.Quantity.HasValue && !curProfile.Quantity.HasValue
+        )
+        {
+          // Just the pinned output quantity (e.g. cheap pipes' doubled output).
+          curProfile.Quantity = defProfile.Quantity;
+          changed = true;
+        }
+      }
     }
 
     // Clamp every quantity (in default and player-added entries alike) to a safe minimum.
     foreach (var entry in live.Values)
     {
-      if (entry?.Levels == null)
+      if (entry?.Profiles == null)
         continue;
-      foreach (var level in entry.Levels.Values)
-      foreach (var ingredient in level.Keys.ToList())
-        if (level[ingredient] < 1)
-        {
-          level[ingredient] = 1;
-          changed = true;
-        }
+      foreach (var profile in entry.Profiles.Values)
+        changed |= ClampProfile(profile);
     }
 
     return changed;
   }
 
-  /// <summary>Applies the named cost <paramref name="level"/> to every recipe in the catalogue. A
-  /// missing or empty level for an entry leaves that recipe untouched.</summary>
+  private static bool ClampProfile(RecipeProfileCost profile)
+  {
+    bool changed = false;
+    if (profile.Ingredients != null)
+      foreach (var k in profile.Ingredients.Keys.ToList())
+        if (profile.Ingredients[k] < 1)
+        {
+          profile.Ingredients[k] = 1;
+          changed = true;
+        }
+    if (profile.Stages != null)
+      foreach (var stage in profile.Stages.Values)
+        foreach (var k in stage.Keys.ToList())
+          if (stage[k] < 1)
+          {
+            stage[k] = 1;
+            changed = true;
+          }
+    if (profile.Quantity is < 1)
+    {
+      profile.Quantity = 1;
+      changed = true;
+    }
+    return changed;
+  }
+
+  /// <summary>Applies the named cost <paramref name="profile"/> to every recipe in the catalogue. A
+  /// missing or empty profile for an entry leaves that recipe untouched.</summary>
   public static void Apply(
     ICoreAPI api,
-    IReadOnlyDictionary<string, RecipeCostEntry> catalogue,
-    string level
+    IDictionary<string, RecipeCostEntry> catalogue,
+    string profile
   )
   {
     foreach (var entry in catalogue.Values)
     {
       if (
         string.IsNullOrEmpty(entry.Match)
-        || !entry.Levels.TryGetValue(level, out var costs)
-        || costs.Count == 0
+        || !entry.Profiles.TryGetValue(profile, out var costs)
+        || costs == null
       )
         continue;
 
       var code = new AssetLocation(entry.Match);
       if (IsRcc(entry))
-        ApplyRcc(api, code, costs);
+        ApplyRcc(api, code, costs.Stages);
       else
-        ApplyGrid(api, code, costs);
+        ApplyGrid(api, code, costs.Ingredients, costs.Quantity);
     }
   }
 
+  private static int Scale(int value, double factor) =>
+    Math.Max(1, (int)Math.Round(value * factor));
+
   private static bool IsRcc(RecipeCostEntry entry) =>
-    string.Equals(entry.Kind, "rcc", StringComparison.OrdinalIgnoreCase);
+    string.Equals(entry.Type, "rcc", StringComparison.OrdinalIgnoreCase);
 
   #region Grid recipes
 
@@ -201,10 +247,7 @@ public static class ExRecipeCosts
       r.Output?.Code is { } c && WildcardUtil.Match(outputWildcard, c)
     );
 
-  private static Dictionary<string, int> ReadGrid(
-    ICoreAPI api,
-    AssetLocation output
-  )
+  private static RecipeProfileCost ReadGrid(ICoreAPI api, AssetLocation output)
   {
     var map = new Dictionary<string, int>();
 
@@ -221,21 +264,42 @@ public static class ExRecipeCosts
             map[ing.Code.ToString()] = ing.Quantity;
     }
 
-    return map;
+    return new RecipeProfileCost { Ingredients = map };
   }
 
   private static void ApplyGrid(
     ICoreAPI api,
     AssetLocation output,
-    IReadOnlyDictionary<string, int> costs
+    IReadOnlyDictionary<string, int>? ingredients,
+    int? quantity
   )
   {
+    bool hasIngredients = ingredients is { Count: > 0 };
+    if (!hasIngredients && quantity is not > 0)
+      return;
+
     foreach (var recipe in GridRecipesFor(api, output))
     {
-      SetGridIngredients(recipe.ResolvedIngredients, costs);
-      if (recipe.Ingredients != null)
-        SetGridIngredients(recipe.Ingredients.Values, costs);
+      if (hasIngredients)
+      {
+        SetGridIngredients(recipe.ResolvedIngredients, ingredients!);
+        if (recipe.Ingredients != null)
+          SetGridIngredients(recipe.Ingredients.Values, ingredients!);
+      }
+      if (quantity is > 0)
+        SetGridOutput(recipe, quantity.Value);
     }
+  }
+
+  /// <summary>Sets a grid recipe's crafted output count - both <c>Quantity</c> and the resolved stack's
+  /// <c>StackSize</c> (the latter is what ends up in the output slot).</summary>
+  private static void SetGridOutput(GridRecipe recipe, int qty)
+  {
+    if (recipe.Output == null)
+      return;
+    recipe.Output.Quantity = qty;
+    if (recipe.Output.ResolvedItemStack != null)
+      recipe.Output.ResolvedItemStack.StackSize = qty;
   }
 
   private static void SetGridIngredients(
@@ -278,98 +342,69 @@ public static class ExRecipeCosts
       .BlockEntityBehaviors?.FirstOrDefault(b => b.Name == RccBehaviorName)
       ?.properties?.Token?["stages"] as JArray;
 
-  private static Dictionary<string, int> ReadRcc(
-    ICoreAPI api,
-    AssetLocation blockCode
-  )
+  private static RecipeProfileCost ReadRcc(ICoreAPI api, AssetLocation blockCode)
   {
-    var map = new Dictionary<string, int>();
+    var stages = new Dictionary<string, Dictionary<string, int>>();
     var block = RccBlocksFor(api, blockCode).FirstOrDefault();
     if (block == null)
-      return map;
+      return new RecipeProfileCost { Stages = stages };
 
-    foreach (var token in RccQuantityTokens(RccStages(block)!))
+    var jstages = RccStages(block)!;
+    for (int i = 0; i < jstages.Count; i++)
     {
-      map[token.Key] = map.TryGetValue(token.Key, out int prev)
-        ? prev + token.Value.Value<int>()
-        : token.Value.Value<int>();
+      if (jstages[i]["requireStacks"] is not JArray reqs)
+        continue;
+      var map = new Dictionary<string, int>();
+      foreach (var req in reqs)
+      {
+        string? name =
+          req["name"]?.Value<string>() ?? req["code"]?.Value<string>();
+        var qty = req["quantity"];
+        if (name != null && qty != null)
+          map[name] = qty.Value<int>();
+      }
+      if (map.Count > 0)
+        stages[i.ToString()] = map;
     }
-    return map;
+    return new RecipeProfileCost { Stages = stages };
   }
 
   private static void ApplyRcc(
     ICoreAPI api,
     AssetLocation blockCode,
-    IReadOnlyDictionary<string, int> costs
+    IReadOnlyDictionary<string, Dictionary<string, int>>? stages
   )
   {
-    // Each variant block carries its own properties JSON, so rewrite them all.
+    if (stages is not { Count: > 0 })
+      return;
+
+    // Each variant block carries its own properties JSON, so rewrite them all. Each per-stage
+    // ingredient is set directly from its own catalogue entry - no redistribution.
     foreach (var block in RccBlocksFor(api, blockCode))
     {
-      var byKey = new Dictionary<string, List<JToken>>();
-      foreach (var (key, token) in RccQuantityTokens(RccStages(block)!))
-        (byKey.TryGetValue(key, out var list) ? list : byKey[key] = new()).Add(
-          token
-        );
-
-      foreach (var (key, total) in costs)
-        if (byKey.TryGetValue(key, out var tokens))
-          Distribute(tokens, total);
-    }
-  }
-
-  /// <summary>Yields (ingredient key, quantity JToken) for every require-stack across the stages, in
-  /// stage order. The JToken is the live quantity value, so callers can read or overwrite it.</summary>
-  private static IEnumerable<KeyValuePair<string, JToken>> RccQuantityTokens(
-    JArray stages
-  )
-  {
-    foreach (var stage in stages)
-    {
-      if (stage["requireStacks"] is not JArray reqs)
-        continue;
-      foreach (var req in reqs)
+      var jstages = RccStages(block)!;
+      foreach (var (stageKey, names) in stages)
       {
-        string? key =
-          req["name"]?.Value<string>() ?? req["code"]?.Value<string>();
-        var qty = req["quantity"];
-        if (key != null && qty != null)
-          yield return new KeyValuePair<string, JToken>(key, qty);
+        if (
+          !int.TryParse(stageKey, out int i)
+          || i < 0
+          || i >= jstages.Count
+          || jstages[i]["requireStacks"] is not JArray reqs
+        )
+          continue;
+
+        foreach (var req in reqs)
+        {
+          string? name =
+            req["name"]?.Value<string>() ?? req["code"]?.Value<string>();
+          if (
+            name != null
+            && req["quantity"] is { } qty
+            && names.TryGetValue(name, out int q)
+          )
+            Set(qty, q);
+        }
       }
-    }
-  }
-
-  /// <summary>
-  /// Distributes <paramref name="total"/> across the per-stage quantity <paramref name="tokens"/>
-  /// proportionally to their current values (remainder on the last), so the staged structure is kept
-  /// and the quantities still sum to exactly the requested total.
-  /// </summary>
-  private static void Distribute(List<JToken> tokens, int total)
-  {
-    total = Math.Max(0, total);
-    int current = tokens.Sum(t => t.Value<int>());
-
-    if (current <= 0)
-    {
-      // No proportions to follow - spread as evenly as possible.
-      for (int i = 0; i < tokens.Count; i++)
-        Set(
-          tokens[i],
-          total / tokens.Count + (i < total % tokens.Count ? 1 : 0)
-        );
-      return;
-    }
-
-    int assigned = 0;
-    for (int i = 0; i < tokens.Count; i++)
-    {
-      int q =
-        i == tokens.Count - 1
-          ? total - assigned
-          : (int)Math.Round((double)tokens[i].Value<int>() * total / current);
-      q = Math.Max(0, q);
-      assigned += q;
-      Set(tokens[i], q);
     }
   }
 

@@ -33,26 +33,50 @@ public class SmexRecipeConfig : IExVersionedConfig
     Defaults();
 
   private static RecipeCostEntry Grid(string match) =>
-    new() { Kind = "grid", Match = match };
+    new() { Type = "grid", Match = match };
 
+  // Curated list of every grid + RCC recipe this mod ships (kept in sync by hand, mirroring the RCC
+  // style). Profiles are auto-filled at load: the normal baseline is read from the live recipe and the
+  // cheap profile is scaled (half cost), both editable in the file.
   private static Dictionary<string, RecipeCostEntry> Defaults() =>
     new()
     {
       // RCC construction (the Bessemer converter vessel).
       ["converterbessemer-rcc"] = new()
       {
-        Kind = "rcc",
+        Type = "rcc",
         Match = "smex:converterbessemer-*",
       },
 
-      // Grid recipes for the steelmaking machines / components.
-      ["airblower-grid"] = Grid("smex:engineairblower-*"),
+      // Blast furnace + converter machine grid recipes.
+      ["blastfurnace-tuyere-grid"] = Grid("smex:blastfurnace-tuyere-*"),
+      ["blastfurnacedoor-grid"] = Grid("smex:blastfurnacedoor"),
+      ["blastfurnacetap-grid"] = Grid("smex:blastfurnacetap-*"),
+      ["converter-intake-grid"] = Grid("smex:converter-intake-*"),
       ["convertercontrol-grid"] = Grid("smex:convertercontrol-*"),
       ["convertertransmission-grid"] = Grid("smex:convertertransmission-*"),
-      ["converterintake-grid"] = Grid("smex:converter-intake-*"),
-      ["blastfurnacedoor-grid"] = Grid("smex:blastfurnacedoor"),
-      ["cowperstove-grid"] = Grid("smex:cowperstove-intake-*"),
-      ["smokestack-grid"] = Grid("smex:smokestack-intake-*"),
+      ["cowperstove-intake-grid"] = Grid("smex:cowperstove-intake-*"),
+      ["cowperstoveheatsink-grid"] = Grid("smex:cowperstoveheatsink-*"),
+      ["engineairblower-grid"] = Grid("smex:engineairblower-*"),
+      ["smokestack-intake-grid"] = Grid("smex:smokestack-intake-*"),
+
+      // Hoppers + molten transport.
+      ["hopperbell-grid"] = Grid("smex:hopperbell"),
+      ["hopperreinforced-grid"] = Grid("smex:hopperreinforced"),
       ["moltenbarrel-grid"] = Grid("smex:moltenbarrel"),
+      ["moltencanal-start-grid"] = Grid("smex:moltencanal-start-*"),
+      ["moltencanal-straight-grid"] = Grid("smex:moltencanal-straight-*"),
+      ["moltencanal-bend-grid"] = Grid("smex:moltencanal-bend-*"),
+      ["moltencanal-tjunction-grid"] = Grid("smex:moltencanal-tjunction-*"),
+      ["moltencanal-xjunction-grid"] = Grid("smex:moltencanal-xjunction-*"),
+      ["moltencanal-tap-grid"] = Grid("smex:moltencanal-tap-*"),
+      ["moltencanal-moldpedestal-grid"] = Grid(
+        "smex:moltencanal-moldpedestal-*"
+      ),
+
+      // Slag paths.
+      ["slagpath-grid"] = Grid("smex:slagpath-*"),
+      ["slagpathslab-grid"] = Grid("smex:slagpathslab-*"),
+      ["slagpathstairs-grid"] = Grid("smex:slagpathstairs-*"),
     };
 }

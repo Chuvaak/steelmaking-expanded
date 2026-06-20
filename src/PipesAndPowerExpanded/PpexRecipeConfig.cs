@@ -34,11 +34,24 @@ public class PpexRecipeConfig : IExVersionedConfig
     Defaults();
 
   private static RecipeCostEntry Rcc(string match) =>
-    new() { Kind = "rcc", Match = match };
+    new() { Type = "rcc", Match = match };
 
   private static RecipeCostEntry Grid(string match) =>
-    new() { Kind = "grid", Match = match };
+    new() { Type = "grid", Match = match };
 
+  // Grid recipe with a pinned cheap output count (the pipe straight/bend/junction families craft double
+  // in the cheap profile). Authored output: straight 2, bend/t/x-junction 1 - so cheap doubles to 4/2/2/2.
+  private static RecipeCostEntry GridOut(string match, int cheapOutput) =>
+    new()
+    {
+      Type = "grid",
+      Match = match,
+      Profiles = new() { ["cheap"] = new() { Quantity = cheapOutput } },
+    };
+
+  // Curated list of every grid + RCC recipe this mod ships (kept in sync by hand, mirroring the RCC
+  // style). Profiles are auto-filled at load: the normal baseline is read from the live recipe and the
+  // cheap profile is scaled (half cost), both editable in the file. Only the cheap pipe output is pinned.
   private static Dictionary<string, RecipeCostEntry> Defaults() =>
     new()
     {
@@ -46,24 +59,9 @@ public class PpexRecipeConfig : IExVersionedConfig
       ["boilercornish-rcc"] = Rcc("ppex:boilercornish-*"),
       ["boilerlancashire-rcc"] = Rcc("ppex:boilerlancashire-*"),
       ["enginecornish-rcc"] = Rcc("ppex:enginecornish-*"),
-      // The Watt engine pins exact "cheap" totals (the worked example); everything else scales.
-      ["enginewatt-rcc"] = new()
-      {
-        Kind = "rcc",
-        Match = "ppex:enginewatt-*",
-        Levels = new()
-        {
-          ["cheap"] = new()
-          {
-            ["ppex:rcc-ingredient-metalplate"] = 2,
-            ["ppex:rcc-ingredient-rod"] = 8,
-            ["ppex:rcc-ingredient-nailsandstrips"] = 4,
-            ["game:burnedbrick-fire"] = 12,
-          },
-        },
-      },
+      ["enginewatt-rcc"] = Rcc("ppex:enginewatt-*"),
 
-      // Grid "frame" recipes for the machines.
+      // Machine grid "frame" recipes.
       ["boilercornish-grid"] = Grid("ppex:boilercornish-*"),
       ["boilerlancashire-grid"] = Grid("ppex:boilerlancashire-*"),
       ["enginecornish-grid"] = Grid("ppex:enginecornish-*"),
@@ -72,5 +70,17 @@ public class PpexRecipeConfig : IExVersionedConfig
       ["enginempgenerator-grid"] = Grid("ppex:enginempgenerator-*"),
       ["manualfluidpump-grid"] = Grid("ppex:manualfluidpump-*"),
       ["steamcondenser-grid"] = Grid("ppex:steamcondenser-*"),
+
+      // Pipe grid recipes - straight/bend/junctions yield double in cheap.
+      ["pipe-straight-grid"] = GridOut("ppex:pipe-straight-*", 4),
+      ["pipe-bend-grid"] = GridOut("ppex:pipe-bend-*", 2),
+      ["pipe-tjunction-grid"] = GridOut("ppex:pipe-tjunction-*", 2),
+      ["pipe-xjunction-grid"] = GridOut("ppex:pipe-xjunction-*", 2),
+      ["pipe-fluidintake-grid"] = Grid("ppex:pipe-fluidintake-*"),
+      ["pipe-outlet-grid"] = Grid("ppex:pipe-outlet-*"),
+      ["pipe-passthrough-grid"] = Grid("ppex:pipe-passthrough-*"),
+      ["pipe-passthroughbend-grid"] = Grid("ppex:pipe-passthroughbend-*"),
+      ["pipe-valve-grid"] = Grid("ppex:pipe-valve-*"),
+      ["pipe-pressurevalve-grid"] = Grid("ppex:pipe-pressurevalve-*"),
     };
 }

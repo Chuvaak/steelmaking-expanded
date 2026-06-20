@@ -2,6 +2,7 @@ using ExpandedLib.Blocks.Structures;
 using ExpandedLib.Registries.Commands;
 using ExpandedLib.Registries.Entities;
 using ExpandedLib.Registries.Preferences;
+using ExpandedLib.Registries.Recipes;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Server;
@@ -57,12 +58,19 @@ public class ExpandedLibModSystem : ModSystem
     // Register the library's own client commands: the shared .exmod root and its network-highlight
     // sub-command. Dependent mods attach their own sub-commands to the same root.
     CommandRegistry.RegisterAll(api, Mod, GetType().Assembly);
+
+    // Apply every dependent mod's selected recipe-cost level (registered in their Start) to the live
+    // recipes, so the client handbook/grid agree with the server. Runs after all mods' Start.
+    ExRecipeProfiles.ApplyAll(api);
   }
 
   public override void StartServerSide(ICoreServerAPI api)
   {
-    // Register the server-side counterpart: the universal exmod root surfaces here as /exmod.
-    // Sub-commands that declare a server side attach to it; the current ones are all client-only.
+    // Register the server-side counterpart: the universal exmod root surfaces here as /exmod, plus the
+    // generic /exmod recipes <mod> <level> switch over the recipe profiles dependent mods register.
     CommandRegistry.RegisterAll(api, Mod, GetType().Assembly);
+
+    // Apply every registered mod's selected recipe-cost level to the live (host-authoritative) recipes.
+    ExRecipeProfiles.ApplyAll(api);
   }
 }

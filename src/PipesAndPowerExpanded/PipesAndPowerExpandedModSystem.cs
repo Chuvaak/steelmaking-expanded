@@ -27,6 +27,19 @@ public class PipesAndPowerExpandedModSystem : ModSystem
     PpexValues.Load(api);
     // The steam-machine recipe cost catalogue (ppex_recipes.json).
     PpexRecipeValues.Load(api);
+    // Register this mod's recipe-cost profile so exlib's shared apply pass and the generic
+    // /exmod recipes ppex <level> command can drive it (see ExRecipeProfiles).
+    ExRecipeProfiles.Register(
+      new RecipeProfile
+      {
+        Code = Mod.Info.ModID,
+        Catalogue = () => PpexRecipeValues.Recipes,
+        Defaults = PpexRecipeConfig.DefaultCatalogue,
+        GetLevel = () => PpexValues.RecipeLevel,
+        SetLevel = level => PpexValues.Edit(c => c.RecipeLevel = level),
+        SaveCatalogue = PpexRecipeValues.Save,
+      }
+    );
 
     // Patch the vanilla chimney's look-at info so a chimney venting one of our pipes
     // reports it (the gas draw itself runs in PipeNetwork's tick).
@@ -55,9 +68,9 @@ public class PipesAndPowerExpandedModSystem : ModSystem
 
   public override void StartServerSide(ICoreServerAPI api)
   {
-    // Server-side sub-commands (e.g. /exmod steam) + apply the active recipe cost level.
+    // Server-side sub-commands. The recipe-cost level is applied centrally by exlib (ExRecipeProfiles);
+    // /exmod recipes ppex <level> is the generic switch.
     CommandRegistry.RegisterAll(api, Mod, GetType().Assembly);
-    ApplyRecipeLevel(api);
   }
 
   #region Creative category
@@ -69,26 +82,7 @@ public class PipesAndPowerExpandedModSystem : ModSystem
     // shared store, then build their .exmod sub-commands. exlib loads/persists/applies the values.
     PreferenceRegistry.RegisterAll(api, Mod, GetType().Assembly);
     CommandRegistry.RegisterAll(api, Mod, GetType().Assembly);
-    // Mirror the recipe cost level on the client so the handbook/crafting grid agree with the server.
-    ApplyRecipeLevel(api);
+    // The recipe cost level is applied centrally by exlib (ExRecipeProfiles) on both sides.
   }
   #endregion
-
-  // Fills any auto-derived catalogue levels (persisting them), then applies the active level to the
-  // live grid/RCC recipes. Recipes have resolved by StartServerSide/StartClientSide.
-  private static void ApplyRecipeLevel(ICoreAPI api)
-  {
-    var catalogue = PpexRecipeValues.Recipes;
-    // Repair any wrong edit / deletion against the code defaults before using the catalogue.
-    bool changed = ExRecipeCosts.Reconcile(
-      catalogue,
-      PpexRecipeConfig.DefaultCatalogue()
-    );
-    changed |= ExRecipeCosts.EnsureNormalExtracted(api, catalogue);
-    changed |= ExRecipeCosts.EnsureScaledLevel(catalogue, "cheap", 0.4);
-    if (changed)
-      PpexRecipeValues.Save();
-
-    ExRecipeCosts.Apply(api, catalogue, PpexValues.RecipeLevel);
-  }
 }

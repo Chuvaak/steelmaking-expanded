@@ -46,7 +46,7 @@ public class SteelmakingExpandedModSystem : ModSystem
     // Enforce any config-disabled molds on the client too, so they vanish from the creative
     // inventory and handbook (recipes have resolved by StartClientSide).
     MoldGating.ApplyDisables(api);
-    ApplyRecipeLevel(api); // mirror the recipe cost level for the handbook/crafting grid
+    // The recipe cost level is mirrored on the client centrally by exlib (ExRecipeProfiles).
     CommandRegistry.RegisterAll(api, Mod, GetType().Assembly); // client-side sub-commands (none yet)
   }
   #endregion
@@ -60,27 +60,10 @@ public class SteelmakingExpandedModSystem : ModSystem
 
     // Strip the clay-forming recipes of any config-disabled molds (recipes have resolved by now).
     MoldGating.ApplyDisables(api);
-    // Apply the active steelmaking recipe cost level to the live grid/RCC recipes.
-    ApplyRecipeLevel(api);
-    // Server-side sub-commands: /exmod molds and /exmod steel.
+    // The recipe cost level is applied centrally by exlib (ExRecipeProfiles); /exmod recipes smex
+    // <level> is the generic switch.
+    // Server-side sub-commands: /exmod molds.
     CommandRegistry.RegisterAll(api, Mod, GetType().Assembly);
-  }
-
-  // Fills any auto-derived catalogue levels (persisting them), then applies the active level.
-  private static void ApplyRecipeLevel(ICoreAPI api)
-  {
-    var catalogue = SmexRecipeValues.Recipes;
-    // Repair any wrong edit / deletion against the code defaults before using the catalogue.
-    bool changed = ExRecipeCosts.Reconcile(
-      catalogue,
-      SmexRecipeConfig.DefaultCatalogue()
-    );
-    changed |= ExRecipeCosts.EnsureNormalExtracted(api, catalogue);
-    changed |= ExRecipeCosts.EnsureScaledLevel(catalogue, "cheap", 0.4);
-    if (changed)
-      SmexRecipeValues.Save();
-
-    ExRecipeCosts.Apply(api, catalogue, SmexValues.RecipeLevel);
   }
 
   private static void OnMoldServerTick(ICoreServerAPI api)
@@ -190,6 +173,19 @@ public class SteelmakingExpandedModSystem : ModSystem
     SmexValues.Load(api);
     // The steelmaking recipe cost catalogue (smex_recipes.json).
     SmexRecipeValues.Load(api);
+    // Register this mod's recipe-cost profile so exlib's shared apply pass and the generic
+    // /exmod recipes smex <level> command can drive it (see ExRecipeProfiles).
+    ExRecipeProfiles.Register(
+      new RecipeProfile
+      {
+        Code = Mod.Info.ModID,
+        Catalogue = () => SmexRecipeValues.Recipes,
+        Defaults = SmexRecipeConfig.DefaultCatalogue,
+        GetLevel = () => SmexValues.RecipeLevel,
+        SetLevel = level => SmexValues.Edit(c => c.RecipeLevel = level),
+        SaveCatalogue = SmexRecipeValues.Save,
+      }
+    );
 
     // Register other mod's iron ore types.
     IronOreCompat.Init(api);

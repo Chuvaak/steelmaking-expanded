@@ -18,6 +18,15 @@
   "command-pref-set": "{0} set to {1}.",
   "command-pref-invalid": "Unknown value '{0}' for {1}. Options: {2}.",
 
+  "command-recipes-desc": "View or set a mod's recipe cost level (applies on next world reload)",
+  "command-recipes-list": "Recipe cost levels (use /exmod recipes <mod> <level> to change):",
+  "command-recipes-none": "No mods have registered recipe cost levels.",
+  "command-recipes-status": "{0} recipe costs are at level: {1}.",
+  "command-recipes-set": "{0} recipe costs set to '{1}'. Applies on the next world reload.",
+  "command-recipes-retain": "{0} recipe costs are already at '{1}'.",
+  "command-recipes-unknown": "Unknown mod '{0}'. Registered: {1}.",
+  "command-recipes-invalid": "Unknown level '{0}'. Options: {1}.",
+
   "command-network-desc": "Visualise block networks (pipes, molten canals, …)",
   "command-network-hi-desc": "Highlight every network block, coloured per network",
   "command-network-unhi-desc": "Stop highlighting network blocks",
