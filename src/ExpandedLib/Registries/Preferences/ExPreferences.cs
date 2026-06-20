@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ExpandedLib.Registries.Config;
 using Vintagestory.API.Common;
 
 namespace ExpandedLib.Registries.Preferences;
@@ -33,6 +34,10 @@ public static class ExPreferences
   /// preferences (the file holds one entry per player, each with one value per preference).</summary>
   public const string ConfigFileName = "exmod_preferences.json";
 
+  /// <summary>Former name of <see cref="ConfigFileName"/>, renamed on load so a player's saved
+  /// preferences carry over the rename instead of regenerating empty.</summary>
+  private static readonly string[] _legacyFileNames = ["exmod.json"];
+
   private static readonly Dictionary<string, IExPreference> _registered = new();
   private static ExPreferencesConfig _config = new();
   private static ICoreAPI? _api;
@@ -55,6 +60,7 @@ public static class ExPreferences
   public static void LoadConfig(ICoreAPI api)
   {
     _api = api;
+    ExConfigFiles.RenameLegacy(api, "exlib", ConfigFileName, _legacyFileNames);
     try
     {
       _config =

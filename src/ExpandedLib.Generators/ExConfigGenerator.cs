@@ -60,6 +60,24 @@ public sealed class ExConfigGenerator : IIncrementalGenerator
     if (string.IsNullOrWhiteSpace(accessorName))
       accessorName = DefaultAccessorName(type.Name);
 
+    var legacyArg = attr
+      .NamedArguments.FirstOrDefault(na => na.Key == "LegacyFileNames")
+      .Value;
+    var legacyNames =
+      legacyArg.Kind == TypedConstantKind.Array && !legacyArg.IsNull
+        ? legacyArg
+          .Values.Select(v => v.Value as string)
+          .Where(s => !string.IsNullOrEmpty(s))
+          .Select(s => s!)
+          .ToImmutableArray()
+        : ImmutableArray<string>.Empty;
+
+    bool manageable =
+      attr
+        .NamedArguments.FirstOrDefault(na => na.Key == "Manageable")
+        .Value.Value
+      is true;
+
     bool hasMigrations = type.GetMembers("Migrations")
       .Any(m => m.IsStatic && m is IFieldSymbol or IPropertySymbol);
 
@@ -89,6 +107,8 @@ public sealed class ExConfigGenerator : IIncrementalGenerator
       fileName,
       modId,
       hasMigrations,
+      manageable,
+      new EquatableArray<string>(legacyNames),
       new EquatableArray<PropModel>(properties)
     );
   }
@@ -127,7 +147,21 @@ public sealed class ExConfigGenerator : IIncrementalGenerator
     sb.AppendLine(
       $"  private static readonly ExConfigRegister<{m.ConfigTypeName}> _store ="
     );
-    sb.AppendLine($"    new(ConfigFileName, \"{m.ModId}\"{migrationsArg});");
+    var legacy = m.LegacyFileNames.AsSpan();
+    if (legacy.Length > 0)
+    {
+      var quoted = new List<string>(legacy.Length);
+      foreach (var n in legacy)
+        quoted.Add($"\"{n}\"");
+      sb.AppendLine($"    new(ConfigFileName, \"{m.ModId}\"{migrationsArg})");
+      sb.AppendLine(
+        $"    {{ LegacyFileNames = new string[] {{ {string.Join(", ", quoted)} }} }};"
+      );
+    }
+    else
+    {
+      sb.AppendLine($"    new(ConfigFileName, \"{m.ModId}\"{migrationsArg});");
+    }
     sb.AppendLine();
     sb.AppendLine(
       $"  private static {m.ConfigTypeName} _config => _store.Config;"
@@ -139,9 +173,42 @@ public sealed class ExConfigGenerator : IIncrementalGenerator
     sb.AppendLine(
       "  /// version-change resets and writes it back. Call once during mod startup.</summary>"
     );
+    if (m.Manageable)
+    {
+      sb.AppendLine("  public static void Load(ICoreAPI api)");
+      sb.AppendLine("  {");
+      sb.AppendLine("    _store.Load(api);");
+      sb.AppendLine(
+        "    // Manageable config: expose its values to the generic /exmod config command."
+      );
+      sb.AppendLine("    ExConfigProfiles.Register(_store);");
+      sb.AppendLine("  }");
+    }
+    else
+    {
+      sb.AppendLine(
+        "  public static void Load(ICoreAPI api) => _store.Load(api);"
+      );
+    }
+    sb.AppendLine();
     sb.AppendLine(
-      "  public static void Load(ICoreAPI api) => _store.Load(api);"
+      "  /// <summary>Mutates the live config through <paramref name=\"mutate\"/> and writes it back."
     );
+    sb.AppendLine(
+      "  /// For runtime admin edits; server-side in practice (config is host-authoritative).</summary>"
+    );
+    sb.AppendLine(
+      $"  public static void Edit(System.Action<{m.ConfigTypeName}> mutate)"
+    );
+    sb.AppendLine("  {");
+    sb.AppendLine("    mutate(_store.Config);");
+    sb.AppendLine("    _store.Save();");
+    sb.AppendLine("  }");
+    sb.AppendLine();
+    sb.AppendLine(
+      "  /// <summary>Persists the live config to its file on disk.</summary>"
+    );
+    sb.AppendLine("  public static void Save() => _store.Save();");
 
     foreach (var p in m.Properties.AsSpan())
     {
@@ -170,6 +237,8 @@ internal sealed record ConfigModel(
   string FileName,
   string ModId,
   bool HasMigrations,
+  bool Manageable,
+  EquatableArray<string> LegacyFileNames,
   EquatableArray<PropModel> Properties
 );
 

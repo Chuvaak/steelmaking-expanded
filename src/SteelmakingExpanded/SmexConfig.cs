@@ -10,7 +10,12 @@ namespace SteelmakingExpanded;
 /// are used when the file is missing or a key is absent (and any NaN/infinite/negative
 /// value is reset to its default on load). Accessed through <see cref="SmexValues"/>, not directly.
 /// </summary>
-[ExConfigRegister("smex_values.json", "smex")]
+[ExConfigRegister(
+  "smex_values.json",
+  "smex",
+  LegacyFileNames = new string[] { "smex.json" },
+  Manageable = true
+)]
 public class SmexConfig : IExVersionedConfig
 {
   /// <summary>Mod version that last wrote this file; drives the <see cref="Migrations"/> resets.

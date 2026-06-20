@@ -46,4 +46,17 @@ public sealed class ExConfigRegisterAttribute : Attribute
   /// <c>Config</c> swapped for <c>Values</c> (e.g. <c>PpexConfig</c> → <c>PpexValues</c>), or the type
   /// name plus <c>Values</c> when it has no <c>Config</c> suffix.</summary>
   public string? AccessorName { get; set; }
+
+  /// <summary>Former names this config file used under <c>ModConfig</c>. On load, if the current
+  /// <see cref="FileName"/> is absent but one of these still exists, it is renamed to the current name
+  /// (first match wins) - so renaming a config in a new release carries the player's existing tuning
+  /// over instead of silently regenerating defaults.</summary>
+  public string[]? LegacyFileNames { get; set; }
+
+  /// <summary>When <c>true</c>, the generated accessor registers this config's store with
+  /// <see cref="ExpandedLib.Registries.Config.ExConfigProfiles"/> at load, exposing its simple-typed
+  /// values to the generic <c>/exmod config &lt;mod&gt; &lt;value&gt; [&lt;new&gt;]</c> command. Use it
+  /// for the mod's tunables config; leave it off for catalogue configs (e.g. recipe costs) that have
+  /// their own command.</summary>
+  public bool Manageable { get; set; }
 }

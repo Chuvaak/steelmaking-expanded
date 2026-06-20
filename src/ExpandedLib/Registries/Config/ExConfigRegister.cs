@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Vintagestory.API.Common;
@@ -20,17 +21,30 @@ namespace ExpandedLib.Registries.Config;
 /// </summary>
 /// <typeparam name="TConfig">The mod's config POCO; needs a parameterless constructor whose property
 /// initialisers define the defaults, and must record the version it was written under.</typeparam>
-public sealed class ExConfigRegister<TConfig>
+public sealed class ExConfigRegister<TConfig> : IExConfigAccess
   where TConfig : class, IExVersionedConfig, new()
 {
   private readonly string _fileName;
   private readonly string _modId;
   private readonly ExConfigMigration[] _migrations;
   private ICoreAPI? _api;
+  private PropertyInfo[]? _editableProps;
 
   /// <summary>The live config. Holds the coded defaults until <see cref="Load"/> runs (and after a
   /// failed load), so accessors are always safe to read.</summary>
   public TConfig Config { get; private set; } = new();
+
+  /// <summary>The owning mod id (also the code typed in <c>/exmod config &lt;mod&gt;</c>).</summary>
+  public string ModId => _modId;
+
+  /// <summary>The config file this store reads/writes under <c>ModConfig</c>.</summary>
+  public string FileName => _fileName;
+
+  /// <summary>Former names this config file used. On <see cref="Load"/>, if <see cref="FileName"/> is
+  /// absent but one of these still exists in <c>ModConfig</c>, it is renamed to the current name (first
+  /// match wins) - carrying a player's existing tuning over a config rename instead of regenerating
+  /// defaults. Set by the generated accessor from the attribute's <c>LegacyFileNames</c>.</summary>
+  public IReadOnlyList<string> LegacyFileNames { get; init; } = [];
 
   /// <param name="fileName">Config file name written under the game's <c>ModConfig</c> folder
   /// (e.g. <c>"ppex.json"</c>).</param>
@@ -53,6 +67,7 @@ public sealed class ExConfigRegister<TConfig>
   public void Load(ICoreAPI api)
   {
     _api = api;
+    ExConfigFiles.RenameLegacy(api, _modId, _fileName, LegacyFileNames);
 
     TConfig config;
     try
@@ -219,6 +234,224 @@ public sealed class ExConfigRegister<TConfig>
       );
     }
   }
+
+  #region IExConfigAccess (runtime /exmod config editing)
+  /// <summary>The simple-typed (number/bool/string), read-write tunables this store exposes to the
+  /// generic config command - the version stamp and any complex/collection property are excluded.
+  /// Cached after first use.</summary>
+  private PropertyInfo[] EditableProps =>
+    _editableProps ??= typeof(TConfig)
+      .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+      .Where(p =>
+        p.CanRead
+        && p.CanWrite
+        && p.Name != nameof(IExVersionedConfig.ConfigVersion)
+        && IsEditableType(p.PropertyType)
+      )
+      .ToArray();
+
+  /// <inheritdoc/>
+  public IReadOnlyList<string> ValueNames =>
+    EditableProps.Select(p => p.Name).ToArray();
+
+  /// <inheritdoc/>
+  public bool TryGet(string name, out string canonicalName, out string value)
+  {
+    var p = FindProp(name);
+    if (p == null)
+    {
+      canonicalName = name;
+      value = string.Empty;
+      return false;
+    }
+
+    canonicalName = p.Name;
+    value = Format(p.GetValue(Config));
+    return true;
+  }
+
+  /// <inheritdoc/>
+  public ExConfigEditResult Set(string name, string raw)
+  {
+    var p = FindProp(name);
+    if (p == null)
+      return new ExConfigEditResult
+      {
+        Status = ExConfigEditStatus.UnknownValue,
+        Name = name,
+      };
+
+    string oldValue = Format(p.GetValue(Config));
+
+    if (!TryParse(p.PropertyType, raw, out object? parsed, out string expected))
+      return new ExConfigEditResult
+      {
+        Status = ExConfigEditStatus.ParseFailed,
+        Name = p.Name,
+        OldValue = oldValue,
+        Expected = expected,
+      };
+
+    if (!InRange(parsed))
+      return new ExConfigEditResult
+      {
+        Status = ExConfigEditStatus.OutOfRange,
+        Name = p.Name,
+        OldValue = oldValue,
+      };
+
+    p.SetValue(Config, parsed);
+    Save();
+    return new ExConfigEditResult
+    {
+      Status = ExConfigEditStatus.Ok,
+      Name = p.Name,
+      OldValue = oldValue,
+      NewValue = Format(parsed),
+    };
+  }
+
+  private PropertyInfo? FindProp(string name) =>
+    EditableProps.FirstOrDefault(p =>
+      string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)
+    );
+
+  private static bool IsEditableType(Type t) =>
+    t == typeof(string)
+    || t == typeof(bool)
+    || t == typeof(int)
+    || t == typeof(long)
+    || t == typeof(float)
+    || t == typeof(double);
+
+  private static string Format(object? v) =>
+    v switch
+    {
+      float f => f.ToString(CultureInfo.InvariantCulture),
+      double d => d.ToString(CultureInfo.InvariantCulture),
+      bool b => b ? "true" : "false",
+      null => string.Empty,
+      _ => Convert.ToString(v, CultureInfo.InvariantCulture) ?? string.Empty,
+    };
+
+  /// <summary>Parses <paramref name="raw"/> into <paramref name="type"/> using invariant culture and
+  /// lenient boolean words (true/on/yes/1, false/off/no/0). <paramref name="expected"/> is a short
+  /// label of the accepted input for the error message.</summary>
+  private static bool TryParse(
+    Type type,
+    string raw,
+    out object? value,
+    out string expected
+  )
+  {
+    value = null;
+
+    if (type == typeof(string))
+    {
+      expected = "text";
+      value = raw;
+      return true;
+    }
+    if (type == typeof(bool))
+    {
+      expected = "true/false";
+      switch (raw.Trim().ToLowerInvariant())
+      {
+        case "true" or "on" or "yes" or "1":
+          value = true;
+          return true;
+        case "false" or "off" or "no" or "0":
+          value = false;
+          return true;
+        default:
+          return false;
+      }
+    }
+    if (type == typeof(int))
+    {
+      expected = "whole number";
+      if (
+        int.TryParse(
+          raw,
+          NumberStyles.Integer,
+          CultureInfo.InvariantCulture,
+          out int i
+        )
+      )
+      {
+        value = i;
+        return true;
+      }
+      return false;
+    }
+    if (type == typeof(long))
+    {
+      expected = "whole number";
+      if (
+        long.TryParse(
+          raw,
+          NumberStyles.Integer,
+          CultureInfo.InvariantCulture,
+          out long l
+        )
+      )
+      {
+        value = l;
+        return true;
+      }
+      return false;
+    }
+    if (type == typeof(float))
+    {
+      expected = "number";
+      if (
+        float.TryParse(
+          raw,
+          NumberStyles.Float,
+          CultureInfo.InvariantCulture,
+          out float f
+        )
+      )
+      {
+        value = f;
+        return true;
+      }
+      return false;
+    }
+    if (type == typeof(double))
+    {
+      expected = "number";
+      if (
+        double.TryParse(
+          raw,
+          NumberStyles.Float,
+          CultureInfo.InvariantCulture,
+          out double d
+        )
+      )
+      {
+        value = d;
+        return true;
+      }
+      return false;
+    }
+
+    expected = "value";
+    return false;
+  }
+
+  /// <summary>Mirrors <see cref="Sanitize"/>: a number must be finite and non-negative (so an edit
+  /// cannot push the config into a value the next load would just reset). Non-numbers always pass.</summary>
+  private static bool InRange(object? value) =>
+    value switch
+    {
+      float f => !float.IsNaN(f) && !float.IsInfinity(f) && f >= 0f,
+      double d => !double.IsNaN(d) && !double.IsInfinity(d) && d >= 0d,
+      int i => i >= 0,
+      long l => l >= 0,
+      _ => true,
+    };
+  #endregion
 
   /// <summary>Parses a mod version (e.g. <c>"0.9.1"</c>, tolerating a <c>-prerelease</c> suffix) into a
   /// comparable <see cref="Version"/>; unparseable or empty versions sort lowest.</summary>

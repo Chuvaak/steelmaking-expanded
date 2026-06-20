@@ -13,7 +13,12 @@ namespace PipesAndPowerExpanded;
 /// a dimensionless ratio (volume / capacity), expressed in atm.
 /// </para>
 /// </summary>
-[ExConfigRegister("ppex_values.json", "ppex")]
+[ExConfigRegister(
+  "ppex_values.json",
+  "ppex",
+  LegacyFileNames = new string[] { "ppex.json" },
+  Manageable = true
+)]
 public class PpexConfig : IExVersionedConfig
 {
   /// <summary>Mod version that last wrote this file; drives the <see cref="Migrations"/> resets.
