@@ -44,5 +44,8 @@
   "network-hi-on": "Network highlighting enabled - each network has its own colour; updates live.",
   "network-hi-off": "Network highlighting disabled.",
 
+  "command-heal-desc": "Recreate orphaned block entities (a placed block whose entity was lost) in loaded chunks",
+  "command-heal-result": "Recreated {0} orphaned block entities in loaded chunks.",
+
   "game:placefailure-exlib-noorientation": "Cannot connect to the neighbouring blocks - no valid orientation here."
 }

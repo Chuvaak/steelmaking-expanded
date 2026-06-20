@@ -27,6 +27,7 @@ public sealed class TestWorld
   private readonly Dictionary<string, Block> _blocksByCode = new();
   private readonly Dictionary<string, Item> _itemsByCode = new();
   private readonly Dictionary<int, Item> _itemsById = new();
+  private readonly Dictionary<string, Func<BlockEntity>> _beFactories = new();
   private int _nextItemId = 1;
 
   private double _totalDays;
@@ -127,6 +128,22 @@ public sealed class TestWorld
       be.Block = block;
       _blockEntities[pos] = be;
     }
+    return this;
+  }
+
+  /// <summary>
+  /// Registers a factory that <c>BlockAccessor.SpawnBlockEntity(classname, pos)</c> uses to create a
+  /// block entity for <paramref name="classname"/> - the headless stand-in for the engine's class
+  /// registry. The spawned entity is positioned, linked to the block at that cell, stored, and
+  /// <c>Initialize</c>d against this world's API, mirroring the real spawn path closely enough to test
+  /// block-entity recreation (e.g. the orphaned-BE healer).
+  /// </summary>
+  public TestWorld RegisterBlockEntityFactory(
+    string classname,
+    Func<BlockEntity> factory
+  )
+  {
+    _beFactories[classname] = factory;
     return this;
   }
 
@@ -249,6 +266,16 @@ public sealed class TestWorld
     a.When(x => x.ExchangeBlock(Arg.Any<int>(), Arg.Any<BlockPos>()))
       .Do(ci => DoExchangeBlock(ci.ArgAt<int>(0), ci.ArgAt<BlockPos>(1)));
     a.When(x => x.MarkBlockDirty(Arg.Any<BlockPos>())).Do(_ => { });
+    a.When(x =>
+        x.SpawnBlockEntity(
+          Arg.Any<string>(),
+          Arg.Any<BlockPos>(),
+          Arg.Any<ItemStack>()
+        )
+      )
+      .Do(ci =>
+        DoSpawnBlockEntity(ci.ArgAt<string>(0), ci.ArgAt<BlockPos>(1))
+      );
     a.When(x =>
         x.BreakBlock(Arg.Any<BlockPos>(), Arg.Any<IPlayer>(), Arg.Any<float>())
       )
@@ -392,6 +419,17 @@ public sealed class TestWorld
     }
     if (_blocksById.TryGetValue(id, out var b))
       _blocks[pos] = b;
+  }
+
+  private void DoSpawnBlockEntity(string classname, BlockPos pos)
+  {
+    if (!_beFactories.TryGetValue(classname, out var factory))
+      return;
+    var be = factory();
+    be.Pos = pos.Copy();
+    be.Block = GetBlock(pos);
+    _blockEntities[pos] = be;
+    be.Initialize(Api);
   }
 
   private void DoExchangeBlock(int id, BlockPos pos)
