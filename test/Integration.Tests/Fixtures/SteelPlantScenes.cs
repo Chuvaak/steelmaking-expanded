@@ -376,6 +376,35 @@ internal sealed class CowperRig
     return this;
   }
 
+  /// <summary>
+  /// Both valves open: pumps fresh blast air into the passthrough AND hot exhaust into the intake on
+  /// the same tick - the genuine "mixing" misconfiguration the stove must refuse to charge through.
+  /// </summary>
+  public CowperRig MixAirAndExhaust(
+    float exhaustTemp = 1200f,
+    float airLitres = 60f,
+    float exhaustLitres = 60f
+  )
+  {
+    _airInNet.TryProduceGas(
+      airLitres,
+      20f,
+      "Air",
+      World.Accessor,
+      maxOutputPressure: 3f
+    );
+    _airInNet.BroadcastUpdate(World.Accessor);
+    _exhaust.TryProduceGas(
+      exhaustLitres,
+      exhaustTemp,
+      "Exhaust",
+      World.Accessor,
+      maxOutputPressure: 10f
+    );
+    Tick();
+    return this;
+  }
+
   private void Tick() =>
     ReflectionHelpers.Invoke(Stove, "OnProductionTick", 1f);
 

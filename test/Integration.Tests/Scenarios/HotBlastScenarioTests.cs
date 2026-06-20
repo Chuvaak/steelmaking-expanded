@@ -148,5 +148,50 @@ public class HotBlastScenarioTests
     );
   }
 
+  // Regression (player-reported): the real two-phase cycle is discharge → CLOSE the air valve →
+  // recharge from exhaust. Discharging leaves blast air sitting in the passthrough, and closing the
+  // valve strands it there (a pressurised run holds well over a pipe's worth). The stove used to read
+  // that stranded air as "mixing" and latch shut, refusing to ever recharge. Every other cowper test
+  // charges from a pristine, empty passthrough, so none of them crossed this discharge→recharge path.
+  [Fact]
+  public void Recharging_after_a_discharge_is_not_blocked_by_air_left_in_the_passthrough()
+  {
+    var rig = new CowperRig();
+
+    // Push blast air through once - this leaves leftover air stranded in the passthrough.
+    rig.DischargeAir(airTemp: 20f, litres: 90f);
+    Assert.True(
+      rig.CoreTemperature <= 25f,
+      "precondition: the core is still cold after a cold discharge"
+    );
+
+    // Air valve now closed (no fresh air); recharge from exhaust. The stranded air must not block it.
+    for (int i = 0; i < 200; i++)
+      rig.ChargeFromExhaust(exhaustTemp: 1200f);
+
+    Assert.True(
+      rig.CoreTemperature > 100f,
+      $"a recharge must clear the stranded air and heat the core, was {rig.CoreTemperature} C"
+    );
+  }
+
+  // The mix guard must still fire while air is GENUINELY flowing (both valves open): the stove can't
+  // soak exhaust into the core while air streams through the passthrough, so it must not charge.
+  [Fact]
+  public void Exhaust_with_air_actively_flowing_is_still_treated_as_mixing()
+  {
+    var rig = new CowperRig();
+    float before = rig.CoreTemperature;
+
+    // Re-supply air every tick (open air valve) alongside the exhaust.
+    for (int i = 0; i < 50; i++)
+      rig.MixAirAndExhaust(exhaustTemp: 1200f);
+
+    Assert.True(
+      rig.CoreTemperature - before < 5f,
+      $"the core must not charge while air is actively mixing, rose to {rig.CoreTemperature} C"
+    );
+  }
+
   #endregion
 }

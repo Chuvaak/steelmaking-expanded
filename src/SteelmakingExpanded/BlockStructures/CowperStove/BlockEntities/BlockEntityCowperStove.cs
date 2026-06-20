@@ -136,21 +136,27 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
       Api.World.BlockAccessor.GetBlockEntity(passthroughPos)
       as BlockEntityPipePassthrough;
 
-    if (passthrough?.Volume > 0)
+    // Raw gas actually sitting in the passthrough's run. airVol below rounds this UP to a full intake
+    // for discharge throughput, so keep the raw figure for the "is air genuinely flowing" test.
+    float passthroughVol = passthrough?.Volume ?? 0f;
+    if (passthroughVol > 0)
     {
-      airTemp = passthrough.Temperature;
+      airTemp = passthrough!.Temperature;
       inGasType = passthrough.Medium;
-      airVol =
-        passthrough.Volume <= _intakeVolume
-          ? _intakeVolume
-          : passthrough.Volume;
+      airVol = passthroughVol <= _intakeVolume ? _intakeVolume : passthroughVol;
     }
 
     string newStatus = Lang.Get("smex:cowperstove-status-idle");
 
-    if (isReceivingExhaust && airVol > PpexValues.LitresPerPipe)
+    if (isReceivingExhaust && passthroughVol > PpexValues.LitresPerPipe)
     {
+      // Air and exhaust both present. Closing the air valve cuts its supply but leaves the gas
+      // already in the passthrough stranded there - and a pressurised run holds well over one pipe's
+      // worth - which used to latch the stove in "mixing" forever and refuse to charge. Vent that
+      // stranded gas: with the valve shut nothing refills it, so it clears within a tick and the
+      // stove charges next tick; only a still-open valve keeps refilling it and stays flagged.
       newStatus = Lang.Get("smex:cowperstove-status-exhaustmix");
+      passthrough?.TryConsume(passthroughVol);
     }
     else if (isReceivingExhaust)
     {
