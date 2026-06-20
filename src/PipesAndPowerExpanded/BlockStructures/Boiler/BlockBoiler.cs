@@ -160,6 +160,19 @@ public abstract class BlockBoiler
     base.OnBlockBroken(world, pos, byPlayer, dropQuantityMultiplier);
   }
 
+  // A broken boiler returns only its construction materials (scattered by the RightClickConstructable
+  // behaviour at brokenDropsRatio), never the boiler block itself - mirrors the bessemer converter. The
+  // JSON "drops": [] declares this, but it isn't reliably honoured for a variant block (the per-pressure
+  // variant can still be handed its own code as a fallback drop at registration), so enforce the empty
+  // drop list here. (The engines deliberately keep their craftable-frame self-drop and are unaffected -
+  // they don't derive from BlockBoiler.)
+  public override ItemStack[] GetDrops(
+    IWorldAccessor world,
+    BlockPos pos,
+    IPlayer? byPlayer,
+    float dropQuantityMultiplier = 1f
+  ) => [];
+
   #region Lid interactions
 
   // The lid and manual fill live on one footprint cell (LidWorldPos). Interactions arrive on

@@ -797,26 +797,17 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
 
   /// <summary>
   /// Builds the metal-bit recovery stack for <paramref name="units"/> of the current charge (5 units
-  /// per bit), carrying the charge temperature; falls back to slag for a non-metal charge.
+  /// per bit), carrying the charge temperature; falls back to slag for a non-metal charge. Shared with
+  /// the canal/barrel chisel drops via <see cref="MoltenChisel.BuildRecovery"/>.
   /// </summary>
-  private ItemStack? BuildRecoveryDrops(int units)
-  {
-    int count = Math.Max(1, units / 5);
-    var loc = MoltenNetwork.SolidDropLocation(_content!.Collectible.Code);
-    Item? item = Api.World.GetItem(loc);
-    if (item == null)
-    {
-      Item? slag = Api.World.GetItem(new AssetLocation("smex:slag"));
-      return slag != null ? new ItemStack(slag, count) : null;
-    }
-    var drop = new ItemStack(item, count);
-    MoltenMetal.SetTemperature(
+  private ItemStack? BuildRecoveryDrops(int units) =>
+    MoltenChisel.BuildRecovery(
       Api.World,
-      drop,
-      MoltenMetal.GetTemperature(Api.World, _content!)
+      _content!.Collectible.Code,
+      MoltenMetal.GetTemperature(Api.World, _content),
+      units,
+      slagFallback: true
     );
-    return drop;
-  }
 
   #endregion
 

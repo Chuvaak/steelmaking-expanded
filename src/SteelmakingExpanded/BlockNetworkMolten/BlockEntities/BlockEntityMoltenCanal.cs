@@ -21,7 +21,7 @@ namespace SteelmakingExpanded.BlockNetworkMolten.BlockEntities;
 /// metal drops below the melting point, blocking flow until chiselled or broken.
 /// </summary>
 [BlockEntityRegister]
-public class BlockEntityMoltenCanal : BlockEntityNetworkNode
+public class BlockEntityMoltenCanal : BlockEntityNetworkNode, IChiselableMolten
 {
   #region Network
   public override string NetworkType
@@ -339,7 +339,15 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
   }
   #endregion
 
-  #region Solidified clearing / drops
+  #region Solidified clearing / drops (IChiselableMolten)
+
+  // A solidified cell is the chiselable target; it can be chipped out once cooled past the hardened
+  // threshold, and (unlike the bessemer) there's no size cap, so "too hot" is the only blocked state.
+  bool IChiselableMolten.HasChiselableContent => Solidified;
+  bool IChiselableMolten.CanChiselOut => Solidified && IsHardened;
+  string? IChiselableMolten.ChiselBlockedError => "smex-canaltoohot";
+  ItemStack? IChiselableMolten.ChiselOut() => ClearSolidified();
+
   /// <summary>
   /// Server-side: chips the hardened metal out of this cell - returns the recoverable drop, empties
   /// the cell, lifts its latch, and rebuilds so it rejoins the run. Returns <c>null</c> off-server
@@ -371,17 +379,12 @@ public class BlockEntityMoltenCanal : BlockEntityNetworkNode
     if (!Solidified || CellAmount <= 0f || CellMetalType.Length == 0)
       return null;
 
-    int count = Math.Max(1, (int)(CellAmount / 5f));
-    var solidLoc = MoltenNetwork.SolidDropLocation(
-      new AssetLocation(CellMetalType)
+    return MoltenChisel.BuildRecovery(
+      world,
+      new AssetLocation(CellMetalType),
+      _cellTemperature,
+      (int)CellAmount
     );
-    Item? item = world.GetItem(solidLoc);
-    if (item == null)
-      return null;
-
-    var drop = new ItemStack(item, count);
-    MoltenMetal.SetTemperature(world, drop, _cellTemperature);
-    return drop;
   }
   #endregion
 

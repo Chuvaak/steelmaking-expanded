@@ -8,9 +8,9 @@ namespace SteelmakingExpanded.Tests;
 /// <summary>
 /// Regression guard for the RCC mega-block break/mining JSON, which the headless harness can't load
 /// (blocks are configured by hand, not from assets). Reads the shipped block JSON directly and pins:
-/// the Bessemer converter must NOT drop itself (it is control-spawned, not a placeable frame) and
-/// must scatter 80% of its construction cost; the craftable engines/boilers must keep their
-/// frame-recovery self-drop; and the retuned pickaxe tiers (converter = iron, engines/boilers =
+/// the Bessemer converter and the boilers must NOT drop themselves (control-spawned / built in place,
+/// not a placeable frame) and must scatter 80% of their construction cost; the craftable engines keep
+/// their frame-recovery self-drop; and the retuned pickaxe tiers (converter = iron, engines/boilers =
 /// bronze).
 /// </summary>
 public class MegablockDropTierTests
@@ -61,27 +61,35 @@ public class MegablockDropTierTests
 
   #endregion
 
-  #region Engines + boilers (craftable frames: self-drop is correct)
+  #region Boilers (built in place: no self-drop)
 
   [Theory]
-  [InlineData(Watt)]
-  [InlineData(EngineCornish)]
   [InlineData(Lancashire)]
   [InlineData(BoilerCornish)]
-  public void Engines_and_boilers_need_a_bronze_tier_pickaxe(string path)
+  public void Boilers_do_not_drop_themselves_as_a_block(string path)
   {
-    Assert.Equal(BronzeTier, MiningTier(Block(path)));
+    // Like the converter, a boiler is built in place (RightClickConstructable), not placed from a
+    // frame item, so it must declare "drops": [] to suppress the auto-populated self-drop.
+    JsonElement block = Block(path);
+    Assert.True(
+      block.TryGetProperty("drops", out JsonElement drops),
+      $"{path} must declare \"drops\": [] to suppress the self-drop"
+    );
+    Assert.Equal(JsonValueKind.Array, drops.ValueKind);
+    Assert.Equal(0, drops.GetArrayLength());
   }
 
+  #endregion
+
+  #region Engines (craftable frames: self-drop is correct)
+
   [Theory]
   [InlineData(Watt)]
   [InlineData(EngineCornish)]
-  [InlineData(Lancashire)]
-  [InlineData(BoilerCornish)]
-  public void Engines_and_boilers_still_drop_their_craftable_frame(string path)
+  public void Engines_still_drop_their_craftable_frame(string path)
   {
-    // These ARE placeable, craftable frames - breaking one should recover the frame block, so they
-    // must NOT carry the converter's empty-drops override.
+    // Engines ARE placeable, craftable frames - breaking one should recover the frame block, so they
+    // must NOT carry the converter/boiler empty-drops override.
     JsonElement block = Block(path);
     bool suppressesSelfDrop =
       block.TryGetProperty("drops", out JsonElement drops)
@@ -91,6 +99,20 @@ public class MegablockDropTierTests
       suppressesSelfDrop,
       $"{path} should keep its frame self-drop (no empty \"drops\")"
     );
+  }
+
+  #endregion
+
+  #region Engines + boilers (shared: bronze tier, 80% salvage)
+
+  [Theory]
+  [InlineData(Watt)]
+  [InlineData(EngineCornish)]
+  [InlineData(Lancashire)]
+  [InlineData(BoilerCornish)]
+  public void Engines_and_boilers_need_a_bronze_tier_pickaxe(string path)
+  {
+    Assert.Equal(BronzeTier, MiningTier(Block(path)));
   }
 
   [Theory]

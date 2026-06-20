@@ -3,6 +3,7 @@ using System.Text;
 using ExpandedLib.Blocks.Construction;
 using ExpandedLib.Helpers;
 using ExpandedLib.Registries.Entities;
+using SteelmakingExpanded.BlockNetworkMolten;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
@@ -20,7 +21,7 @@ namespace SteelmakingExpanded.BlockStructures.Converter.BlockEntities;
 /// on break.
 /// </summary>
 [BlockEntityRegister]
-public class BlockEntityConverterBessemer : BlockEntity
+public class BlockEntityConverterBessemer : BlockEntity, IChiselableMolten
 {
   private BlockPos? _controlPos;
   private ConverterOpState _opState = ConverterOpState.Normal;
@@ -254,7 +255,7 @@ public class BlockEntityConverterBessemer : BlockEntity
 
   #endregion
 
-  #region Chisel-out (forwarded to the control)
+  #region Chisel-out (IChiselableMolten, forwarded to the control)
 
   /// <summary>True when the vessel holds a solidified charge (see the control).</summary>
   public bool HasSolidifiedCharge => GetControl()?.HasSolidifiedCharge ?? false;
@@ -267,6 +268,14 @@ public class BlockEntityConverterBessemer : BlockEntity
 
   /// <summary>Server-side: chips the hardened residue out via the control; null when not chiselable.</summary>
   public ItemStack? ChiselOutContent() => GetControl()?.ChiselOutContent();
+
+  // IChiselableMolten: a solidified charge is the chiselable target; unlike a canal it also caps by size,
+  // so the blocked feedback distinguishes "too full" (hardened but too big - break it) from "too hot".
+  bool IChiselableMolten.HasChiselableContent => HasSolidifiedCharge;
+  bool IChiselableMolten.CanChiselOut => CanChiselOut();
+  string? IChiselableMolten.ChiselBlockedError =>
+    ChargeIsHardened ? "smex-bessemertoofull" : "smex-bessemertoohot";
+  ItemStack? IChiselableMolten.ChiselOut() => ChiselOutContent();
 
   #endregion
 

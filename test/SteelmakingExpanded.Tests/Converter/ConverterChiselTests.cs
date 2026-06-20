@@ -2,6 +2,7 @@ using ExpandedLib.Testing;
 using SteelmakingExpanded.BlockNetworkMolten;
 using SteelmakingExpanded.BlockNetworkMolten.BlockEntities;
 using SteelmakingExpanded.BlockStructures.Converter.BlockEntities;
+using SteelmakingExpanded.BlockStructures.Converter.Blocks;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
@@ -197,6 +198,30 @@ public class ConverterChiselTests
 
     Assert.False(be.HasSolidifiedCharge);
     Assert.False(be.CanChiselOut());
+  }
+
+  #endregion
+
+  #region Self-drop suppression
+
+  // Regression (player-reported): the control-spawned vessel still dropped itself as a block on break,
+  // alongside its construction materials. "drops": [] in the JSON isn't always honoured for a variant
+  // block, so the block overrides GetDrops to guarantee an empty list. Simulate the registry handing
+  // the block its own code as a fallback drop and confirm the override strips it.
+  [Fact]
+  public void Bessemer_vessel_never_drops_itself_even_if_registered_with_a_self_drop()
+  {
+    var block = TestBlocks.Configure(
+      new BlockConverterBessemer(),
+      "smex:converterbessemer-north",
+      1,
+      ("side", "north")
+    );
+    block.Drops = [new BlockDropItemStack(new ItemStack(block))];
+
+    ItemStack[] drops = block.GetDrops(null!, new BlockPos(0, 8, 0), null);
+
+    Assert.Empty(drops);
   }
 
   #endregion

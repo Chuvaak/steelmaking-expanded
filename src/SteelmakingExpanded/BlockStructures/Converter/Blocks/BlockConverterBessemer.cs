@@ -1,13 +1,12 @@
 using System;
-using System.Linq;
 using ExpandedLib.Blocks.Structures;
 using ExpandedLib.Helpers;
 using ExpandedLib.Registries.Entities;
+using SteelmakingExpanded.BlockNetworkMolten;
 using SteelmakingExpanded.BlockStructures.Converter.BlockEntities;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
-using Vintagestory.API.Server;
 
 namespace SteelmakingExpanded.BlockStructures.Converter.Blocks;
 
@@ -84,6 +83,20 @@ public partial class BlockConverterBessemer
       world.SpawnItemEntity(solidifiedDrops, pos.ToVec3d().Add(0.5, 0.5, 0.5));
   }
 
+  // The vessel is control-spawned, never placed from an item, so it must NOT drop itself when broken:
+  // the construction materials come from the RightClickConstructable behaviour and the solidified
+  // charge is spawned by OnBlockBroken above. The JSON "drops": [] declares this, but it is not always
+  // honoured for a variant block (the per-side variant can still be handed its own code as a fallback
+  // drop at registration), which leaves the vessel dropping itself alongside the materials. Enforce the
+  // empty drop list here so the suppression can't be bypassed. (Block behaviours can still contribute
+  // their own drops via base.GetDrops; the converter has none, so an empty list is correct.)
+  public override ItemStack[] GetDrops(
+    IWorldAccessor world,
+    BlockPos pos,
+    IPlayer? byPlayer,
+    float dropQuantityMultiplier = 1f
+  ) => [];
+
   #region Chisel-out interaction (IFillerInteractionTarget)
 
   // Every footprint cell forwards interaction to this principal block. We single out the (0,1,1)
@@ -139,17 +152,7 @@ public partial class BlockConverterBessemer
       return
       [
         .. baseHelp,
-        new WorldInteraction
-        {
-          ActionLangCode = "smex:blockhelp-bessemer-chiselresidue",
-          MouseButton = EnumMouseButton.Right,
-          Itemstacks = _chiselStacks ??=
-            [
-              .. world
-                .SearchItems(new AssetLocation("chisel-*"))
-                .Select(i => new ItemStack(i)),
-            ],
-        },
+        MoltenChisel.ChiselHelp(world, "smex:blockhelp-bessemer-chiselresidue"),
       ];
 
     return baseHelp;
@@ -166,8 +169,9 @@ public partial class BlockConverterBessemer
     return clickedCell.Equals(chiselCell);
   }
 
-  // Chisel in hand + hammer in the off-hand chips a hardened residue out of the vessel - mirrors the
-  // molten-canal clear. Returns true when this owns the click (so it isn't forwarded to construction).
+  // Chisel in hand + hammer in the off-hand chips a hardened residue out of the vessel via the shared
+  // MoltenChisel ritual. Returns true when this owns the click (chiselled, or claimed-but-not-ready with
+  // a "too hot"/"too full" message), so it isn't forwarded to construction handling.
   private bool TryChiselOut(
     IWorldAccessor world,
     IPlayer byPlayer,
@@ -176,52 +180,18 @@ public partial class BlockConverterBessemer
   {
     if (
       world.BlockAccessor.GetBlockEntity(principalPos)
-        is not BlockEntityConverterBessemer be
-      || !be.HasSolidifiedCharge
+      is not BlockEntityConverterBessemer be
     )
-      return false; // nothing solidified here - let the click fall through to construction handling
+      return false;
 
-    ItemSlot? activeSlot = byPlayer.InventoryManager.ActiveHotbarSlot;
-    ItemStack? held = activeSlot?.Itemstack;
-    ItemStack? offhand = byPlayer.Entity?.LeftHandItemSlot?.Itemstack;
-    if (!IsTool(held, EnumTool.Chisel) || !IsTool(offhand, EnumTool.Hammer))
-      return false; // not chiselling - fall through
-
-    // The player is actively trying to chisel a solidified charge: own the click and explain why if
-    // it can't be chipped out yet.
-    if (!be.CanChiselOut())
-    {
-      if (world.Side == EnumAppSide.Server)
-        (byPlayer as IServerPlayer)?.SendIngameError(
-          be.ChargeIsHardened ? "smex-bessemertoofull" : "smex-bessemertoohot"
-        );
-      return true;
-    }
-
-    if (world.Side == EnumAppSide.Server)
-    {
-      ItemStack? recovered = be.ChiselOutContent();
-      if (
-        recovered != null
-        && !byPlayer.InventoryManager.TryGiveItemstack(recovered)
-      )
-        world.SpawnItemEntity(
-          recovered,
-          principalPos.ToVec3d().Add(0.5, 0.6, 0.5)
-        );
-
-      if (byPlayer.WorldData.CurrentGameMode != EnumGameMode.Creative)
-        held!.Collectible.DamageItem(world, byPlayer.Entity, activeSlot, 2);
-
-      ExSounds.Play(world.Api, principalPos, ExSounds.StoneCrush, 0.8f);
-    }
-    return true;
+    return MoltenChisel.TryChisel(
+        world,
+        byPlayer,
+        principalPos,
+        be,
+        ExSounds.StoneCrush
+      ) != ChiselOutcome.NotChiseling;
   }
-
-  private static bool IsTool(ItemStack? stack, EnumTool tool) =>
-    stack?.Collectible?.Tool == tool;
-
-  private static ItemStack[]? _chiselStacks;
 
   #endregion
 

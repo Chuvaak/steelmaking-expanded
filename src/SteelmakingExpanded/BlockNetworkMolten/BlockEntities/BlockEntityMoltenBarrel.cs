@@ -19,7 +19,10 @@ namespace SteelmakingExpanded.BlockNetworkMolten.BlockEntities;
 /// temperature/hardening, and yields cast or chiselled metal when emptied.
 /// </summary>
 [BlockEntityRegister]
-public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
+public class BlockEntityMoltenBarrel
+  : BlockEntity,
+    ILiquidMetalSink,
+    IChiselableMolten
 {
   /// <summary>The metal currently stored, or <c>null</c> when empty.</summary>
   public ItemStack? MetalContent;
@@ -244,36 +247,48 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
   /// <summary>No-op: the barrel handles interaction in its block, not here.</summary>
   public bool OnPlayerInteract(IPlayer byPlayer) => false;
 
-  /// <summary>Chisels hardened metal out as solid bits (5 units each), emptying the barrel.</summary>
-  public bool TryChiselOut(IPlayer byPlayer)
+  #region Chisel-out (IChiselableMolten)
+
+  // The barrel is chiselable once its stored metal hardens; there's no size cap, so the hardened state
+  // is both the claim gate and the can-chisel gate (and there is no "too hot" feedback - a chisel + hammer
+  // click on a still-soft barrel falls through to its other interactions). The shared MoltenChisel ritual
+  // (give/spawn, sound) runs from the block; here we only clear and recover. Bits are 10 units each (the
+  // barrel's long-standing chisel ratio), distinct from the 5-unit break drop in GetMetalDrops.
+  bool IChiselableMolten.HasChiselableContent =>
+    MetalContent != null && CurrentUnitAmount > 0 && IsHardened;
+
+  bool IChiselableMolten.CanChiselOut =>
+    ((IChiselableMolten)this).HasChiselableContent;
+
+  string? IChiselableMolten.ChiselBlockedError => null;
+
+  /// <summary>Server-side: empties the barrel and returns the recovered metal bits (10 units each).</summary>
+  public ItemStack? ChiselOut()
   {
-    if (MetalContent == null || CurrentUnitAmount <= 0 || !IsHardened)
-      return false;
+    if (
+      Api?.Side != EnumAppSide.Server
+      || MetalContent == null
+      || CurrentUnitAmount <= 0
+      || !IsHardened
+    )
+      return null;
 
-    if (Api.Side == EnumAppSide.Server)
-    {
-      int count = Math.Max(1, CurrentUnitAmount / 10);
-      var solidLoc = MoltenNetwork.SolidDropLocation(
-        MetalContent.Collectible.Code
-      );
-      var item = Api.World.GetItem(solidLoc);
-      if (item != null)
-      {
-        var drop = new ItemStack(item, count);
-        MoltenMetal.SetTemperature(Api.World, drop, Temperature);
-        if (!byPlayer.InventoryManager.TryGiveItemstack(drop))
-          Api.World.SpawnItemEntity(drop, Pos.ToVec3d().Add(0.5, 0.5, 0.5));
-      }
-      MetalContent = null;
-      CurrentUnitAmount = 0;
-      ExSounds.Play(Api, Pos, ExSounds.AnvilHit, 0.8f);
-      UpdateRenderer();
-      UpdateGlow();
-      MarkDirty(true);
-    }
-
-    return true;
+    ItemStack? recovered = MoltenChisel.BuildRecovery(
+      Api.World,
+      MetalContent.Collectible.Code,
+      Temperature,
+      CurrentUnitAmount,
+      unitsPerBit: 10
+    );
+    MetalContent = null;
+    CurrentUnitAmount = 0;
+    UpdateRenderer();
+    UpdateGlow();
+    MarkDirty(true);
+    return recovered;
   }
+
+  #endregion
 
   /// <summary>Resolves the block-defined drop(s) for a full, hardened barrel of <paramref name="fromMetal"/>.</summary>
   public ItemStack[] GetMoldedStacks(ItemStack fromMetal)
@@ -336,16 +351,14 @@ public class BlockEntityMoltenBarrel : BlockEntity, ILiquidMetalSink
     if (IsFull && IsHardened)
       return GetMoldedStacks(MetalContent);
 
-    int count = Math.Max(1, CurrentUnitAmount / 5);
-    var solidLoc = MoltenNetwork.SolidDropLocation(
-      MetalContent.Collectible.Code
+    // Breaking a not-yet-cast barrel scatters metal bits at 5 units each (vs the chisel-out's 10).
+    ItemStack? drop = MoltenChisel.BuildRecovery(
+      Api.World,
+      MetalContent.Collectible.Code,
+      Temperature,
+      CurrentUnitAmount
     );
-    var item = Api.World.GetItem(solidLoc);
-    if (item == null)
-      return [];
-    var drop = new ItemStack(item, count);
-    MoltenMetal.SetTemperature(Api.World, drop, Temperature);
-    return [drop];
+    return drop != null ? [drop] : [];
   }
 
   private ItemStack? StackFromCode(JsonItemStack jstack, ItemStack fromMetal)

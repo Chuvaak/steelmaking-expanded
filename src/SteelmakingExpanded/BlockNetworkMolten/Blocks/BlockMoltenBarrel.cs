@@ -22,9 +22,9 @@ public partial class BlockMoltenBarrel : Block
 {
   private MeshData? _barrelBaseMesh;
 
-  // Cached item lists for the interaction help, populated on load.
+  // Cached item list for the pour interaction help, populated on load. (The chisel list is shared
+  // through MoltenChisel.ChiselHelp.)
   private ItemStack[] _smeltedCrucibles = [];
-  private ItemStack[] _chisels = [];
 
   public override void OnLoaded(ICoreAPI api)
   {
@@ -44,16 +44,6 @@ public partial class BlockMoltenBarrel : Block
       }
     }
     _smeltedCrucibles = crucibleList.ToArray();
-
-    var chiselList = new List<ItemStack>();
-    foreach (var item in api.World.Items)
-    {
-      if (item.Tool == EnumTool.Chisel)
-      {
-        chiselList.Add(new ItemStack(item));
-      }
-    }
-    _chisels = chiselList.ToArray();
   }
 
   /// <summary>
@@ -241,18 +231,18 @@ public partial class BlockMoltenBarrel : Block
       ?.Collectible;
     if (heldItem?.Tool == EnumTool.Chisel)
     {
-      var offhandItem = byPlayer
-        .Entity
-        .LeftHandItemSlot
-        ?.Itemstack
-        ?.Collectible;
-      if (offhandItem?.Tool != EnumTool.Hammer)
-        return false;
-
-      if (world.Side == EnumAppSide.Client)
-        return true;
-
-      return be.TryChiselOut(byPlayer);
+      // A chisel in hand resolves here either way: chip the hardened metal out (shared ritual; the
+      // barrel takes no tool wear and chips at 10 units/bit), or do nothing when it isn't hardened yet.
+      var outcome = MoltenChisel.TryChisel(
+        world,
+        byPlayer,
+        blockSel.Position,
+        be,
+        ExSounds.AnvilHit,
+        damageChisel: false,
+        yOffset: 0.5
+      );
+      return outcome != ChiselOutcome.NotChiseling;
     }
 
     if (byPlayer.Entity.Controls.ShiftKey)
@@ -400,16 +390,7 @@ public partial class BlockMoltenBarrel : Block
     }
 
     if (isHardened)
-    {
-      result.Add(
-        new WorldInteraction
-        {
-          ActionLangCode = "smex:blockhelp-barrel-chisel",
-          MouseButton = EnumMouseButton.Right,
-          Itemstacks = _chisels,
-        }
-      );
-    }
+      result.Add(MoltenChisel.ChiselHelp(world, "smex:blockhelp-barrel-chisel"));
 
     return result.ToArray();
   }

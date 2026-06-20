@@ -213,39 +213,19 @@ public partial class BlockMoltenCanal : BlockNetworkNode
     ItemSlot? activeSlot = byPlayer.InventoryManager.ActiveHotbarSlot;
     ItemStack? held = activeSlot?.Itemstack;
 
-    // A solidified canal is chipped clear with a chisel in hand + hammer in the off-hand.
+    // A solidified canal is chipped clear with a chisel in hand + hammer in the off-hand (shared
+    // chisel-out ritual). A plain click on a still-clogged cell falls through to base.
     if (be.Solidified)
     {
-      ItemStack? offhand = byPlayer.Entity?.LeftHandItemSlot?.Itemstack;
-      if (!IsTool(held, EnumTool.Chisel) || !IsTool(offhand, EnumTool.Hammer))
-        return base.OnBlockInteractStart(world, byPlayer, blockSel);
-
-      // Solidified metal blocks flow at once but can't be chipped out until fully hardened.
-      if (!be.IsHardened)
-      {
-        if (world.Side == EnumAppSide.Server)
-          (byPlayer as IServerPlayer)?.SendIngameError("smex-canaltoohot");
-        return true;
-      }
-
-      if (world.Side == EnumAppSide.Server)
-      {
-        ItemStack? recovered = be.ClearSolidified();
-        if (
-          recovered != null
-          && !byPlayer.InventoryManager.TryGiveItemstack(recovered)
-        )
-          world.SpawnItemEntity(
-            recovered,
-            blockSel.Position.ToVec3d().Add(0.5, 0.6, 0.5)
-          );
-
-        if (byPlayer.WorldData.CurrentGameMode != EnumGameMode.Creative)
-          held!.Collectible.DamageItem(world, byPlayer.Entity, activeSlot, 2);
-
-        ExSounds.Play(world.Api, blockSel.Position, ExSounds.StoneCrush, 0.8f);
-      }
-      return true;
+      var outcome = MoltenChisel.TryChisel(
+        world,
+        byPlayer,
+        blockSel.Position,
+        be,
+        ExSounds.StoneCrush
+      );
+      return outcome != ChiselOutcome.NotChiseling
+        || base.OnBlockInteractStart(world, byPlayer, blockSel);
     }
 
     // Sealing / unsealing only applies to straight segments.
@@ -280,7 +260,7 @@ public partial class BlockMoltenCanal : BlockNetworkNode
     }
 
     // Sealed: unseal with a chisel.
-    if (!IsTool(held, EnumTool.Chisel))
+    if (!MoltenChisel.IsTool(held, EnumTool.Chisel))
       return base.OnBlockInteractStart(world, byPlayer, blockSel);
 
     if (world.Side == EnumAppSide.Server)
@@ -337,11 +317,7 @@ public partial class BlockMoltenCanal : BlockNetworkNode
     && code.Domain == FireClayCode.Domain
     && code.Path == FireClayCode.Path;
 
-  private static bool IsTool(ItemStack? stack, EnumTool tool) =>
-    stack?.Collectible?.Tool == tool;
-
   private static ItemStack[]? _fireClayStacks;
-  private static ItemStack[]? _chiselStacks;
 
   /// <summary>
   /// The "chip out the solidified cell" interaction hint, or <c>null</c> when the cell at
@@ -352,26 +328,11 @@ public partial class BlockMoltenCanal : BlockNetworkNode
   protected WorldInteraction? ChiselClearInteraction(
     IWorldAccessor world,
     BlockPos pos
-  )
-  {
-    if (
-      world.BlockAccessor.GetBlockEntity(pos)
-      is not BlockEntityMoltenCanal { Solidified: true, IsHardened: true }
-    )
-      return null;
-
-    return new WorldInteraction
-    {
-      ActionLangCode = "smex:blockhelp-canal-clearsolidified",
-      MouseButton = EnumMouseButton.Right,
-      Itemstacks = _chiselStacks ??=
-        [
-          .. world
-            .SearchItems(new AssetLocation("chisel-*"))
-            .Select(i => new ItemStack(i)),
-        ],
-    };
-  }
+  ) =>
+    world.BlockAccessor.GetBlockEntity(pos)
+    is BlockEntityMoltenCanal { Solidified: true, IsHardened: true }
+      ? MoltenChisel.ChiselHelp(world, "smex:blockhelp-canal-clearsolidified")
+      : null;
 
   public override WorldInteraction[] GetPlacedBlockInteractionHelp(
     IWorldAccessor world,
@@ -392,39 +353,15 @@ public partial class BlockMoltenCanal : BlockNetworkNode
       return
       [
         .. baseHelp,
-        new WorldInteraction
-        {
-          ActionLangCode = "smex:blockhelp-canal-clearsolidified",
-          MouseButton = EnumMouseButton.Right,
-          Itemstacks = _chiselStacks ??=
-            [
-              .. world
-                .SearchItems(new AssetLocation("chisel-*"))
-                .Select(i => new ItemStack(i)),
-            ],
-        },
+        MoltenChisel.ChiselHelp(world, "smex:blockhelp-canal-clearsolidified"),
       ];
 
     if (Type != "straight")
       return baseHelp;
 
-    // A sealed canal can always be unsealed.
+    // A sealed canal can always be unsealed (with a chisel).
     if (be is { Sealed: true })
-      return
-      [
-        .. baseHelp,
-        new WorldInteraction
-        {
-          ActionLangCode = "smex:blockhelp-canal-unseal",
-          MouseButton = EnumMouseButton.Right,
-          Itemstacks = _chiselStacks ??=
-            [
-              .. world
-                .SearchItems(new AssetLocation("chisel-*"))
-                .Select(i => new ItemStack(i)),
-            ],
-        },
-      ];
+      return [.. baseHelp, MoltenChisel.ChiselHelp(world, "smex:blockhelp-canal-unseal")];
 
     // The seal hint only shows when sealing is actually possible: this cell and its neighbours
     // are empty. A cell holding (or sitting next to) metal - liquid or solidified - won't advertise it.
