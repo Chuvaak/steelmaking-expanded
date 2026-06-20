@@ -48,8 +48,11 @@ Code is organized by **feature**, and within each feature by Vintage Story's
   `[BlockBehaviorRegister]` (etc.) attribute and `EntityRegistry.RegisterAll` picks it
   up. Chat commands use `[CommandRegister]` / `[SubCommandRegister]` the same way.
 - Gameplay tunables live in `PpexValues` / `SmexValues` (the static accessors are
-  source-generated from the config classes), persisted to `ModConfig/ppex.json` /
-  `ModConfig/smex.json` and editable live with `/exmod config`.
+  source-generated from the config classes), persisted to `ModConfig/ppex_values.json` /
+  `ModConfig/smex_values.json` and editable live with `/exmod config`. Recipe and
+  construction costs live in a separate `ModConfig/{ppex,smex}_recipes.json` catalogue
+  (per-level `normal` / `cheap` numbers), switched with `/exmod recipes` and applied on
+  the next world reload. Both files auto-rename from their pre-`_values` legacy names.
 
 ## Network system (`src/ExpandedLib/Blocks/Networks/`)
 
