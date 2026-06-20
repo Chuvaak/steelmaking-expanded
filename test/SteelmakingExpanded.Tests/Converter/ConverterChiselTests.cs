@@ -57,8 +57,9 @@ public class ConverterChiselTests
 
   // The VS time-based cooldown speed lives on the stack's temperature tree.
   private static float CooldownSpeedOf(ItemStack stack) =>
-    (stack.Attributes["temperature"] as ITreeAttribute)?.GetFloat("cooldownSpeed")
-    ?? 0f;
+    (stack.Attributes["temperature"] as ITreeAttribute)?.GetFloat(
+      "cooldownSpeed"
+    ) ?? 0f;
 
   // Primes the control's charge directly (bypasses the peripheral-gated tick).
   private static void PrimeCharge(
@@ -118,6 +119,37 @@ public class ConverterChiselTests
       ExpectedSlowedCooldown,
       3
     );
+  }
+
+  // Regression (player-reported): /exmod config smex bessemercooldowncoefficient 10 did nothing,
+  // because the rate was baked into the charge only when it was first poured. The tick now re-stamps
+  // the live rate, so a coefficient change reaches the metal already in the vessel.
+  [Fact]
+  public void Changing_the_cooldown_coefficient_reaches_the_charge_already_in_the_vessel()
+  {
+    var world = NewWorld();
+    var be = Control(world);
+    var content = Metal(world, Iron, 1400f);
+    ReflectionHelpers.SetField(be, "_content", content);
+    ReflectionHelpers.SetField(be, "_contentUnits", 50);
+
+    float original = SmexValues.BessemerCooldownCoefficient;
+    try
+    {
+      // Admin speeds the cooling way up mid-session.
+      SmexValues.Edit(c => c.BessemerCooldownCoefficient = 10f);
+      ReflectionHelpers.Invoke(be, "SyncContentCooldown");
+
+      Assert.Equal(
+        SmexValues.MoltenCooldownSpeed * 10f,
+        CooldownSpeedOf(content),
+        3
+      );
+    }
+    finally
+    {
+      SmexValues.Edit(c => c.BessemerCooldownCoefficient = original);
+    }
   }
 
   #endregion

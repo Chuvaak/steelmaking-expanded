@@ -14,6 +14,7 @@
   "maxstacksize": 1,
   "drops": [],
   "attributes": {
+    "chiselOffset": { "x": 0, "y": 1, "z": 0 },
     "fillerOffsets": [
       { "x": -1, "y": -1, "z": -1 },
       { "x": 0, "y": -1, "z": -1 },

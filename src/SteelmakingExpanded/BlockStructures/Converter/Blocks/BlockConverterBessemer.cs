@@ -27,10 +27,6 @@ public partial class BlockConverterBessemer
     IFillerHost,
     IFillerInteractionTarget
 {
-  // The footprint cell (north-orientation offset from the vessel principal) that exposes the
-  // chisel-out interaction - the upper-rear hatch, matching the player-facing hint.
-  private static readonly Vec3i ChiselFillerOffset = new(0, 1, 1);
-
   // RMB construction and its build prompts are routed to the
   // RightClickConstructable block-entity behaviour by the "BlockEntityInteract"
   // block behaviour declared in the block JSON.
@@ -161,9 +157,13 @@ public partial class BlockConverterBessemer
 
   private bool IsChiselCell(BlockPos principalPos, BlockPos clickedCell)
   {
-    int angle = ExOrientation.AngleFromSide(Variant["side"]);
-    Vec3i r = ExOrientation.RotateOffset(ChiselFillerOffset, angle);
-    return clickedCell.Equals(principalPos.AddCopy(r.X, r.Y, r.Z));
+    BlockPos chiselCell = ExOrientation.WorldPosFromAttr(
+      principalPos,
+      ChiselOffset,
+      new Vec3i(),
+      ExOrientation.AngleFromSide(Variant["side"])
+    );
+    return clickedCell.Equals(chiselCell);
   }
 
   // Chisel in hand + hammer in the off-hand chips a hardened residue out of the vessel - mirrors the

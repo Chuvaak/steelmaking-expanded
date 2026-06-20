@@ -73,6 +73,9 @@ public class BlockEntityEngineMpGenerator
     bool turning = _mp.Network != null && Math.Abs(_mp.Network.Speed) > 0.001f;
     UpdateGrindSound(turning);
     if (Engine is { } engine)
+      // Drive the engine cycle off the axle's signed render angle so its rod tracks the axle's
+      // visible spin direction (folding in AxisSign tracked the opposite way - the rendered axle
+      // already turns with AngleRad here).
       engine.DriveMpCycleFrame(turning, _mp.AngleRad);
   }
 

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ExpandedLib.Blocks.Structures;
 using ExpandedLib.Helpers;
 using ExpandedLib.Registries.Entities;
 using SteelmakingExpanded.BlockNetworkMolten.BlockEntities;
@@ -59,10 +60,7 @@ public partial class BlockMoltenCanalTap : BlockMoltenCanal
 
     if (sneak)
     {
-      Block blockBelow = world.BlockAccessor.GetBlock(
-        blockSel.Position.DownCopy()
-      );
-      if (!blockBelow.SideSolid[BlockFacing.UP.Index])
+      if (!HasSolidSupportBelow(world, blockSel.Position))
         return false;
 
       if (be.HasContent)
@@ -134,6 +132,21 @@ public partial class BlockMoltenCanalTap : BlockMoltenCanal
     return true;
   }
 
+  /// <summary>
+  /// A barrel or mold can only be parked under the tap when the cell directly below is a real solid
+  /// surface to rest on. Invisible mega-block fillers are deliberately excluded: they are solid for
+  /// collision but are an internal part of another structure, not a stand you can set a vessel on.
+  /// </summary>
+  private static bool HasSolidSupportBelow(
+    IWorldAccessor world,
+    BlockPos tapPos
+  )
+  {
+    Block below = world.BlockAccessor.GetBlock(tapPos.DownCopy());
+    return below.SideSolid[BlockFacing.UP.Index]
+      && below is not BlockStructureFiller;
+  }
+
   public override WorldInteraction[] GetPlacedBlockInteractionHelp(
     IWorldAccessor world,
     BlockSelection selection,
@@ -158,10 +171,7 @@ public partial class BlockMoltenCanalTap : BlockMoltenCanal
       },
     };
 
-    Block blockBelow = world.BlockAccessor.GetBlock(
-      selection.Position.DownCopy()
-    );
-    if (!blockBelow.SideSolid[BlockFacing.UP.Index])
+    if (!HasSolidSupportBelow(world, selection.Position))
       return result.ToArray();
 
     if (!hasContent)

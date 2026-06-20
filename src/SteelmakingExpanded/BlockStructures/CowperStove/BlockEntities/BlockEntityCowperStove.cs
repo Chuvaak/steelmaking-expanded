@@ -42,6 +42,19 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
   {
     base.Initialize(api);
 
+    CacheTunables();
+
+    // The exhaust connector sits on the stove's local-south face, rotated with the block.
+    _connectorFace = ExOrientation.RotateFacing(
+      BlockFacing.SOUTH,
+      ExOrientation.AngleFromSide(Block.Variant["side"])
+    );
+  }
+
+  // Pulls the gameplay tunables off the live config. Re-run each production tick (not just at load)
+  // so a `/exmod config smex ...` change applies immediately, not only after the chunk reloads.
+  private void CacheTunables()
+  {
     _factorAnthracite = SmexValues.CowperHeatingSpeedAnthracite;
     _factorOtherCoal = SmexValues.CowperHeatingSpeedOtherCoal;
     _factorDefault = SmexValues.CowperHeatingSpeedDefault;
@@ -49,12 +62,6 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
     _coolingSpeedAir = SmexValues.CowperCoolingSpeedAir;
     _maxTemperature = SmexValues.CowperMaxTemperature;
     _intakeVolume = SmexValues.CowperIntakeVolume;
-
-    // The exhaust connector sits on the stove's local-south face, rotated with the block.
-    _connectorFace = ExOrientation.RotateFacing(
-      BlockFacing.SOUTH,
-      ExOrientation.AngleFromSide(Block.Variant["side"])
-    );
   }
 
   #region Abstract implementations
@@ -85,6 +92,9 @@ public class BlockEntityCowperStove : BlockEntityMultiblockStructure
   {
     if (!StructureComplete)
       return;
+
+    // Pick up any live `/exmod config` tunable change this tick.
+    CacheTunables();
 
     // The stove is a fixed machine port: only draw from a run whose pipe actually
     // presents a connector back at the stove's exhaust face - a pipe merely routed

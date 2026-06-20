@@ -261,7 +261,7 @@
   "game:ingameerror-smex-molddisabled": "This mold is disabled on this server.",
 
   "command-molds-desc": "Enable or disable the mod's added casting molds (plate, ingot, rod). Recipe and handbook changes apply on the next world reload; already-placed molds stop casting immediately.",
-  "command-molds-status": "{0} mold: {1}.",
+  "command-molds-status": "{0} mold - {1}.",
   "command-molds-set": "{0} mold {1}. Recipe and handbook changes apply on the next world reload; placed molds have already stopped casting.",
   "mold-plate": "Plate",
   "mold-ingot": "Double-ingot",

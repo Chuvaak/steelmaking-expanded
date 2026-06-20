@@ -595,8 +595,8 @@ public abstract class BlockEntityEngine : BlockEntityProductionMachine
   /// cycle, so the beam/piston motion stays locked to the visible axle at any speed and keeps
   /// cycling while the flywheel coasts. Pushed every render frame by
   /// <see cref="BlockEntityEngineMpGenerator"/>; <paramref name="angleRad"/> is the axle's render
-  /// angle (0..2π), <paramref name="turning"/> whether the network moves. We accumulate the
-  /// rotation MAGNITUDE not the signed angle - see the body for why.
+  /// angle (0..2π, the axle's render angle), <paramref name="turning"/> whether the network moves.
+  /// We accumulate the signed delta so the cycle follows the axle's direction - see the body.
   /// </summary>
   public void DriveMpCycleFrame(bool turning, float angleRad)
   {
@@ -619,13 +619,11 @@ public abstract class BlockEntityEngine : BlockEntityProductionMachine
       return;
     int total = st.Animation.QuantityFrames;
 
-    // Advance FORWARD by the magnitude of the axle's rotation. The axle is a fixed-direction
-    // source (an angled gear flips propagation, hence the SIGN of angleRad, but AxisSign keeps
-    // the rendered axle spinning the same way), so the signed angle would play the cycle
-    // backwards whenever propagation flips. The magnitude keeps the rate exact and forward.
-    float delta = Math.Abs(
-      GameMath.AngleRadDistance(_lastDriveAngle, angleRad)
-    );
+    // Advance by the SIGNED rotation so the engine cycle follows the axle's visible direction - when
+    // the axle reverses (orientation flip / driven the other way) the cycle plays backwards too,
+    // instead of always cranking forward. The caller passes the axle's render angle, whose signed
+    // per-frame delta matches what the player sees the axle do.
+    float delta = GameMath.AngleRadDistance(_lastDriveAngle, angleRad);
     _lastDriveAngle = angleRad;
     _mpCycleFrame = GameMath.Mod(
       _mpCycleFrame + delta / GameMath.TWOPI * total,

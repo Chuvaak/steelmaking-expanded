@@ -50,11 +50,7 @@ public class MegablockDropTierTests
   public void Bessemer_converter_scatters_80_percent_of_its_construction_cost()
   {
     JsonElement rcc = Constructable(Block(Bessemer));
-    Assert.Equal(
-      0.8,
-      rcc.GetProperty("brokenDropsRatio").GetDouble(),
-      3
-    );
+    Assert.Equal(0.8, rcc.GetProperty("brokenDropsRatio").GetDouble(), 3);
   }
 
   [Fact]
@@ -123,7 +119,9 @@ public class MegablockDropTierTests
   // The ExRightClickConstructable entity behavior's properties node (holds brokenDropsRatio + stages).
   private static JsonElement Constructable(JsonElement block)
   {
-    foreach (JsonElement b in block.GetProperty("entityBehaviors").EnumerateArray())
+    foreach (
+      JsonElement b in block.GetProperty("entityBehaviors").EnumerateArray()
+    )
     {
       if (
         b.TryGetProperty("name", out JsonElement name)

@@ -53,7 +53,8 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
 
   // Below this fraction of capacity a hardened residue is small enough to chisel out (rather than
   // breaking the whole converter to salvage it).
-  private static float ChiselMaxFraction => SmexValues.BessemerChiselMaxFraction;
+  private static float ChiselMaxFraction =>
+    SmexValues.BessemerChiselMaxFraction;
 
   private const string IronCode = "game:ingot-iron";
   private const string SteelCode = "game:ingot-steel";
@@ -138,6 +139,7 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
     }
 
     UpdateSolidified();
+    SyncContentCooldown();
 
     switch (OpState)
     {
@@ -396,6 +398,17 @@ public class BlockEntityConverterControl : BlockEntityMultiblockStructure
   #endregion
 
   #region Temperature handling
+
+  // Re-stamps the live charge's cooldown rate from the (live) config every tick, so an admin
+  // changing BessemerCooldownCoefficient via /exmod config speeds up or slows down the metal already
+  // in the vessel - not just metal added on a later fill. SetCooldownSpeed only rewrites the rate
+  // attribute (it doesn't reset the stored temperature or its timestamp), so re-applying the same
+  // value is a no-op and a changed value takes effect from this tick forward.
+  private void SyncContentCooldown()
+  {
+    if (_content != null)
+      MoltenMetal.SetCooldownSpeed(_content, ContentCooldownSpeed);
+  }
 
   private void HoldTemperature(float dt)
   {

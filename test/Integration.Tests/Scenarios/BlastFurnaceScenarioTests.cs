@@ -1,4 +1,5 @@
 using ExpandedLib.Testing;
+using SteelmakingExpanded;
 using SteelmakingExpanded.BlockStructures.BlastFurnace;
 using Vintagestory.API.MathTools;
 using Xunit;
@@ -104,6 +105,39 @@ public class BlastFurnaceScenarioTests
     rig.Tick(1);
 
     Assert.Equal(BlastFurnaceState.Firing, rig.State);
+  }
+
+  #endregion
+
+  #region Live config
+
+  // Regression (player-reported): /exmod config smex bfmeltstartdelay 30 used to take effect only
+  // after a relog, because the furnace cached its tunables once at load. The production tick now
+  // re-reads them, so an admin change applies on the next tick without a reload.
+  [Fact]
+  public void A_live_config_change_to_the_melt_delay_applies_without_a_reload()
+  {
+    float original = SmexValues.BfMeltStartDelay;
+    try
+    {
+      var rig = new BlastFurnaceRig()
+        .FeedBlast()
+        .SetState(BlastFurnaceState.Firing);
+
+      // Admin shortens the soak time mid-session.
+      SmexValues.Edit(c => c.BfMeltStartDelay = 30f);
+      rig.Tick(1);
+
+      Assert.Equal(
+        30f,
+        (float)ReflectionHelpers.GetField(rig.Furnace, "_meltStartDelay")!,
+        3
+      );
+    }
+    finally
+    {
+      SmexValues.Edit(c => c.BfMeltStartDelay = original);
+    }
   }
 
   #endregion

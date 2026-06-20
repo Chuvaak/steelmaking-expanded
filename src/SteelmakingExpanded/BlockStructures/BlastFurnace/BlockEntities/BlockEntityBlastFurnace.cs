@@ -257,6 +257,11 @@ public class BlockEntityBlastFurnace : BlockEntityMultiblockStructure
     if (!StructureComplete)
       return;
 
+    // Re-read the tunables each tick so a live `/exmod config smex ...` change (e.g. shortening the
+    // melt-start delay) takes effect immediately, instead of staying pinned to whatever was cached
+    // when this furnace last loaded. Reading the generated accessor is a plain field read - cheap.
+    CacheAttributes();
+
     bool dirty = false;
 
     bool failedAny = false;
