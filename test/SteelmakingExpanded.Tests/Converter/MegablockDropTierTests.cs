@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using Xunit;
@@ -99,6 +100,50 @@ public class MegablockDropTierTests
       suppressesSelfDrop,
       $"{path} should keep its frame self-drop (no empty \"drops\")"
     );
+  }
+
+  #endregion
+
+  #region Construction cost (salvage base)
+
+  // The break salvage scatters brokenDropsRatio (80%) of the consumed stacks across EVERY completed
+  // stage. Vanilla rcc.GetDrops omits the LAST stage (a `i < CurrentCompletedStage` off-by-one), which
+  // robbed the salvage of the most expensive stage - the Lancashire casing - so a fully built boiler
+  // refunded ~40% instead of 80%. ExRightClickConstructable now includes the final stage. This pins
+  // the full per-material construction cost the 80% is taken from, so a stage edit can't silently shift
+  // it again. (The 1.22 drop code is vanilla-backed and the legacy reimpl is excluded from this target,
+  // so the totals are asserted off the shipped JSON.)
+  [Fact]
+  public void Lancashire_boiler_full_construction_cost_is_pinned()
+  {
+    Dictionary<string, int> cost = ConstructionCost(Block(Lancashire));
+
+    Assert.Equal(34, cost["metalplate-steel"]); // 10 + 8 + 16
+    Assert.Equal(24, cost["metalnailsandstrips-*"]); // 8 + 8 + 8
+    Assert.Equal(10, cost["rod-steel"]); // 4 + 6
+    Assert.Equal(60, cost["game:burnedbrick-fire"]); // 12 + 48
+  }
+
+  // Sums every stage's requireStacks quantity by ingredient code (the full build cost).
+  private static Dictionary<string, int> ConstructionCost(JsonElement block)
+  {
+    var totals = new Dictionary<string, int>();
+    foreach (
+      JsonElement stage in Constructable(block)
+        .GetProperty("stages")
+        .EnumerateArray()
+    )
+    {
+      if (!stage.TryGetProperty("requireStacks", out JsonElement stacks))
+        continue;
+      foreach (JsonElement ing in stacks.EnumerateArray())
+      {
+        string code = ing.GetProperty("code").GetString()!;
+        totals[code] =
+          totals.GetValueOrDefault(code) + ing.GetProperty("quantity").GetInt32();
+      }
+    }
+    return totals;
   }
 
   #endregion

@@ -20,10 +20,40 @@ using Vintagestory.GameContent;
 public class ExRightClickConstructable(BlockEntity blockentity)
   : BEBehaviorRightClickConstructable(blockentity)
 {
-  /// <summary>The materials this block would scatter at <paramref name="ratio"/> (0..1) of the
-  /// consumed stacks. Reaches the protected base <c>rcc</c> directly (no reflection needed).</summary>
-  public ItemStack[] GetConstructionDrops(float ratio, Random rand) =>
-    rcc.GetDrops(ratio, rand);
+  /// <summary>
+  /// The materials this block would scatter at <paramref name="ratio"/> (0..1) of the consumed stacks,
+  /// across EVERY completed stage. Vanilla <c>rcc.GetDrops</c> loops <c>i &lt; CurrentCompletedStage</c>,
+  /// which silently omits the LAST built stage's materials - for the mega-blocks that's the most
+  /// expensive stage (e.g. the Lancashire casing: 16 plate / 8 nails / 6 rod / 48 brick), so a fully
+  /// built structure refunded far less than its <c>brokenDropsRatio</c>. Advancing the counter by one
+  /// across the call (it's a public field) makes the loop reach the final stage, then we restore it.
+  /// </summary>
+  public ItemStack[] GetConstructionDrops(float ratio, Random rand)
+  {
+    int built = rcc.CurrentCompletedStage;
+    rcc.CurrentCompletedStage = built + 1;
+    try
+    {
+      return rcc.GetDrops(ratio, rand);
+    }
+    finally
+    {
+      rcc.CurrentCompletedStage = built;
+    }
+  }
+
+  /// <summary>
+  /// Replaces vanilla's break handler (which scatters the off-by-one <c>rcc.GetDrops</c>) so a broken
+  /// structure refunds all completed stages at <c>brokenDropsRatio</c>. Null-safe on the breaker (an
+  /// explosion-broken structure still drops its salvage), unlike the vanilla override.
+  /// </summary>
+  public override void OnBlockBroken(IPlayer? byPlayer = null)
+  {
+    if (byPlayer?.WorldData.CurrentGameMode == EnumGameMode.Creative)
+      return;
+    foreach (var drop in GetConstructionDrops(brokenDropsRatio, Api.World.Rand))
+      Api.World.SpawnItemEntity(drop, Pos, null);
+  }
 }
 #else
 using System;
