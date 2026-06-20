@@ -86,7 +86,7 @@
       "R": {
         "type": "item",
         "code": "game:rod-{metal}",
-        "quantity": 24
+        "quantity": 16
       },
       "P": {
         "type": "item",
